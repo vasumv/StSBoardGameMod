@@ -13,6 +13,9 @@ Slay the Spire: The Board Game. Goal of this fork: add networked multiplayer.
 - Do not anchor on the existing `multicharacter` code (below). If a cleaner design
   works properly, use it; treat that code as reference only.
 
+Design and milestones: `docs/MULTIPLAYER_DESIGN.md` (each player runs a solo
+game, shared state is synced, one player acts at a time, undo via snapshots).
+
 ## What exists
 
 - No networking code anywhere in the mod.
@@ -34,3 +37,9 @@ ModTheSpire, BaseMod, StSLib, Bestiary, Quick Restart. Paths are in `pom.xml`.
 The build copies `target/BoardGame.jar` into the game's `mods/` folder. Disable the
 Workshop copy of the mod so it does not load twice. A cloud/remote session without
 the game jars can read and edit code but cannot compile or run it.
+
+## Running without Steam / headless
+
+`scripts/run-sandbox.sh p1 --headless` launches the built mod from an isolated
+folder (`../sandbox/p1`, own saves) on a hidden virtual display. Use different
+names for several instances. Log output goes to stdout.
