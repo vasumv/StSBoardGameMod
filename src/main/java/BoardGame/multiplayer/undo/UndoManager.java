@@ -31,7 +31,19 @@ public class UndoManager implements PostUpdateSubscriber {
     public static final Logger logger = LogManager.getLogger(UndoManager.class.getName());
     private static final float SETTLE_SECONDS = 0.15f;
 
-    private static final ArrayList<StateSnapshot> stack = new ArrayList<>();
+    /** One resolved step this turn: the state before it and what it was. */
+    public static final class Step {
+        public final StateSnapshot before;
+        public final String label;
+
+        Step(StateSnapshot before, String label) {
+            this.before = before;
+            this.label = label;
+        }
+    }
+
+    private static final ArrayList<Step> stack = new ArrayList<>();
+    private static int playedAtSnapshot = 0;
     private static StateSnapshot current;
     private static boolean dirty = true;
     private static float idleTime = 0f;
@@ -40,10 +52,16 @@ public class UndoManager implements PostUpdateSubscriber {
 
     public static void initialize() {
         BaseMod.subscribe(new UndoManager());
+        BaseMod.subscribe(new HistoryPanel());
     }
 
     public static int undoDepth() {
         return stack.size();
+    }
+
+    /** Steps resolved this turn, oldest first. */
+    public static java.util.List<Step> steps() {
+        return java.util.Collections.unmodifiableList(stack);
     }
 
     public static StateSnapshot currentSnapshot() {
@@ -80,6 +98,7 @@ public class UndoManager implements PostUpdateSubscriber {
     public void receivePostUpdate() {
         try {
             tick();
+            HistoryPanel.update();
             DebugChannel.poll();
         } catch (Throwable t) {
             logger.error("undo tick failed", t);
@@ -100,6 +119,7 @@ public class UndoManager implements PostUpdateSubscriber {
             idleTime += Gdx.graphics.getDeltaTime();
             if (dirty && idleTime >= SETTLE_SECONDS) {
                 current = StateSnapshot.capture();
+                playedAtSnapshot = AbstractDungeon.actionManager.cardsPlayedThisTurn.size();
                 dirty = false;
             }
             if (!dirty && Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT)) {
@@ -110,7 +130,7 @@ public class UndoManager implements PostUpdateSubscriber {
             idleTime = 0f;
             if (managerBusy() && !dirty) {
                 // something started resolving: the last settled state becomes an undo point
-                stack.add(current);
+                stack.add(new Step(current, describeActivity()));
                 dirty = true;
             }
         }
@@ -123,17 +143,34 @@ public class UndoManager implements PostUpdateSubscriber {
         idleTime = 0f;
     }
 
+    private static String describeActivity() {
+        GameActionManager am = AbstractDungeon.actionManager;
+        if (!am.cardQueue.isEmpty() && am.cardQueue.get(0).card != null) {
+            AbstractMonster m = am.cardQueue.get(0).monster;
+            return am.cardQueue.get(0).card.name + (m != null ? " > " + m.name : "");
+        }
+        if (am.cardsPlayedThisTurn.size() > playedAtSnapshot)
+            return am.cardsPlayedThisTurn.get(am.cardsPlayedThisTurn.size() - 1).name;
+        if (am.turnHasEnded || AbstractDungeon.player.isEndingTurn || AbstractDungeon.player.endTurnQueued)
+            return "End turn";
+        return "Other action";
+    }
+
     public static boolean undo() {
-        if (!canUndo()) return false;
-        apply(stack.remove(stack.size() - 1), "Undo");
-        return true;
+        return rollbackTo(stack.size() - 1);
     }
 
     public static boolean resetTurn() {
-        if (!canUndo()) return false;
-        StateSnapshot first = stack.get(0);
-        stack.clear();
-        apply(first, "Turn reset");
+        return rollbackTo(0);
+    }
+
+    /** Restore the state from before step {@code index}; that step and all later ones are undone. */
+    public static boolean rollbackTo(int index) {
+        if (!canUndo() || index < 0 || index >= stack.size()) return false;
+        Step target = stack.get(index);
+        String label = index == stack.size() - 1 ? "Undo: " + target.label : "Rolled back to before " + target.label;
+        while (stack.size() > index) stack.remove(stack.size() - 1);
+        apply(target.before, label);
         return true;
     }
 
@@ -141,6 +178,7 @@ public class UndoManager implements PostUpdateSubscriber {
         s.restore();
         current = s;
         dirty = false;
+        playedAtSnapshot = AbstractDungeon.actionManager.cardsPlayedThisTurn.size();
         AbstractPlayer p = AbstractDungeon.player;
         // the snapshot may have been taken while a card was hovered
         p.hoveredCard = null;

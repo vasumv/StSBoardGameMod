@@ -90,7 +90,10 @@ Rules for rollback:
 - Only within the current player turn; history is cleared when the turn ends.
 - Requested through the same queue, so it is ordered against in-flight plays;
   plays queued behind a rollback are dropped.
-- Any player may roll back; everyone sees who did it. No vote (assumed default).
+- Any player may propose a rollback from the history panel. Everyone else gets a
+  prompt showing who asked and which play; it happens once every player accepts and
+  is cancelled if anyone declines. New plays are held while a proposal is open. In
+  solo play it is immediate.
 - Random generators are restored too, so replaying gives the same draws and rolls.
 
 Known limits: cosmetic state inside skipped rendering objects (e.g. an animation

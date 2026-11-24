@@ -65,6 +65,15 @@ public class DebugChannel {
                         + UndoManager.undoDepth();
             case "undo":
                 return "undo=" + UndoManager.undo();
+            case "panel":
+                return BoardGame.multiplayer.undo.HistoryPanel.debug();
+            case "rollback":
+                return "rollback=" + UndoManager.rollbackTo(Integer.parseInt(a[1]));
+            case "history": {
+                StringBuilder sb = new StringBuilder();
+                for (UndoManager.Step st : UndoManager.steps()) sb.append('[').append(st.label).append("] ");
+                return sb.toString();
+            }
             case "reset":
                 return "reset=" + UndoManager.resetTurn();
             case "stats": {
