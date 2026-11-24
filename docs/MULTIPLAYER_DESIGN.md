@@ -1,6 +1,7 @@
 # Multiplayer design
 
-Status: design chosen, nothing implemented yet. Rules reference:
+Status: milestones 1 and 2 are done (test harness; undo in solo play, tested on basic
+Ironclad cards only). Networking has not been started. Rules reference:
 `MULTIPLAYER_RULES.md`.
 
 ## What the code investigation found
