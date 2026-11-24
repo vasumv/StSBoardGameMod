@@ -1,0 +1,150 @@
+package BoardGame.multiplayer.debug;
+
+import BoardGame.multiplayer.undo.StateSnapshot;
+import BoardGame.multiplayer.undo.UndoManager;
+import BoardGame.thedie.TheDie;
+import com.megacrit.cardcrawl.actions.GameActionManager;
+import com.megacrit.cardcrawl.cards.AbstractCard;
+import com.megacrit.cardcrawl.cards.CardGroup;
+import com.megacrit.cardcrawl.cards.CardQueueItem;
+import com.megacrit.cardcrawl.characters.AbstractPlayer;
+import com.megacrit.cardcrawl.core.CardCrawlGame;
+import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
+import com.megacrit.cardcrawl.monsters.AbstractMonster;
+import com.megacrit.cardcrawl.orbs.AbstractOrb;
+import com.megacrit.cardcrawl.potions.AbstractPotion;
+import com.megacrit.cardcrawl.powers.AbstractPower;
+import com.megacrit.cardcrawl.random.Random;
+import com.megacrit.cardcrawl.relics.AbstractRelic;
+
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
+import java.util.List;
+
+/**
+ * Test-only command channel, active when the JVM is started with -Dbg.debug.dir=DIR.
+ * Each frame, if DIR/cmd exists it is read and deleted, each line is run as a command,
+ * and replies are appended to DIR/out. Commands: state, undo, reset, play I [M], end,
+ * stats, idle.
+ */
+public class DebugChannel {
+    private static final String DIR = System.getProperty("bg.debug.dir");
+
+    public static void poll() {
+        if (DIR == null) return;
+        File cmd = new File(DIR, "cmd");
+        if (!cmd.exists()) return;
+        try {
+            List<String> lines = Files.readAllLines(cmd.toPath(), StandardCharsets.UTF_8);
+            Files.delete(cmd.toPath());
+            for (String line : lines) {
+                line = line.trim();
+                if (line.isEmpty()) continue;
+                String reply;
+                try {
+                    reply = run(line.split("\\s+"));
+                } catch (Throwable t) {
+                    reply = "ERROR " + t;
+                }
+                Files.write(new File(DIR, "out").toPath(), ("> " + line + "\n" + reply + "\n").getBytes(
+                        StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            }
+        } catch (Throwable t) {
+            UndoManager.logger.error("debug channel", t);
+        }
+    }
+
+    private static String run(String[] a) {
+        switch (a[0]) {
+            case "state":
+                return state();
+            case "idle":
+                return "idle=" + UndoManager.isIdle() + " canUndo=" + UndoManager.canUndo() + " depth="
+                        + UndoManager.undoDepth();
+            case "undo":
+                return "undo=" + UndoManager.undo();
+            case "reset":
+                return "reset=" + UndoManager.resetTurn();
+            case "stats": {
+                StateSnapshot s = UndoManager.currentSnapshot();
+                return s == null ? "no snapshot" : s.stats(40);
+            }
+            case "play": {
+                if (!UndoManager.isIdle()) return "not idle";
+                AbstractCard c = AbstractDungeon.player.hand.group.get(Integer.parseInt(a[1]));
+                AbstractMonster m = a.length > 2
+                        ? AbstractDungeon.getCurrRoom().monsters.monsters.get(Integer.parseInt(a[2])) : null;
+                if (!c.canUse(AbstractDungeon.player, m)) return "cannot use " + c.cardID;
+                AbstractDungeon.actionManager.cardQueue.add(new CardQueueItem(c, m));
+                return "queued " + c.cardID;
+            }
+            case "end":
+                if (!UndoManager.isIdle()) return "not idle";
+                AbstractDungeon.overlayMenu.endTurnButton.disable(true);
+                return "ending turn";
+            default:
+                return "unknown command";
+        }
+    }
+
+    /** One-line-per-section dump of everything gameplay-relevant; equal dumps mean equal state. */
+    public static String state() {
+        if (!CardCrawlGame.isInARun() || AbstractDungeon.player == null) return "not in a run";
+        AbstractPlayer p = AbstractDungeon.player;
+        StringBuilder sb = new StringBuilder();
+        sb.append("turn=").append(GameActionManager.turn).append(" hp=").append(p.currentHealth).append('/')
+                .append(p.maxHealth).append(" block=").append(p.currentBlock).append(" energy=")
+                .append(com.megacrit.cardcrawl.ui.panels.EnergyPanel.totalCount).append(" gold=").append(p.gold)
+                .append(" stance=").append(p.stance == null ? "-" : p.stance.ID).append(" die=")
+                .append(TheDie.initialRoll).append('/').append(TheDie.finalRelicRoll).append('/')
+                .append(TheDie.monsterRoll).append(" lock=").append(TheDie.forceLockInRoll).append('\n');
+        sb.append("powers=").append(powers(p.powers)).append('\n');
+        sb.append("hand=").append(cards(p.hand)).append('\n');
+        sb.append("draw=").append(cards(p.drawPile)).append('\n');
+        sb.append("discard=").append(cards(p.discardPile)).append('\n');
+        sb.append("exhaust=").append(cards(p.exhaustPile)).append('\n');
+        sb.append("relics=");
+        for (AbstractRelic r : p.relics)
+            sb.append(r.relicId).append(':').append(r.counter).append(r.grayscale ? "g" : "").append(' ');
+        sb.append("\npotions=");
+        for (AbstractPotion po : p.potions) sb.append(po.ID).append(' ');
+        sb.append("\norbs=");
+        for (AbstractOrb o : p.orbs) sb.append(o.ID).append(':').append(o.passiveAmount).append(' ');
+        sb.append('\n');
+        if (AbstractDungeon.currMapNode != null && AbstractDungeon.getCurrRoom().monsters != null) {
+            for (AbstractMonster m : AbstractDungeon.getCurrRoom().monsters.monsters) {
+                sb.append("monster ").append(m.id).append(" hp=").append(m.currentHealth).append('/')
+                        .append(m.maxHealth).append(" block=").append(m.currentBlock).append(" dead=")
+                        .append(m.isDead).append('/').append(m.isDying).append('/').append(m.escaped)
+                        .append(" intent=").append(m.intent).append(" move=").append(m.nextMove).append(" dmg=")
+                        .append(m.getIntentDmg()).append(" powers=").append(powers(m.powers)).append('\n');
+            }
+        }
+        sb.append("rng=");
+        Random[] rs = {AbstractDungeon.monsterRng, AbstractDungeon.aiRng, AbstractDungeon.shuffleRng,
+                AbstractDungeon.cardRandomRng, AbstractDungeon.miscRng, AbstractDungeon.cardRng,
+                AbstractDungeon.monsterHpRng, AbstractDungeon.potionRng, AbstractDungeon.relicRng};
+        for (Random r : rs) sb.append(r == null ? -1 : r.counter).append(' ');
+        sb.append("\nplayed=").append(AbstractDungeon.actionManager.cardsPlayedThisTurn.size()).append('/')
+                .append(AbstractDungeon.actionManager.cardsPlayedThisCombat.size()).append(" undoDepth=")
+                .append(UndoManager.undoDepth());
+        return sb.toString();
+    }
+
+    private static String powers(java.util.ArrayList<AbstractPower> ps) {
+        StringBuilder sb = new StringBuilder();
+        for (AbstractPower pw : ps) sb.append(pw.ID).append(':').append(pw.amount).append(' ');
+        return sb.toString();
+    }
+
+    private static String cards(CardGroup g) {
+        StringBuilder sb = new StringBuilder();
+        for (AbstractCard c : g.group)
+            sb.append(c.cardID).append(c.upgraded ? "+" : "").append('(').append(c.costForTurn).append(',')
+                    .append(c.baseDamage).append(',').append(c.baseBlock).append(',').append(c.baseMagicNumber)
+                    .append(',').append(c.misc).append(") ");
+        return sb.toString();
+    }
+}
