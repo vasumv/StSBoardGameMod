@@ -97,6 +97,8 @@ public class UndoManager implements PostUpdateSubscriber {
     @Override
     public void receivePostUpdate() {
         try {
+            BoardGame.multiplayer.MP.update();
+            BoardGame.multiplayer.RunStart.update();
             tick();
             HistoryPanel.update();
             DebugChannel.poll();

@@ -65,6 +65,23 @@ public class DebugChannel {
                         + UndoManager.undoDepth();
             case "undo":
                 return "undo=" + UndoManager.undo();
+            case "mp": {
+                if (a.length < 2 || a[1].equals("status")) return BoardGame.multiplayer.MP.status();
+                switch (a[1]) {
+                    case "host":
+                        return "host=" + BoardGame.multiplayer.MP.host(Integer.parseInt(a[2]));
+                    case "join":
+                        return "join=" + BoardGame.multiplayer.MP.join(a[2], Integer.parseInt(a[3]));
+                    case "char":
+                        BoardGame.multiplayer.MP.setCharacter(Integer.parseInt(a[2]));
+                        return "ok";
+                    case "start":
+                        BoardGame.multiplayer.MP.startRun(a.length > 2 ? Long.parseLong(a[2]) : System.nanoTime());
+                        return "starting";
+                    default:
+                        return "unknown mp command";
+                }
+            }
             case "panel":
                 return BoardGame.multiplayer.undo.HistoryPanel.debug();
             case "rollback":
