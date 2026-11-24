@@ -42,8 +42,29 @@ public class HistoryPanel implements PostRenderSubscriber {
         hb.height = ROW_H * Settings.scale;
     }
 
+    private static boolean mp() {
+        return BoardGame.multiplayer.MP.inRun;
+    }
+
+    private static List<String> labels() {
+        java.util.ArrayList<String> l = new java.util.ArrayList<>();
+        if (mp()) for (BoardGame.multiplayer.Session.Step s : BoardGame.multiplayer.Session.steps) l.add(s.label);
+        else for (UndoManager.Step s : UndoManager.steps()) l.add(s.label);
+        return l;
+    }
+
+    private static boolean ready() {
+        return mp() ? BoardGame.multiplayer.combat.MonsterSync.active() && !com.megacrit.cardcrawl.dungeons.AbstractDungeon.isScreenUp
+                : UndoManager.isIdle();
+    }
+
+    private static void choose(int i) {
+        if (mp()) BoardGame.multiplayer.Session.proposeRollback(i);
+        else UndoManager.rollbackTo(i);
+    }
+
     private static boolean visible() {
-        return UndoManager.isIdle() || (open && !UndoManager.steps().isEmpty());
+        return ready() || (open && !labels().isEmpty());
     }
 
     private static float rowY(int row) { // row 0 is the button
@@ -51,11 +72,11 @@ public class HistoryPanel implements PostRenderSubscriber {
     }
 
     public static void update() {
-        if (!UndoManager.isIdle()) {
+        if (!ready()) {
             wasDown = Gdx.input.isButtonPressed(com.badlogic.gdx.Input.Buttons.LEFT);
             return;
         }
-        List<UndoManager.Step> steps = UndoManager.steps();
+        List<String> steps = labels();
         size(button);
         button.move(X * Settings.scale + button.width / 2f, rowY(0) + button.height / 2f);
         button.update();
@@ -76,7 +97,7 @@ public class HistoryPanel implements PostRenderSubscriber {
             hb.move(X * Settings.scale + hb.width / 2f, rowY(i - first + 1) + hb.height / 2f);
             hb.update();
             if (hb.hovered && clicked) {
-                UndoManager.rollbackTo(i);
+                choose(i);
                 return;
             }
         }
@@ -85,10 +106,10 @@ public class HistoryPanel implements PostRenderSubscriber {
     @Override
     public void receivePostRender(SpriteBatch sb) {
         if (!visible()) return;
-        List<UndoManager.Step> steps = UndoManager.steps();
+        List<String> steps = labels();
         float x = X * Settings.scale, w = W * Settings.scale, h = ROW_H * Settings.scale;
         drawRow(sb, x, rowY(0), w, h, button.hovered,
-                "History (" + steps.size() + ")" + (open ? "  - click a step to undo to before it" : ""),
+                "History (" + steps.size() + ")" + (open ? (mp() ? "  - click a step to propose undoing to before it" : "  - click a step to undo to before it") : ""),
                 Settings.GOLD_COLOR);
         if (!open) return;
         int first = Math.max(0, steps.size() - MAX_ROWS);
@@ -97,7 +118,7 @@ public class HistoryPanel implements PostRenderSubscriber {
             // hovering a step highlights it and everything after it: all of those get undone
             boolean affected = false;
             for (int j = first; j <= i; j++) affected |= rows[j - first].hovered;
-            drawRow(sb, x, rowY(i - first + 1), w, h, hov || affected, (i + 1) + ". " + steps.get(i).label,
+            drawRow(sb, x, rowY(i - first + 1), w, h, hov || affected, (i + 1) + ". " + steps.get(i),
                     affected ? Settings.RED_TEXT_COLOR : Settings.CREAM_COLOR);
         }
     }

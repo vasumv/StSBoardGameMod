@@ -53,6 +53,7 @@ public class UndoManager implements PostUpdateSubscriber {
     public static void initialize() {
         BaseMod.subscribe(new UndoManager());
         BaseMod.subscribe(new HistoryPanel());
+        BaseMod.subscribe(new BoardGame.multiplayer.ui.MPOverlay());
     }
 
     public static int undoDepth() {
@@ -99,6 +100,7 @@ public class UndoManager implements PostUpdateSubscriber {
         try {
             BoardGame.multiplayer.MP.update();
             BoardGame.multiplayer.RunStart.update();
+            BoardGame.multiplayer.ui.MPOverlay.update();
             tick();
             HistoryPanel.update();
             DebugChannel.poll();
@@ -108,6 +110,11 @@ public class UndoManager implements PostUpdateSubscriber {
     }
 
     private static void tick() {
+        if (BoardGame.multiplayer.MP.inRun) {
+            // in multiplayer, steps are the shared play queue (see Session)
+            if (current != null || !stack.isEmpty()) clear();
+            return;
+        }
         if (!inCombat()) {
             if (current != null || !stack.isEmpty()) clear();
             return;
@@ -174,6 +181,12 @@ public class UndoManager implements PostUpdateSubscriber {
         while (stack.size() > index) stack.remove(stack.size() - 1);
         apply(target.before, label);
         return true;
+    }
+
+    /** Restore a snapshot taken elsewhere (multiplayer rollback). */
+    public static void restore(StateSnapshot s, String label) {
+        apply(s, label);
+        clear();
     }
 
     private static void apply(StateSnapshot s, String label) {

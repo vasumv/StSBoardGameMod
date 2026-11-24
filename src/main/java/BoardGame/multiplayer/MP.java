@@ -27,6 +27,8 @@ public class MP {
         public String powers = "";
         public boolean endTurnReady;
         public boolean connected = true;
+        public int gold;
+        public String where = "";
     }
 
     /** True once a session exists (hosting or joined), in the lobby or in a run. */

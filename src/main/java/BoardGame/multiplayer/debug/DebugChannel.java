@@ -75,6 +75,41 @@ public class DebugChannel {
                     case "char":
                         BoardGame.multiplayer.MP.setCharacter(Integer.parseInt(a[2]));
                         return "ok";
+                    case "ready":
+                        BoardGame.multiplayer.Session.toggleReady();
+                        return "ok";
+                    case "vote":
+                        BoardGame.multiplayer.Session.voteMap(Integer.parseInt(a[2]), Integer.parseInt(a[3]));
+                        return "ok";
+                    case "rb":
+                        BoardGame.multiplayer.Session.proposeRollback(Integer.parseInt(a[2]));
+                        return "ok";
+                    case "yes":
+                        BoardGame.multiplayer.Session.voteRollback(true);
+                        return "ok";
+                    case "no":
+                        BoardGame.multiplayer.Session.voteRollback(false);
+                        return "ok";
+                    case "steps": {
+                        StringBuilder sb = new StringBuilder();
+                        for (BoardGame.multiplayer.Session.Step st : BoardGame.multiplayer.Session.steps)
+                            sb.append('[').append(st.label).append("] ");
+                        return sb.toString();
+                    }
+                    case "map": {
+                        StringBuilder sb = new StringBuilder("screen=" + AbstractDungeon.screen + " firstChosen="
+                                + AbstractDungeon.firstRoomChosen + " cur=" + (AbstractDungeon.currMapNode == null ? "-"
+                                : AbstractDungeon.currMapNode.x + "," + AbstractDungeon.currMapNode.y) + " phase="
+                                + (AbstractDungeon.currMapNode == null ? "-" : AbstractDungeon.getCurrRoom().phase) + " next:");
+                        for (java.util.ArrayList<com.megacrit.cardcrawl.map.MapRoomNode> row : AbstractDungeon.map)
+                            for (com.megacrit.cardcrawl.map.MapRoomNode n : row) {
+                                if (n.room == null) continue;
+                                boolean ok = AbstractDungeon.firstRoomChosen ? AbstractDungeon.currMapNode.isConnectedTo(n) : n.y == 0;
+                                if (ok) sb.append(' ').append(n.x).append(',').append(n.y).append('=')
+                                        .append(n.room.getClass().getSimpleName());
+                            }
+                        return sb.toString();
+                    }
                     case "start":
                         BoardGame.multiplayer.MP.startRun(a.length > 2 ? Long.parseLong(a[2]) : System.nanoTime());
                         return "starting";
@@ -106,6 +141,31 @@ public class DebugChannel {
                 AbstractDungeon.actionManager.cardQueue.add(new CardQueueItem(c, m));
                 return "queued " + c.cardID;
             }
+            case "am": {
+                com.megacrit.cardcrawl.actions.GameActionManager am = AbstractDungeon.actionManager;
+                StringBuilder sb = new StringBuilder("phase=" + am.phase + " cur=" + (am.currentAction == null ? "-"
+                        : am.currentAction.getClass().getName()) + " turnHasEnded=" + am.turnHasEnded + " usingCard="
+                        + am.usingCard + " monsterAttacksQueued=" + am.monsterAttacksQueued + " screenUp="
+                        + AbstractDungeon.isScreenUp + " screen=" + AbstractDungeon.screen + " endTurnEnabled="
+                        + AbstractDungeon.overlayMenu.endTurnButton.enabled + " actions=");
+                for (com.megacrit.cardcrawl.actions.AbstractGameAction x : am.actions) sb.append(x.getClass().getSimpleName()).append(' ');
+                sb.append(" cardQueue=").append(am.cardQueue.size()).append(" monsterQueue=").append(am.monsterQueue.size());
+                return sb.toString();
+            }
+            case "hit": {
+                // test helper: damage an enemy outside the play queue (like a potion would)
+                AbstractMonster m = AbstractDungeon.getCurrRoom().monsters.monsters.get(Integer.parseInt(a[1]));
+                AbstractDungeon.actionManager.addToBottom(new com.megacrit.cardcrawl.actions.common.DamageAction(m,
+                        new com.megacrit.cardcrawl.cards.DamageInfo(AbstractDungeon.player, Integer.parseInt(a[2]),
+                                com.megacrit.cardcrawl.cards.DamageInfo.DamageType.THORNS)));
+                return "ok";
+            }
+            case "skiproom":
+                // test helper: finish the current non-combat room and open the map
+                if (AbstractDungeon.isScreenUp) AbstractDungeon.closeCurrentScreen();
+                AbstractDungeon.getCurrRoom().phase = com.megacrit.cardcrawl.rooms.AbstractRoom.RoomPhase.COMPLETE;
+                AbstractDungeon.dungeonMapScreen.open(false);
+                return "ok";
             case "end":
                 if (!UndoManager.isIdle()) return "not idle";
                 AbstractDungeon.overlayMenu.endTurnButton.disable(true);
@@ -141,7 +201,8 @@ public class DebugChannel {
         sb.append('\n');
         if (AbstractDungeon.currMapNode != null && AbstractDungeon.getCurrRoom().monsters != null) {
             for (AbstractMonster m : AbstractDungeon.getCurrRoom().monsters.monsters) {
-                sb.append("monster ").append(m.id).append(" hp=").append(m.currentHealth).append('/')
+                sb.append("monster ").append(BoardGame.multiplayer.combat.MonsterSync.id(m)).append(" row")
+                        .append(BoardGame.multiplayer.combat.MonsterSync.row(m)).append(' ').append(m.id).append(" hp=").append(m.currentHealth).append('/')
                         .append(m.maxHealth).append(" block=").append(m.currentBlock).append(" dead=")
                         .append(m.isDead).append('/').append(m.isDying).append('/').append(m.escaped)
                         .append(" intent=").append(m.intent).append(" move=").append(m.nextMove).append(" dmg=")
