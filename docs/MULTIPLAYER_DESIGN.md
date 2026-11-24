@@ -49,39 +49,53 @@ Boss, or the action is area-of-effect. Enemy-side results are then synced from t
 row owner. Which non-Boss actions are area-of-effect is not in the code today and
 has to be added per monster from the physical cards.
 
-## Decision 2: one player acts at a time ("the floor"); a batch is a floor session
+## Decision 2: everyone plays at once; plays go through one shared queue
 
-- Playing a card takes the floor if it is free. While someone holds the floor the
-  others cannot play, but watch each card resolve with its animation.
-- A batch is everything a player does while holding the floor. Committing a batch
-  releases the floor.
+(Replaces an earlier "one player holds the floor" idea, which the project owner
+rejected in favour of Slay the Spire 2 style simultaneous play.)
+
+- Any player may play a card, potion or ability at any time during the player
+  turn. There are no batches and no commit step.
+- Each play is a request to the host, which gives it the next sequence number.
+  Plays resolve strictly in sequence order, one at a time across all players, each
+  fully (with its animation, shown to everyone) before the next starts. The rules
+  require full resolution per card, and it means two players never change the same
+  enemy at once.
+- A play is validated when it reaches the front of the queue, in the acting
+  player's game. If it is no longer legal (target dead, not enough energy), it is
+  dropped, the card stays in hand and the player is told.
+- A player may queue several plays; cards that only enter the hand later (draws)
+  can be played once they arrive.
 - Group decisions (die modifiers, end turn, map path, row switching) need every
   player to confirm.
 
-This matches the rules (any order, each card resolves fully) and removes the case
-of two players changing the same enemy at once.
+## Decision 3: roll back to before any play in the queue
 
-## Decision 3: undo by generic in-memory snapshots
-
-Before each card play and at each batch boundary, every game records a snapshot of
-its own combat state; snapshots are numbered the same in every game. Undo tells all
-games to restore the same numbered snapshot.
+Every game records a snapshot of its own combat state before each queued play
+resolves, numbered by the play's sequence number, plus one at the start of the
+turn. A history panel lists the plays resolved this turn (who, what, target).
+Choosing an entry restores, in every game, the snapshot taken before that play, so
+that play and everything after it (from any player) is undone and the cards are
+back in hand.
 
 A snapshot is content-agnostic: walk the object graph from the player, the
 enemies, the action manager, the random generators and the mod's static fields,
 and record a shallow copy of every field of every object reached (collections by
 content). Restoring writes the values back into the same objects. This avoids
 per-card/per-power code for 900 classes. Rendering resources (textures, skeletons,
-sounds) are skipped.
+sounds) are skipped. This part is implemented and works in solo play
+(`BoardGame.multiplayer.undo`).
 
-Rules for undo:
-- Only when the action queue is idle, and only within the current player turn.
-- Last-in first-out: undoing an earlier batch also undoes the later ones.
-- Random generators are restored too, so redoing gives the same draws and rolls.
-- "Reset turn" restores the start-of-turn snapshot.
+Rules for rollback:
+- Only within the current player turn; history is cleared when the turn ends.
+- Requested through the same queue, so it is ordered against in-flight plays;
+  plays queued behind a rollback are dropped.
+- Any player may roll back; everyone sees who did it. No vote (assumed default).
+- Random generators are restored too, so replaying gives the same draws and rolls.
 
 Known limits: cosmetic state inside skipped rendering objects (e.g. an animation
-that changed) may not rewind.
+that changed) may not rewind; the killing blow that ends a fight cannot yet be
+undone.
 
 ## Transport
 
@@ -95,7 +109,8 @@ port forwarding). Steam cannot be tested with one account, so TCP comes first.
    (`scripts/run-sandbox.sh`), plus a debug command channel to drive them.
 2. Undo in solo play (snapshot/restore, undo card, reset turn). Useful by itself.
 3. Session layer over TCP: lobby, shared seed, map movement, room sync.
-4. Multi-row combat: enemy sync, the floor, networked undo, enemy-turn rules.
+4. Multi-row combat: enemy sync, the shared play queue, history panel and networked
+   rollback, enemy-turn rules.
 5. Shared out-of-combat pieces: merchant stock, boss relics, potion trading,
    paying for others, row switching, defeat rules, "any player" card targets.
 6. Steam lobbies. Token limits and area-of-effect data per monster.

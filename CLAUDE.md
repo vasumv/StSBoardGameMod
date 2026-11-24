@@ -6,15 +6,16 @@ Slay the Spire: The Board Game. Goal of this fork: add networked multiplayer.
 ## Goal
 
 - Each remote player controls one character in a shared board-game run (2-4 players).
-- Play style to support: players "batch" their card plays, commit the batch, and
-  can undo (roll back) a committed batch. A batch applies in a defined order, with
-  animations playing as each action resolves. Rollback is the main requirement.
+- Play style: everyone plays simultaneously (like Slay the Spire 2 co-op); plays are
+  serialized into one shared queue and take effect immediately. A history panel lets
+  players roll back to before any play made this turn. No batches or commit step.
 - Follow the board game's actual multiplayer rules: see `docs/MULTIPLAYER_RULES.md`.
 - Do not anchor on the existing `multicharacter` code (below). If a cleaner design
   works properly, use it; treat that code as reference only.
 
 Design and milestones: `docs/MULTIPLAYER_DESIGN.md` (each player runs a solo
-game, shared state is synced, one player acts at a time, undo via snapshots).
+game, shared state is synced, plays go through one shared queue, rollback via
+snapshots).
 
 ## What exists
 
