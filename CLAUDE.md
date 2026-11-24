@@ -9,8 +9,9 @@ Slay the Spire: The Board Game. Goal of this fork: add networked multiplayer.
 - Play style to support: players "batch" their card plays, commit the batch, and
   can undo (roll back) a committed batch. A batch applies in a defined order, with
   animations playing as each action resolves. Rollback is the main requirement.
-- Follow the board game's actual multiplayer rules. These have not been researched
-  yet; do that before designing.
+- Follow the board game's actual multiplayer rules: see `docs/MULTIPLAYER_RULES.md`.
+- Do not anchor on the existing `multicharacter` code (below). If a cleaner design
+  works properly, use it; treat that code as reference only.
 
 ## What exists
 
@@ -19,7 +20,7 @@ Slay the Spire: The Board Game. Goal of this fork: add networked multiplayer.
   unfinished mode where one person controls up to 4 characters in board-game rows.
   Hidden behind the "test features" toggle in the mod config
   (`BoardGame.ENABLE_TEST_FEATURES`). Not yet tested in game by us; last substantial
-  upstream work on it was mid-2024. This is the intended base for multiplayer.
+  upstream work on it was mid-2024.
 - The upstream README lists known softlocks and rule inaccuracies.
 
 ## Build
