@@ -209,6 +209,7 @@ public class SteamNet {
         public void onLobbyEnter(SteamID id, int chatPermissions, boolean blocked,
                                  SteamMatchmaking.ChatRoomEnterResponse response) {
             Gdx.app.postRunnable(() -> {
+                Net.logger.info("Steam lobby entered: " + id + " " + response);
                 if (Net.isHost() && lobby != null) return; // the host's own entry
                 if (response != SteamMatchmaking.ChatRoomEnterResponse.Success) {
                     MP.lastError = "Could not join the Steam lobby (" + response + ")";
@@ -281,8 +282,13 @@ public class SteamNet {
         /** A friend's invite was accepted in the Steam overlay while the game is running. */
         public void onGameLobbyJoinRequested(SteamID lobbyId, SteamID friend) {
             Gdx.app.postRunnable(() -> {
-                if (MP.inRun) return;
+                Net.logger.info("Steam invite accepted: lobby " + lobbyId + " from " + friend);
+                if (MP.inRun) {
+                    MP.lastError = "Finish or leave your current run to join a lobby";
+                    return;
+                }
                 Net.shutdown();
+                BoardGame.multiplayer.ui.LobbyScreen.open = true; // show the lobby while joining
                 status = "Joining " + friends.getFriendPersonaName(friend) + "'s lobby...";
                 matchmaking.joinLobby(lobbyId);
             });
@@ -312,9 +318,11 @@ public class SteamNet {
 
     /** Steam shows "Join game" for an invite received before launching: handle +connect_lobby. */
     public static void checkLaunchArgs() {
+        boolean ok = available(); // registers the invite/lobby listeners
+        Net.logger.info("Steam invites: " + (ok ? "listening" : "unavailable"));
         String arg = System.getProperty("sun.java.command", "");
         int i = arg.indexOf("+connect_lobby");
-        if (i < 0 || !available()) return;
+        if (i < 0 || !ok) return;
         try {
             String id = arg.substring(i + "+connect_lobby".length()).trim().split("\\s+")[0];
             matchmaking.joinLobby(SteamID.createFromNativeHandle(Long.parseLong(id)));
