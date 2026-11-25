@@ -26,6 +26,15 @@ public class BGShiftingPower extends AbstractBGPower {
 
     public int onAttacked(DamageInfo info, int damageAmount) {
         if (damageAmount > 0) {
+            // multiplayer: the Block goes to the player in the Transient's row
+            BoardGame.multiplayer.MP.Player rowOwner = BoardGame.multiplayer.combat.OtherPlayers.multi()
+                    && this.owner instanceof com.megacrit.cardcrawl.monsters.AbstractMonster
+                    ? BoardGame.multiplayer.MP.playerInRow(BoardGame.multiplayer.combat.MonsterSync.targetRow(
+                    BoardGame.multiplayer.combat.MonsterSync.row((com.megacrit.cardcrawl.monsters.AbstractMonster) this.owner)))
+                    : null;
+            if (rowOwner != null && rowOwner.id != BoardGame.multiplayer.MP.myId)
+                BoardGame.multiplayer.combat.OtherPlayers.giveBlock(rowOwner.id, damageAmount, "Transient");
+            else
             addToTop((AbstractGameAction)new GainBlockAction(AbstractDungeon.player,damageAmount));
 
             flash();
