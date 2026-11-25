@@ -40,12 +40,15 @@ reference implementation: `reference/enemy_audit.md`, `reference/enemy_mp_data.j
 
 ## Known gaps
 
-- Relic/potion decks are per-game copies offset per player, not one shared deck.
-- Dead Adventurer is still chosen per player (shared roll); its elite fight is solo.
-  Ancient Temple's escalating cost is not implemented.
-- Steam lobbies/invites (net/SteamNet) are untested with two Steam accounts. Accepting
-  an invite while the game is closed may not join automatically (ModTheSpire may not
-  pass Steam's +connect_lobby argument); start the game first, then accept.
+- Untested in game since the latest batch (compile-checked only): Steam lobbies,
+  shared merchant, boss relic count, keys, party events (Lab, Dead Adventurer, Big
+  Fish), relic deck removals, acts-last, per-player enemy values, Sentries per row,
+  Awakened One Cultists, partial all-player hits. Acts 2-3 untested in multiplayer.
+- Steam: needs two Steam accounts to verify. Accepting an invite while the game is
+  closed may not join automatically (ModTheSpire may not pass +connect_lobby); start
+  the game first, then accept.
+- Snake Plant's A7 card (second hit hits everyone) is not in the mod at all.
+- Ancient Temple (escalating cost) is not an event in this mod.
 
 ## What the code investigation found
 

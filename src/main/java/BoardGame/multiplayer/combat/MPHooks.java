@@ -32,6 +32,7 @@ import java.util.ArrayList;
 public class MPHooks {
     public static AbstractMonster actingMonster;
     public static int actingMove = -1;
+    public static final java.util.HashMap<AbstractMonster, Integer> turnHits = new java.util.HashMap<>();
     public static com.megacrit.cardcrawl.cards.AbstractCard actingCard;
 
     private static boolean multi() {
@@ -90,7 +91,8 @@ public class MPHooks {
                 @Override
                 public void edit(MethodCall m) throws CannotCompileException {
                     if (m.getMethodName().equals("takeTurn")) {
-                        m.replace("{ BoardGame.multiplayer.combat.MPHooks.actingMonster = $0;"
+                        m.replace("{ BoardGame.multiplayer.combat.MPHooks.turnHits.put($0, Integer.valueOf(0));"
+                                + " BoardGame.multiplayer.combat.MPHooks.actingMonster = $0;"
                                 + " BoardGame.multiplayer.combat.MPHooks.actingMove = $0.nextMove; $_ = $proceed($$);"
                                 + " BoardGame.multiplayer.combat.MPHooks.actingMonster = null; }");
                     } else if (m.getMethodName().equals("applyStartOfTurnRelics")) {
@@ -195,7 +197,19 @@ public class MPHooks {
             a.update();
             return;
         }
-        boolean aoe = EnemyMPData.isAoe(src.getClass().getSimpleName(), MPFields.Action.sourceMove.get(a));
+        String cls = src.getClass().getSimpleName();
+        int move = MPFields.Action.sourceMove.get(a);
+        boolean aoe = EnemyMPData.isAoe(cls, move);
+        if (!aoe && affectsPlayer(a)) {
+            int idx = MPFields.Action.hitIndex.get(a);
+            if (idx < 0) {
+                Integer c = turnHits.get(src);
+                idx = c == null ? 0 : c;
+                turnHits.put(src, idx + 1);
+                MPFields.Action.hitIndex.set(a, idx);
+            }
+            aoe = EnemyMPData.isAoeHit(cls, move, idx);
+        }
         if (MonsterSync.active() && !aoe && !MonsterSync.targetsMe(src) && affectsPlayer(a)) {
             a.isDone = true; // an enemy in another player's row: its attack is aimed at them
             return;

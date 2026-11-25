@@ -12,8 +12,15 @@ public class EnemyMPData {
     private static final HashMap<String, int[]> HP = new HashMap<>();
     /** Move bytes (the monster's nextMove) whose action hits all players. */
     private static final HashMap<String, int[]> AOE = new HashMap<>();
+    /** Moves where only some hits hit all players: "class#move" -> indexes of player-targeted hits (0-based). */
+    private static final HashMap<String, int[]> AOE_HITS = new HashMap<>();
 
     static {
+        // only the second hit is "all players" on the card
+        AOE_HITS.put("BGSpireGrowth#1", new int[]{1});
+        AOE_HITS.put("BGSpireGrowth#2", new int[]{1});
+        // A7 Large Slime (cube card): its splash attack hits all players
+        AOE.put("BGAcidSlime_L", new int[]{6});
         HP.put("BGGremlinNob", new int[]{17, 33, 48, 64});
         HP.put("BGHexaghost", new int[]{36, 75, 112, 150});
         HP.put("BGLagavulin", new int[]{22, 44, 66, 88});
@@ -71,6 +78,13 @@ public class EnemyMPData {
 
     public static boolean hasScaledHp(String cls) {
         return HP.containsKey(cls);
+    }
+
+    public static boolean isAoeHit(String cls, int move, int hitIndex) {
+        int[] a = AOE_HITS.get(cls + "#" + move);
+        if (a == null) return false;
+        for (int x : a) if (x == hitIndex) return true;
+        return false;
     }
 
     public static boolean isAoe(String cls, int move) {
