@@ -121,6 +121,23 @@ public class BGDeadAdventurer
             AbstractDungeon.floorNum-=1;
             return;
         }
+        // multiplayer: one choice for the party; the host decides and every game follows
+        if (BoardGame.multiplayer.MP.inRun && BoardGame.multiplayer.MP.playerCount() > 1) {
+            if (!BoardGame.multiplayer.MP.isHost() && !partyDriven) {
+                if (buttonPressed >= 0 && toastFloor != AbstractDungeon.floorNum) {
+                    toastFloor = AbstractDungeon.floorNum;
+                    BoardGame.multiplayer.Session.toast("The host chooses for the party");
+                }
+                return;
+            }
+            if (BoardGame.multiplayer.MP.isHost()) {
+                if (this.screen == CUR_SCREEN.INTRO && buttonPressed == takePrizeIndex && pendingReward <= 0)
+                    partySend("search", 0);
+                else if (this.screen == CUR_SCREEN.INTRO && buttonPressed == leaveIndex) partySend("leave", 0);
+                else if (this.screen == CUR_SCREEN.FAIL || this.screen == CUR_SCREEN.SUCCESS
+                        || this.screen == CUR_SCREEN.ESCAPE) partySend("continue", 0);
+            }
+        }
         switch (this.screen) {
             case INTRO:
                 if(buttonPressed==takePrizeIndex) {
@@ -280,7 +297,42 @@ public class BGDeadAdventurer
         logMetric(this.numRewards);
     }
 
+    // ---- multiplayer party decision ----
+    public static boolean partyDriven = false;
+    private static int toastFloor = -1;
+
+    private static void partySend(String action, int value) {
+        com.google.gson.JsonObject o = BoardGame.multiplayer.MP.msg("deadadv");
+        o.addProperty("a", action);
+        o.addProperty("v", value);
+        o.addProperty("floor", AbstractDungeon.floorNum);
+        BoardGame.multiplayer.MP.send(o);
+    }
+
+    /** A non-host game follows the host's decision. */
+    public static void onPartyMessage(int from, com.google.gson.JsonObject m) {
+        if (BoardGame.multiplayer.MP.isHost() || m.get("floor").getAsInt() != AbstractDungeon.floorNum) return;
+        if (!(AbstractDungeon.getCurrRoom().event instanceof BGDeadAdventurer)) return;
+        BGDeadAdventurer ev = (BGDeadAdventurer) AbstractDungeon.getCurrRoom().event;
+        partyDriven = true;
+        try {
+            switch (m.get("a").getAsString()) {
+                case "search": ev.buttonEffect(ev.takePrizeIndex); break;
+                case "leave": ev.buttonEffect(ev.leaveIndex); break;
+                case "result":
+                    ev.pendingReward = m.get("v").getAsInt();
+                    ev.takeReward(true);
+                    break;
+                case "continue": ev.buttonEffect(0); break;
+            }
+        } finally {
+            partyDriven = false;
+        }
+    }
+
     public void takeReward(boolean skipContinueButton){
+        if (BoardGame.multiplayer.MP.inRun && BoardGame.multiplayer.MP.playerCount() > 1
+                && BoardGame.multiplayer.MP.isHost()) partySend("result", pendingReward);
         if(pendingReward==1 || pendingReward==2){
             spawnEliteEncounter();
             screen= CUR_SCREEN.FAIL;

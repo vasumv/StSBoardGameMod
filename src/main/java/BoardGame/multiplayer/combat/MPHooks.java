@@ -371,7 +371,7 @@ public class MPHooks {
         AbstractRoom r = AbstractDungeon.currMapNode == null ? null : AbstractDungeon.getCurrRoom();
         if (!(r instanceof com.megacrit.cardcrawl.rooms.EventRoom) || r.event == null) return false;
         String n = r.event.getClass().getSimpleName();
-        return n.contains("Colosseum") || n.contains("DeadAdventurer");
+        return n.contains("Colosseum"); // Dead Adventurer is a party decision (host decides): shared fight
     }
 
     private static Method findMethod(Class<?> c, String name, Class<?>... args) throws NoSuchMethodException {

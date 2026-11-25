@@ -130,6 +130,7 @@ public class Session {
     public static final ArrayList<Float> toastTimes = new ArrayList<>();
 
     public static void reset() {
+        knownRelics.clear();
         queue.clear();
         logicalPending.clear();
         cancelled.clear();
@@ -484,6 +485,12 @@ public class Session {
             case "give":
                 receiveGive(from, m);
                 return;
+            case "deadadv":
+                BoardGame.events.BGDeadAdventurer.onPartyMessage(from, m);
+                return;
+            case "relicgone":
+                if (from != MP.myId) removeFromDecks(m.get("id").getAsString());
+                return;
             case "key":
                 BoardGame.multiplayer.combat.SharedRewards.onMessage(type, from, m);
                 return;
@@ -684,6 +691,29 @@ public class Session {
         pendingMove = null;
     }
 
+    private static final HashSet<String> knownRelics = new HashSet<>();
+
+    /** A relic someone obtains leaves the shared relic decks in every game (one physical copy). */
+    private static void shareObtainedRelics() {
+        AbstractPlayer p = AbstractDungeon.player;
+        if (p == null || !CardCrawlGame.isInARun()) return;
+        for (com.megacrit.cardcrawl.relics.AbstractRelic r : p.relics) {
+            if (knownRelics.add(r.relicId)) {
+                removeFromDecks(r.relicId);
+                JsonObject o = MP.msg("relicgone");
+                o.addProperty("id", r.relicId);
+                MP.send(o);
+            }
+        }
+    }
+
+    private static void removeFromDecks(String id) {
+        java.util.ArrayList<com.megacrit.cardcrawl.relics.AbstractRelic> d = BoardGame.relics.AbstractBGRelic.relicDeck;
+        if (d != null) d.removeIf(r -> r.relicId.equals(id));
+        java.util.ArrayList<com.megacrit.cardcrawl.relics.AbstractRelic> b = BoardGame.relics.AbstractBGRelic.bossRelicDeck;
+        if (b != null) b.removeIf(r -> r.relicId.equals(id));
+    }
+
     private static Object rotatedRelicDeck, rotatedPotionDeck;
 
     /**
@@ -725,6 +755,7 @@ public class Session {
         checkDeath();
         updatePendingMove();
         offsetSharedDecks();
+        shareObtainedRelics();
         if (!CardCrawlGame.isInARun() || AbstractDungeon.currMapNode == null) return;
 
         AbstractRoom room = AbstractDungeon.getCurrRoom();
