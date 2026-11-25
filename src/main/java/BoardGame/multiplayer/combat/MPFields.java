@@ -18,6 +18,8 @@ public class MPFields {
     public static class Action {
         /** The monster whose turn created this action (directly or through a chain), if any. */
         public static SpireField<AbstractMonster> sourceMonster = new SpireField<>(() -> null);
+        /** The move (nextMove) the monster was making when it created this action. */
+        public static SpireField<Integer> sourceMove = new SpireField<>(() -> -1);
         /** The card whose play created this action, if any. */
         public static SpireField<com.megacrit.cardcrawl.cards.AbstractCard> sourceCard = new SpireField<>(() -> null);
     }

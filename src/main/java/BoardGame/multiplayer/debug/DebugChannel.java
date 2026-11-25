@@ -192,6 +192,11 @@ public class DebugChannel {
                     return "ERROR " + t;
                 }
             }
+            case "upg": {
+                AbstractCard c = AbstractDungeon.player.hand.group.get(Integer.parseInt(a[1]));
+                c.upgrade();
+                return "upgraded " + c.cardID + " -> " + c.rawDescription;
+            }
             case "skiproom":
                 // test helper: finish the current non-combat room and open the map
                 if (AbstractDungeon.isScreenUp) AbstractDungeon.closeCurrentScreen();

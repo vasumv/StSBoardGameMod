@@ -31,6 +31,7 @@ import java.util.ArrayList;
 /** All game patches for multiplayer. Each one does nothing unless a multiplayer run is active. */
 public class MPHooks {
     public static AbstractMonster actingMonster;
+    public static int actingMove = -1;
     public static com.megacrit.cardcrawl.cards.AbstractCard actingCard;
 
     private static boolean multi() {
@@ -89,7 +90,8 @@ public class MPHooks {
                 @Override
                 public void edit(MethodCall m) throws CannotCompileException {
                     if (m.getMethodName().equals("takeTurn")) {
-                        m.replace("{ BoardGame.multiplayer.combat.MPHooks.actingMonster = $0; $_ = $proceed($$);"
+                        m.replace("{ BoardGame.multiplayer.combat.MPHooks.actingMonster = $0;"
+                                + " BoardGame.multiplayer.combat.MPHooks.actingMove = $0.nextMove; $_ = $proceed($$);"
                                 + " BoardGame.multiplayer.combat.MPHooks.actingMonster = null; }");
                     } else if (m.getMethodName().equals("applyStartOfTurnRelics")) {
                         m.replace("{ BoardGame.multiplayer.combat.MPHooks.markStartOfTurn(); $_ = $proceed($$); }");
@@ -129,7 +131,10 @@ public class MPHooks {
     public static class StampActionSource {
         @SpirePostfixPatch
         public static void postfix(AbstractGameAction __instance) {
-            if (actingMonster != null) MPFields.Action.sourceMonster.set(__instance, actingMonster);
+            if (actingMonster != null) {
+                MPFields.Action.sourceMonster.set(__instance, actingMonster);
+                MPFields.Action.sourceMove.set(__instance, actingMove);
+            }
             if (actingCard != null) MPFields.Action.sourceCard.set(__instance, actingCard);
         }
     }
@@ -184,16 +189,20 @@ public class MPHooks {
             a.update();
             return;
         }
-        if (MonsterSync.active() && !MonsterSync.targetsMe(src) && affectsPlayer(a)) {
+        boolean aoe = EnemyMPData.isAoe(src.getClass().getSimpleName(), MPFields.Action.sourceMove.get(a));
+        if (MonsterSync.active() && !aoe && !MonsterSync.targetsMe(src) && affectsPlayer(a)) {
             a.isDone = true; // an enemy in another player's row: its attack is aimed at them
             return;
         }
         AbstractMonster prev = actingMonster;
+        int prevMove = actingMove;
         actingMonster = src;
+        actingMove = MPFields.Action.sourceMove.get(a);
         try {
             a.update();
         } finally {
             actingMonster = prev;
+            actingMove = prevMove;
         }
     }
 
@@ -260,7 +269,7 @@ public class MPHooks {
             int n = MP.playerCount();
             ArrayList<AbstractMonster> all = new ArrayList<>(__result.monsters);
             for (int i = 0; i < all.size(); i++) MultiCreature.Field.currentRow.set(all.get(i), i == 0 ? 0 : i % n);
-            if (!all.isEmpty()) scaleHp(all.get(0), n);
+            for (AbstractMonster m : all) scaleHp(m, n);
             return finishGroup(all);
         }
     }
@@ -273,7 +282,7 @@ public class MPHooks {
             if (!multi() || __result == null) return __result;
             for (AbstractMonster m : __result.monsters) {
                 MultiCreature.Field.currentRow.set(m, 0);
-                if (m.type == AbstractMonster.EnemyType.BOSS) scaleHp(m, MP.playerCount());
+                scaleHp(m, MP.playerCount());
             }
             MonsterSync.sharedRoom = AbstractDungeon.getCurrRoom();
             MonsterSync.resetIds();
@@ -282,12 +291,11 @@ public class MPHooks {
         }
     }
 
-    /**
-     * Enemy HP for bigger parties. The board game's HP board values are not in the mod;
-     * this scales the solo value linearly with the number of players.
-     */
+    /** Enemy HP for bigger parties, from the HP board on the enemy's card (EnemyMPData). */
     private static void scaleHp(AbstractMonster m, int players) {
-        m.maxHealth = m.maxHealth * players;
+        String cls = m.getClass().getSimpleName();
+        if (!EnemyMPData.hasScaledHp(cls)) return;
+        m.maxHealth = EnemyMPData.scaledHp(cls, m.maxHealth, players);
         m.currentHealth = m.maxHealth;
     }
 

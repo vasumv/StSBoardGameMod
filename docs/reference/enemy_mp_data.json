@@ -1,0 +1,1337 @@
+[
+ {
+  "class": "BGAcidSlime_L",
+  "refId": "large_slime_a1_asc7",
+  "refIdsOther": [
+   "large_slime_a1",
+   "large_slime_a1_minion"
+  ],
+  "hp": null,
+  "aoeMoves": [
+   6
+  ],
+  "aoeDetail": [
+   {
+    "move": 6,
+    "ref": "large_slime_a1_asc7 row1: AOE ATK2",
+    "modBehavior": "Splash: 1 dmg (A7+: 2 dmg) to player; non-hard (encounter) Large Slime only, cube 6->7->8->6"
+   }
+  ],
+  "uncertain": true,
+  "note": "Two modes. hard=false (encounter 'BoardGame:Large Slime'): cube moves 6 (AOE splash) ->7 (ATK4 + daze) ->8 (summon Acid Slime M) loop; mod uses this at A0 too (HP8, AOE 1, 1 daze) although ref A0 card large_slime_a1 is a dice card (HP6, ATK3 / weak weak / ATK2+daze daze, Split on death) with no AOE. hard=true (Slime Boss split summon): die moves 2 (ATK4), 1 (ATK3+2 Slimed), 4 (ATK1+2 Weak), 5 (ATK2+2 daze), all single-target = large_slime_a1_minion, no AOE."
+ },
+ {
+  "class": "BGAcidSlime_M",
+  "refId": "acid_slime_a1_minion",
+  "refIdsOther": [],
+  "hp": null,
+  "aoeMoves": [],
+  "note": "Die-controlled; behavior drawn from summon pool CAL/LCA/ALC/LAC (ref transcribes only CAL). Moves: 1=ATK2+Dazed, 2=ATK2, 4=Weak 1."
+ },
+ {
+  "class": "BGBlueSlaver",
+  "refId": "blue_slaver_a1",
+  "refIdsOther": [
+   "blue_slaver_a2_minion"
+  ],
+  "hp": null,
+  "aoeMoves": [],
+  "note": "Moves: 1=ATK2+Dazed('d'), 2=ATK3+Dazed('D'), 3=ATK2+Weak('W'), 4=ATK2, 5=ATK3."
+ },
+ {
+  "class": "BGCultist",
+  "refId": "cultist_a1_card",
+  "refIdsOther": [
+   "cultist_a1_pot",
+   "cultist_a2_monster",
+   "cultist_a2_minion",
+   "cultist_a3_minion"
+  ],
+  "hp": null,
+  "aoeMoves": [],
+  "note": "Move 3 (first turn) = ATK1 + 1 Str; move 1 thereafter = ATK1 with Ritual(1) giving +1 Str at end of each later round."
+ },
+ {
+  "class": "BGFungiBeast",
+  "refId": "fungi_beast_a1",
+  "refIdsOther": [
+   "fungi_beast_a1_asc7"
+  ],
+  "hp": null,
+  "aoeMoves": [],
+  "note": "Moves: 1=ATK2, 2=ATK1+1 Str, 3=gain Str (2 in normal mode, 1 in A7-summon mode)."
+ },
+ {
+  "class": "BGGreenLouse",
+  "refId": "green_louse_a1_minion",
+  "refIdsOther": [],
+  "hp": null,
+  "aoeMoves": [],
+  "note": "Behavior from summon pool 1W2/21W (ref transcribes only 21W). Moves: 3=ATK1, 4=Weak 1, 5=ATK2."
+ },
+ {
+  "class": "BGGremlinAngry",
+  "refId": "mad_gremlin_a1",
+  "refIdsOther": [
+   "mad_gremlin_a1_variant",
+   "mad_gremlin_a1_minion"
+  ],
+  "hp": null,
+  "aoeMoves": [],
+  "note": "Move 1=ATK1; Angry(1). 99=escape (unused path)."
+ },
+ {
+  "class": "BGGremlinFat",
+  "refId": null,
+  "refIdsOther": [],
+  "hp": null,
+  "aoeMoves": [],
+  "note": "Not in reference ENEMY_CARD_SPECS (summoned by Gremlin team leaders). Move 2=ATK1."
+ },
+ {
+  "class": "BGGremlinNob",
+  "refId": "gremlin_nob_a1",
+  "refIdsOther": [],
+  "hp": [
+   17,
+   33,
+   48,
+   64
+  ],
+  "hpAsc": {
+   "1": [
+    18,
+    36,
+    53,
+    70
+   ]
+  },
+  "aoeMoves": [
+   2
+  ],
+  "aoeDetail": [
+   {
+    "move": 2,
+    "ref": "red row: AOE ATK3 (harder card: AOE ATK3 + Str)",
+    "modBehavior": "ATK3 to player; A1+: also +1 Str"
+   },
+   {
+    "move": 3,
+    "ref": "grey row: Gains Enraged (not AOE)",
+    "modBehavior": "BGAnger(1); A12+: also deals 1 dmg (not on any ref card) - excluded"
+   }
+  ],
+  "note": "Harder-elite HP from Elites_Act1 scan (flame-marked variant; ref data never transcribed it). Mod solo HP 14 (A0) / 17 (A1-11) / 19 (A12+)."
+ },
+ {
+  "class": "BGGremlinSneaky",
+  "refId": "sneaky_gremlin_a1",
+  "refIdsOther": [
+   "sneaky_gremlin_a1_minion"
+  ],
+  "hp": null,
+  "aoeMoves": [],
+  "note": "Move 1=ATK2."
+ },
+ {
+  "class": "BGGremlinWizard",
+  "refId": null,
+  "refIdsOther": [],
+  "hp": null,
+  "aoeMoves": [],
+  "note": "Not in reference ENEMY_CARD_SPECS. Move 2=charge (no action, first turn), then move 1=ATK3 every turn."
+ },
+ {
+  "class": "BGHexaghost",
+  "refId": "boss:hexaghost",
+  "refIdsOther": [],
+  "hp": [
+   36,
+   75,
+   112,
+   150
+  ],
+  "hpAsc": {
+   "10": [
+    38,
+    80,
+    120,
+    160
+   ]
+  },
+  "aoeMoves": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "aoeDetail": [
+   {
+    "move": 1,
+    "ref": "AOE 1 + Burn (A10: + 2 Burn)",
+    "modBehavior": "1 dmg + 1 Burn (A10: 2)"
+   },
+   {
+    "move": 2,
+    "ref": "AOE 2x2 + Burn",
+    "modBehavior": "2x2 + 1 Burn"
+   },
+   {
+    "move": 3,
+    "ref": "AOE Burn Burn",
+    "modBehavior": "2 Burns"
+   },
+   {
+    "move": 4,
+    "ref": "AOE 3 (A10: 4) + 5 Block",
+    "modBehavior": "5 Block + 3 (A10: 4) dmg"
+   },
+   {
+    "move": 5,
+    "ref": "AOE 2 (A10: 3) + Burn",
+    "modBehavior": "2 (A10: 3) + 1 Burn"
+   },
+   {
+    "move": 6,
+    "ref": "AOE 3x3 + 2 Burn + Str",
+    "modBehavior": "3x2 + 2 Burns + 1 Str"
+   }
+  ],
+  "note": "Boss card data from Bosses.pdf (not in ENEMY_CARD_SPECS). Move 3 is a status-only row but carries the AOE icon (each player gets 2 Burns)."
+ },
+ {
+  "class": "BGJawWorm",
+  "refId": "jaw_worm_a1",
+  "refIdsOther": [
+   "jaw_worm_a1_asc7",
+   "jaw_worm_a3_minion"
+  ],
+  "hp": null,
+  "aoeMoves": [],
+  "note": "Constructor difficulty: 0=Easy first-encounter (HP8, 'sda'; not in ref), 1=jaw_worm_a1 (HP10,'DAs'), 2=act3 Jaw Worms (Hard) (HP10, block 3, behaviors SDA/DAS/ASD), 3=A7 (HP7,'dsa'). Moves: 1=Chomp ATK, 2=Bellow block+Str, 3=Thrash ATK+1 block."
+ },
+ {
+  "class": "BGLagavulin",
+  "refId": "lagavulin_a1",
+  "refIdsOther": [],
+  "hp": [
+   22,
+   44,
+   66,
+   88
+  ],
+  "hpAsc": {
+   "1": [
+    22,
+    44,
+    66,
+    88
+   ]
+  },
+  "aoeMoves": [
+   1,
+   3,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12
+  ],
+  "aoeDetail": [
+   {
+    "move": 3,
+    "ref": "AOE ATK4",
+    "modBehavior": "ATK4 (A0 loop)"
+   },
+   {
+    "move": 1,
+    "ref": "AOE Weak Weak + Str",
+    "modBehavior": "2 Weak to player + 1 Str self (A0 loop)"
+   },
+   {
+    "move": 7,
+    "ref": "harder card: AOE Weak Weak",
+    "modBehavior": "A1-11: 2 Weak"
+   },
+   {
+    "move": 8,
+    "ref": "harder card: AOE ATK4",
+    "modBehavior": "A1-11: ATK4"
+   },
+   {
+    "move": 9,
+    "ref": "harder card: AOE ATK4 + Str",
+    "modBehavior": "A1-11: ATK4 + 1 Str"
+   },
+   {
+    "move": 10,
+    "ref": "(A12, no ref card)",
+    "modBehavior": "A12+: 2 Weak"
+   },
+   {
+    "move": 11,
+    "ref": "(A12, no ref card)",
+    "modBehavior": "A12+: ATK4 + 1 Str"
+   },
+   {
+    "move": 12,
+    "ref": "(A12, no ref card)",
+    "modBehavior": "A12+: ATK4"
+   }
+  ],
+  "note": "Moves 5 (sleep) and 4 (stunned when hit while asleep) are non-actions. A12 moves 10-12 inferred AOE by analogy."
+ },
+ {
+  "class": "BGLooter",
+  "refId": "looter_a1",
+  "refIdsOther": [
+   "looter_a1_asc7",
+   "looter_a2"
+  ],
+  "hp": null,
+  "aoeMoves": [],
+  "note": "Moves: 1=ATK2, 2=ATK3+1 block, 3=lose 2 gold & escape."
+ },
+ {
+  "class": "BGRedLouse",
+  "refId": "red_louse_a1_b",
+  "refIdsOther": [
+   "red_louse_a1_a"
+  ],
+  "hp": null,
+  "aoeMoves": [],
+  "note": "Moves: 3=ATK1, 4=+1 Str, 5=ATK2. Curl Up 2."
+ },
+ {
+  "class": "BGRedSlaver",
+  "refId": "red_slaver_a1",
+  "refIdsOther": [
+   "red_slaver_a1_asc7",
+   "red_slaver_a2_minion",
+   "red_slaver_minion_variant"
+  ],
+  "hp": null,
+  "aoeMoves": [],
+  "note": "Moves: 1=ATK3, 2=ATK2+Dazed, 3=ATK2+Vuln."
+ },
+ {
+  "class": "BGSentry",
+  "refId": "sentries_a1",
+  "refIdsOther": [
+   "sentries_a1_asc8",
+   "sentry_a_a1_minion"
+  ],
+  "hp": null,
+  "aoeMoves": [],
+  "note": "No AOE on any Sentry card. Moves: 3=Dazed, 4=ATK2, 5=ATK3; A1+ '2D' sentry cube: 6=Dazed (once) ->7=ATK2 ->8=2 Dazed ->7."
+ },
+ {
+  "class": "BGSlimeBoss",
+  "refId": "boss:slime_boss",
+  "refIdsOther": [],
+  "hp": [
+   22,
+   44,
+   66,
+   88
+  ],
+  "hpAsc": {
+   "10": [
+    23,
+    46,
+    68,
+    92
+   ]
+  },
+  "aoeMoves": [
+   1,
+   2,
+   3
+  ],
+  "aoeDetail": [
+   {
+    "move": 1,
+    "ref": "AOE Slimed x3 (A10: x4)",
+    "modBehavior": "3 (A10: 4) Slimed into discard"
+   },
+   {
+    "move": 2,
+    "ref": "AOE 3 + Slimed x2",
+    "modBehavior": "ATK3 + 2 Slimed"
+   },
+   {
+    "move": 3,
+    "ref": "AOE 6",
+    "modBehavior": "ATK6"
+   }
+  ],
+  "note": "Move 4 = Split (spawn Large/Acid/Spike slime; ref: one set per player), move 5 = dead placeholder, 99 unused."
+ },
+ {
+  "class": "BGSpikeSlime_M",
+  "refId": "spike_slime_a1_minion",
+  "refIdsOther": [],
+  "hp": null,
+  "aoeMoves": [],
+  "note": "Behavior from summon pool 2DV/V2D/DV2/VD2 (ref transcribes only DV2). Moves: 1=ATK1+Dazed, 2=ATK2, 4=ATK1+Vuln."
+ },
+ {
+  "class": "BGSpikeSlime_S",
+  "refId": "small_slime_a1",
+  "refIdsOther": [],
+  "hp": null,
+  "aoeMoves": [],
+  "note": "Move 1=ATK1."
+ },
+ {
+  "class": "BGTestLouse",
+  "refId": "green_louse_a1_minion",
+  "refIdsOther": [],
+  "hp": null,
+  "aoeMoves": [],
+  "uncertain": true,
+  "note": "Unreferenced test duplicate of BGGreenLouse (no addMonster/encounter uses it)."
+ },
+ {
+  "class": "BGTheGuardian",
+  "refId": "boss:the_guardian",
+  "refIdsOther": [],
+  "hp": [
+   40,
+   80,
+   120,
+   160
+  ],
+  "hpAsc": {
+   "10": [
+    40,
+    80,
+    120,
+    160
+   ]
+  },
+  "aoeMoves": [
+   2,
+   3,
+   4,
+   5
+  ],
+  "aoeDetail": [
+   {
+    "move": 5,
+    "ref": "Attack mode row1: AOE 2, 5 Block per player (A10: 6)",
+    "modBehavior": "2 dmg + 5 (A10: 6) block (solo amount)"
+   },
+   {
+    "move": 2,
+    "ref": "Mode Shift row: AOE 6 (A10: 7)",
+    "modBehavior": "6 (A10: 7) dmg"
+   },
+   {
+    "move": 3,
+    "ref": "Defensive row1: AOE 2 (A10: 3)",
+    "modBehavior": "2 (A10: 3)"
+   },
+   {
+    "move": 4,
+    "ref": "Defensive row2: AOE 4 + Str, enter Attack Mode",
+    "modBehavior": "4 dmg + 1 Str, remove Sharp Hide, back to Offensive"
+   }
+  ],
+  "note": "Move 1 = Close Up (no attack; applies Sharp Hide) = card's 'doesn't attack this turn' - not AOE. Block amount in move 5 must scale x players for MP."
+ },
+ {
+  "class": "BGBookOfStabbing",
+  "refId": "book_of_stabbing_a2",
+  "refIdsOther": [],
+  "hp": [
+   35,
+   70,
+   105,
+   140
+  ],
+  "hpAsc": {
+   "1": [
+    35,
+    70,
+    105,
+    140
+   ]
+  },
+  "aoeMoves": [
+   1,
+   2
+  ],
+  "aoeDetail": [
+   {
+    "move": 1,
+    "ref": "AOE ATK1 ATK1 [str]",
+    "modBehavior": "2 hits of 1 dmg + self Str 1 (Painful Stabs: daze if unblocked)"
+   },
+   {
+    "move": 2,
+    "ref": "AOE ATK3 [str]",
+    "modBehavior": "3 dmg (A12: 4) + self Str 1"
+   }
+  ],
+  "uncertain": true,
+  "note": "Reference card is flagged ascension=1 (only that side transcribed); it matches mod A1 (HP 35, opens with move 2). Mod A0 uses HP 30 and opens with move 1; no A0 reference HP array, so per-player HP for A0 is unknown (30/60/90/120 would be the linear guess, inferred)."
+ },
+ {
+  "class": "BGTaskmaster",
+  "refId": "taskmaster_a2",
+  "refIdsOther": [],
+  "hp": [
+   15,
+   32,
+   48,
+   64
+  ],
+  "hpAsc": {
+   "1": [
+    15,
+    32,
+    48,
+    64
+   ]
+  },
+  "aoeMoves": [
+   0,
+   1,
+   2,
+   3
+  ],
+  "aoeDetail": [
+   {
+    "move": 1,
+    "ref": "grey AOE ATK1",
+    "modBehavior": "A1-A11 opener: 1 dmg, then move 2"
+   },
+   {
+    "move": 2,
+    "ref": "red AOE ATK2 [daze] [str]",
+    "modBehavior": "2 dmg + 1 Dazed + self Str 1, repeats"
+   },
+   {
+    "move": 0,
+    "ref": "(no A0 card in reference)",
+    "modBehavior": "A0 only: 1 dmg + self Str 1, repeats"
+   },
+   {
+    "move": 3,
+    "ref": "(no A12 card in reference)",
+    "modBehavior": "A12 only: 1 dmg + 1 Dazed + self Str 1, repeats"
+   }
+  ],
+  "uncertain": true,
+  "note": "Reference card is flagged ascension=1. Moves 0 and 3 (A0/A12 variants) are not in reference; treated as AOE because every Taskmaster row on the reference card is AOE. HP per player is not linear in reference (15/32/48/64)."
+ },
+ {
+  "class": "BGGremlinLeader",
+  "refId": "gremlin_leader_a2",
+  "refIdsOther": [],
+  "hp": [
+   30,
+   60,
+   90,
+   120
+  ],
+  "aoeMoves": [
+   1,
+   2
+  ],
+  "aoeDetail": [
+   {
+    "move": 1,
+    "ref": "AOE ATK2 , [block 1] [str] to ALL enemies",
+    "modBehavior": "2 dmg (A1+: 3) to player; then Str 1 + Block 1 to every living monster incl. Leader. Only the attack part is AOE"
+   },
+   {
+    "move": 2,
+    "ref": "AOE ATK5",
+    "modBehavior": "5 dmg"
+   }
+  ],
+  "note": "Move 3 = revive dead gremlins (not an attack). Mod spawns 2 gremlins at combat start (solo); reference card does not state how many gremlins per player."
+ },
+ {
+  "class": "BGGremlinPlaceholder",
+  "refId": null,
+  "refIdsOther": [],
+  "hp": null,
+  "aoeMoves": [],
+  "note": "Mod-internal 0-HP placeholder for Gremlin Leader slots; not a real enemy."
+ },
+ {
+  "class": "BGChosen",
+  "refId": "chosen_a2",
+  "refIdsOther": [
+   "chosen_a2_asc7"
+  ],
+  "hp": null,
+  "aoeMoves": [
+   1
+  ],
+  "aoeDetail": [
+   {
+    "move": 1,
+    "ref": "chosen_a2: AOE [daze] (loop 0, repeats); chosen_a2_asc7 (14 HP): grey AOE ATK1 [daze] (once)",
+    "modBehavior": "1 dmg + 1 Dazed, once (both encounters)"
+   }
+  ],
+  "note": "Mod uses the 14-HP card's actions for both encounters; HP from constructor arg (14 in 'Chosen and Cultist', 16 in 'Chosen and Byrd')."
+ },
+ {
+  "class": "BGSnakePlant",
+  "refId": "snake_plant_a2",
+  "refIdsOther": [
+   "snake_plant_a2_asc7"
+  ],
+  "hp": null,
+  "aoeMoves": [],
+  "aoeMovesAsc": {
+   "7": [
+    1
+   ]
+  },
+  "aoeDetail": [
+   {
+    "move": 1,
+    "ref": "A7 card: ATK3 , AOE ATK2",
+    "modBehavior": "3 dmg then 2 dmg to the single player; no A7 variant in mod. At A7 only the 2-dmg hit should hit all players"
+   }
+  ],
+  "uncertain": true,
+  "note": "Mod has no A7 Snake Plant; move 1 is partly AOE only on the A7 card."
+ },
+ {
+  "class": "BGSnecko",
+  "refId": "snecko_a2",
+  "refIdsOther": [],
+  "hp": null,
+  "aoeMoves": []
+ },
+ {
+  "class": "BGSphericGuardian",
+  "refId": "spheric_guardian_a2",
+  "refIdsOther": [
+   "spheric_guardian_a2_asc7",
+   "spheric_guardian_a3_asc11"
+  ],
+  "hp": null,
+  "aoeMoves": []
+ },
+ {
+  "class": "BGByrd",
+  "refId": "byrd_a2_monster",
+  "refIdsOther": [
+   "byrd_a2_minion"
+  ],
+  "hp": null,
+  "aoeMoves": []
+ },
+ {
+  "class": "BGShelledParasite",
+  "refId": "shelled_parasite_a2",
+  "refIdsOther": [],
+  "hp": null,
+  "aoeMoves": []
+ },
+ {
+  "class": "BGCenturion",
+  "refId": "centurion_a2",
+  "refIdsOther": [
+   "centurion_a2_asc7"
+  ],
+  "hp": null,
+  "aoeMoves": []
+ },
+ {
+  "class": "BGHealer",
+  "refId": "mystic_a2_minion",
+  "refIdsOther": [
+   "mystic_minion_variant"
+  ],
+  "hp": null,
+  "aoeMoves": [],
+  "note": "Heal (move 2) and Str (move 3) target all enemies, not players."
+ },
+ {
+  "class": "BGMugger",
+  "refId": "mugger_minion_variant",
+  "refIdsOther": [
+   "mugger_a2_minion"
+  ],
+  "hp": null,
+  "aoeMoves": []
+ },
+ {
+  "class": "BGBronzeAutomaton",
+  "refId": "boss:bronze_automaton",
+  "refIdsOther": [],
+  "hp": [
+   55,
+   110,
+   165,
+   220
+  ],
+  "hpAsc": {
+   "10": [
+    60,
+    120,
+    180,
+    240
+   ]
+  },
+  "aoeMoves": [
+   2,
+   4
+  ],
+  "aoeDetail": [
+   {
+    "move": 2,
+    "ref": "AOE 1 1",
+    "modBehavior": "2 hits of 1"
+   },
+   {
+    "move": 4,
+    "ref": "AOE 7 (A10: 9)",
+    "modBehavior": "7 dmg (A10: 9)"
+   }
+  ],
+  "note": "Moves 1 and 3 are self Str (+remove Weak/Vuln) only. Start of combat: 1 Bronze Orb per player (mod spawns 1)."
+ },
+ {
+  "class": "BGBronzeOrb",
+  "refId": "bronze_orb_a2_a",
+  "refIdsOther": [],
+  "hp": null,
+  "aoeMoves": [],
+  "note": "Minion. Mod draws behavior from 4 die orders (3DB,3BD,DB3,B3D); reference only has Bronze Orb A (3DB)."
+ },
+ {
+  "class": "BGTheCollector",
+  "refId": "boss:the_collector",
+  "refIdsOther": [],
+  "hp": [
+   57,
+   114,
+   171,
+   228
+  ],
+  "hpAsc": {
+   "10": [
+    60,
+    120,
+    180,
+    240
+   ]
+  },
+  "aoeMoves": [
+   2,
+   3,
+   4
+  ],
+  "aoeDetail": [
+   {
+    "move": 2,
+    "ref": "AOE 3, [str] to all enemies",
+    "modBehavior": "3 dmg + Str 1 to all monsters (only the attack is AOE)"
+   },
+   {
+    "move": 3,
+    "ref": "AOE 5 (A10: 6)",
+    "modBehavior": "5 dmg (A10: 6)"
+   },
+   {
+    "move": 4,
+    "ref": "grey: AOE weak weak, daze daze, burn burn (A10: 3 burns) (icons read from Bosses.pdf scan)",
+    "modBehavior": "Weak 2, 2 Dazed into draw pile, 2 Burns (A10: 3) into discard; once per combat"
+   }
+  ],
+  "note": "Move 1 = summon Torch Heads until 2 (solo); reference: 2 per player."
+ },
+ {
+  "class": "BGTorchHead",
+  "refId": "torch_head_a2",
+  "refIdsOther": [],
+  "hp": null,
+  "aoeMoves": []
+ },
+ {
+  "class": "BGChamp",
+  "refId": "boss:the_champ",
+  "refIdsOther": [],
+  "hp": [
+   40,
+   80,
+   120,
+   160
+  ],
+  "hpAsc": {
+   "10": [
+    45,
+    90,
+    135,
+    180
+   ]
+  },
+  "aoeMoves": [
+   1,
+   2,
+   3,
+   5
+  ],
+  "aoeDetail": [
+   {
+    "move": 1,
+    "ref": "AOE 4",
+    "modBehavior": "4 dmg"
+   },
+   {
+    "move": 2,
+    "ref": "AOE [weak] + [str]",
+    "modBehavior": "Weak 1 to player + self Str 1 (no damage)"
+   },
+   {
+    "move": 3,
+    "ref": "AOE 5 (A10: 6), 3 block",
+    "modBehavior": "5 dmg (A10: 6) + 3 block"
+   },
+   {
+    "move": 5,
+    "ref": "Fury: AOE 4 4",
+    "modBehavior": "2 hits of 4"
+   }
+  ],
+  "note": "Move 4 (Fury: remove Weak/Vuln) and move 6 (Str 1, A10: 2) are not attacks. Anger heals maxHealth: 40 per player in the reference (45 at A10)."
+ },
+ {
+  "class": "BGGiantHead",
+  "refId": "giant_head_a3",
+  "refIdsOther": [
+   "scan:Elites_Act3 harder side"
+  ],
+  "hp": [
+   80,
+   160,
+   240,
+   320
+  ],
+  "hpAsc": {
+   "1": [
+    85,
+    170,
+    255,
+    340
+   ]
+  },
+  "aoeMoves": [
+   2,
+   4
+  ],
+  "aoeDetail": [
+   {
+    "move": 2,
+    "ref": "red AOE ATK7 [str] (A1 card: AOE 8 + str)",
+    "modBehavior": "ATK startingDeathDmg (7/A1 8/A12 9) + 1 Str, repeats forever"
+   },
+   {
+    "move": 4,
+    "ref": "A1 card grey row 2: AOE ATK3",
+    "modBehavior": "A1+ only, 2nd turn: ATK secondaryDmg (5, A12 6)"
+   }
+  ],
+  "note": "Move 0 = countdown (no effect). A1 card's first grey row 'AOE Weak' is not implemented (dead code if(false) BGGiantHead.java:113); if implemented it would be an AOE move (currently move 0 or 1)."
+ },
+ {
+  "class": "BGNemesis",
+  "refId": "nemesis_a3",
+  "refIdsOther": [
+   "scan:Elites_Act3 harder side"
+  ],
+  "hp": [
+   30,
+   60,
+   90,
+   120
+  ],
+  "hpAsc": {
+   "1": [
+    35,
+    70,
+    105,
+    140
+   ]
+  },
+  "aoeMoves": [
+   0,
+   1,
+   2,
+   3
+  ],
+  "aoeDetail": [
+   {
+    "move": 0,
+    "ref": "AOE 5x Burn",
+    "modBehavior": "Burn x4 (A1+: 5) into discard"
+   },
+   {
+    "move": 1,
+    "ref": "AOE ATK5, intangible while cube here",
+    "modBehavior": "ATK 4 (A1 5, A12 6)"
+   },
+   {
+    "move": 2,
+    "ref": "AOE ATK2 x3 (A1: + 2 Burn)",
+    "modBehavior": "ATK2 x2 (A12 x3) + 1 Burn (A12 2)"
+   },
+   {
+    "move": 3,
+    "ref": "AOE ATK8 (A1 9), intangible while cube here",
+    "modBehavior": "ATK 7 (A1/A12 8)"
+   }
+  ],
+  "note": "Mod loops 2<->3 after first pass; reference loops back to row 0 (burns)."
+ },
+ {
+  "class": "BGReptomancer",
+  "refId": "reptomancer_a3",
+  "refIdsOther": [
+   "scan:Elites_Act3 harder side"
+  ],
+  "hp": [
+   35,
+   70,
+   105,
+   140
+  ],
+  "hpAsc": {
+   "1": [
+    40,
+    80,
+    120,
+    160
+   ]
+  },
+  "aoeMoves": [
+   1,
+   2,
+   3,
+   4
+  ],
+  "aoeDetail": [
+   {
+    "move": 1,
+    "ref": "A0: AOE ATK3 ATK3, Rally",
+    "modBehavior": "A0: 3 x2"
+   },
+   {
+    "move": 2,
+    "ref": "A0: AOE ATK7 Weak",
+    "modBehavior": "A0: ATK7 (weak commented out)"
+   },
+   {
+    "move": 3,
+    "ref": "A1: AOE ATK7 Weak, Rally",
+    "modBehavior": "A1+: ATK7 + Daze x1 (A12 x2)"
+   },
+   {
+    "move": 4,
+    "ref": "A1: AOE ATK3 ATK3 Str",
+    "modBehavior": "A1+: 4 x2 + 1 Str"
+   }
+  ],
+  "note": "Move 0 = summon daggers (not AOE). A0 uses moves 0,1,2; A1+ uses 0,3,4."
+ },
+ {
+  "class": "BGSnakeDagger",
+  "refId": "dagger_a3_minion",
+  "refIdsOther": [],
+  "hp": null,
+  "aoeMoves": []
+ },
+ {
+  "class": "BGDarkling",
+  "refId": "darkling_a3",
+  "refIdsOther": [],
+  "hp": null,
+  "aoeMoves": [],
+  "note": "Ref card faces match behavior string 'S32'; mod encounter also uses '2S3' and '32S' (not in reference)."
+ },
+ {
+  "class": "BGExploder",
+  "refId": "exploder_a3_minion",
+  "refIdsOther": [
+   "exploder_a3_monster"
+  ],
+  "hp": null,
+  "aoeMoves": [
+   3
+  ],
+  "aoeDetail": [
+   {
+    "move": 3,
+    "ref": "grey AOE ATK10, Exploder dies",
+    "modBehavior": "ATK10 then SuicideAction (3rd turn onward)"
+   }
+  ]
+ },
+ {
+  "class": "BGRepulsor",
+  "refId": "repulsor_a3_minion",
+  "refIdsOther": [],
+  "hp": null,
+  "aoeMoves": [],
+  "note": "Ref faces = behavior '3D'; encounter 'Repulsor and Friends' uses 'D3' (reversed, not in reference)."
+ },
+ {
+  "class": "BGSpiker",
+  "refId": "spiker_a3_minion_a",
+  "refIdsOther": [
+   "spiker_a3_minion_b"
+  ],
+  "hp": null,
+  "aoeMoves": [],
+  "note": "behavior '2T' = minion_a, 'T2' = minion_b."
+ },
+ {
+  "class": "BGSpireGrowth",
+  "refId": "spire_growth_a3",
+  "refIdsOther": [],
+  "hp": null,
+  "aoeMoves": [
+   1,
+   2
+  ],
+  "aoeDetail": [
+   {
+    "move": 1,
+    "ref": "[1-3] ATK2 (row), AOE ATK3",
+    "modBehavior": "hit 2 then hit 3 on the single player; only the SECOND hit (damage index 1) is AOE"
+   },
+   {
+    "move": 2,
+    "ref": "[4-6] ATK4 (row), AOE ATK2",
+    "modBehavior": "hit 4 then hit 2; only the SECOND hit (damage index 3) is AOE"
+   }
+  ],
+  "uncertain": true,
+  "note": "Mixed move: first hit targets row player only, second hit targets all players. Move 0 = turn-1 no action."
+ },
+ {
+  "class": "BGOrbWalker",
+  "refId": "orb_walker_a3",
+  "refIdsOther": [],
+  "hp": null,
+  "aoeMoves": [],
+  "note": "Ref card = behavior '32'; 'Orb Walker v2.3' encounter uses swapped faces (not in reference)."
+ },
+ {
+  "class": "BGTransient",
+  "refId": "transient_a3",
+  "refIdsOther": [],
+  "hp": null,
+  "aoeMoves": []
+ },
+ {
+  "class": "BGWrithingMass",
+  "refId": "writhing_mass_a3",
+  "refIdsOther": [],
+  "hp": null,
+  "aoeMoves": [
+   1,
+   3
+  ],
+  "aoeDetail": [
+   {
+    "move": 3,
+    "ref": "[1] AOE Vuln, acts last",
+    "modBehavior": "die 1: 1 Vulnerable to player"
+   },
+   {
+    "move": 1,
+    "ref": "[2] AOE Daze Daze",
+    "modBehavior": "die 2: 2 Dazed into draw pile"
+   }
+  ]
+ },
+ {
+  "class": "BGMaw",
+  "refId": null,
+  "refIdsOther": [],
+  "hp": null,
+  "aoeMoves": [],
+  "note": "No Maw card in reference."
+ },
+ {
+  "class": "BGAwakenedOne",
+  "refId": "boss:awakened_one",
+  "refIdsOther": [
+   "boss:awakened_one_phase2"
+  ],
+  "hp": [
+   50,
+   100,
+   150,
+   200
+  ],
+  "hpAsc": {
+   "10": [
+    50,
+    100,
+    150,
+    200
+   ]
+  },
+  "aoeMoves": [
+   0,
+   1,
+   2,
+   4,
+   5,
+   6
+  ],
+  "aoeDetail": [
+   {
+    "move": 0,
+    "ref": "P1 AOE 3",
+    "modBehavior": "ATK3"
+   },
+   {
+    "move": 1,
+    "ref": "P1 AOE 5 (A10 6)",
+    "modBehavior": "ATK5/6"
+   },
+   {
+    "move": 2,
+    "ref": "P1 AOE 2x2",
+    "modBehavior": "2x2"
+   },
+   {
+    "move": 4,
+    "ref": "P2 AOE 7 (A10 6)",
+    "modBehavior": "ATK7/6"
+   },
+   {
+    "move": 5,
+    "ref": "P2 AOE 4 + 2 Slimed(green spiral)",
+    "modBehavior": "ATK4 + 2 BGVoidCard to discard"
+   },
+   {
+    "move": 6,
+    "ref": "P2 AOE 3x2 + Str",
+    "modBehavior": "3x2 + 1 Str"
+   }
+  ],
+  "note": "Move 3 = rebirth (phase 2 transition, A10 Str=powers played); not AOE. Phase 2 HP also 50/100/150/200. Start of combat: 2 Cultists per player (mod encounter hard-codes 2)."
+ },
+ {
+  "class": "BGTimeEater",
+  "refId": "boss:time_eater",
+  "refIdsOther": [],
+  "hp": [
+   60,
+   120,
+   180,
+   240
+  ],
+  "hpAsc": {
+   "10": [
+    64,
+    128,
+    192,
+    256
+   ]
+  },
+  "aoeMoves": [
+   0,
+   1,
+   2
+  ],
+  "aoeDetail": [
+   {
+    "move": 0,
+    "ref": "clock5 AOE 2x2 (A10 3x3)",
+    "modBehavior": "2x2 (A10 3x2)"
+   },
+   {
+    "move": 1,
+    "ref": "clock4 AOE Slimed x3",
+    "modBehavior": "3 Slimed to discard"
+   },
+   {
+    "move": 2,
+    "ref": "clock3 AOE 6 + Str (A10 + Daze)",
+    "modBehavior": "6 + 1 Daze + 1 Str at all ascensions"
+   }
+  ],
+  "note": "Haste heals 30/player (A10 32/player)."
+ },
+ {
+  "class": "BGDonu",
+  "refId": "boss:donu",
+  "refIdsOther": [],
+  "hp": [
+   50,
+   100,
+   150,
+   200
+  ],
+  "hpAsc": {
+   "10": [
+    55,
+    110,
+    165,
+    220
+   ]
+  },
+  "aoeMoves": [
+   0
+  ],
+  "aoeDetail": [
+   {
+    "move": 0,
+    "ref": "AOE 3x2",
+    "modBehavior": "3 x2"
+   }
+  ],
+  "note": "Move 2 = Str to all enemies (not AOE)."
+ },
+ {
+  "class": "BGDeca",
+  "refId": "boss:deca",
+  "refIdsOther": [],
+  "hp": [
+   50,
+   100,
+   150,
+   200
+  ],
+  "hpAsc": {
+   "10": [
+    55,
+    110,
+    165,
+    220
+   ]
+  },
+  "aoeMoves": [
+   0,
+   2
+  ],
+  "aoeDetail": [
+   {
+    "move": 0,
+    "ref": "AOE 3x2",
+    "modBehavior": "3 x2"
+   },
+   {
+    "move": 2,
+    "ref": "AOE Daze + Slimed (A10 Slimed x2)",
+    "modBehavior": "1 Daze to draw pile + 1 Slimed (A10 2) to discard"
+   }
+  ]
+ },
+ {
+  "class": "BGCorruptHeart",
+  "refId": "boss:corrupt_heart",
+  "refIdsOther": [],
+  "hp": [
+   100,
+   200,
+   300,
+   400
+  ],
+  "hpAsc": {
+   "11": [
+    120,
+    240,
+    360,
+    480
+   ]
+  },
+  "aoeMoves": [
+   0,
+   1,
+   2
+  ],
+  "aoeDetail": [
+   {
+    "move": 0,
+    "ref": "grey AOE Weak Vuln + 5 Slimed shuffled into draw (A11 Burns)",
+    "modBehavior": "same"
+   },
+   {
+    "move": 1,
+    "ref": "AOE 5",
+    "modBehavior": "ATK5"
+   },
+   {
+    "move": 2,
+    "ref": "AOE 2x3",
+    "modBehavior": "2x3"
+   }
+  ],
+  "note": "Move 3 = Str x2 + Beat of Death +1 (A11 +2) + lose Invincible (not AOE). Invincible floor 50/player (A11 60/player); Beat of Death hits all players."
+ },
+ {
+  "class": "BGSpireShield",
+  "refId": "boss:spire_shield",
+  "refIdsOther": [],
+  "hp": [
+   30,
+   60,
+   90,
+   120
+  ],
+  "aoeMoves": [
+   1
+  ],
+  "aoeDetail": [
+   {
+    "move": 1,
+    "ref": "AOE 8 (Facing: you can't draw cards this turn)",
+    "modBehavior": "ATK8"
+   }
+  ],
+  "note": "Facing mechanic: after start-of-turn effects players may switch rows, then each player is immediately hit by the Facing ability of the enemy in their row (Shield: move0 lose 1 Energy, move1 no draw, move2 your damage is 0). Shield placed in bottom 2 rows. Move 0 = 20 Block, move 2 = 2 Str to all enemies (not AOE)."
+ },
+ {
+  "class": "BGSpireSpear",
+  "refId": "boss:spire_spear",
+  "refIdsOther": [],
+  "hp": [
+   42,
+   84,
+   126,
+   168
+  ],
+  "aoeMoves": [
+   0,
+   1,
+   2
+  ],
+  "aoeDetail": [
+   {
+    "move": 0,
+    "ref": "AOE 2x2",
+    "modBehavior": "2x2"
+   },
+   {
+    "move": 1,
+    "ref": "AOE Daze Daze",
+    "modBehavior": "2 Dazed into draw pile"
+   },
+   {
+    "move": 2,
+    "ref": "AOE 9",
+    "modBehavior": "ATK9"
+   }
+  ],
+  "note": "Facing (every row): 2 Burns to the facing player (mod facingAttack). Spear placed in top 2 rows."
+ }
+]
