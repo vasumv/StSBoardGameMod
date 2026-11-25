@@ -437,7 +437,7 @@ public class MPHooks {
             int n = MP.playerCount();
             int row;
             if (src == null || src.type == AbstractMonster.EnemyType.BOSS || src.type == AbstractMonster.EnemyType.ELITE)
-                row = (summonRobin++) % n;
+                row = AbstractDungeon.getCurrRoom().monsters.monsters.size() % n; // same in every game
             else row = MonsterSync.row(src);
             MultiCreature.Field.currentRow.set(___m, row);
         }

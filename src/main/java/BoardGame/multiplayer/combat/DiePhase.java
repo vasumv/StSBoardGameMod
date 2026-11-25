@@ -171,11 +171,11 @@ public class DiePhase {
         }
     }
 
-    private static void maybeRelease() {
+    public static void maybeRelease() {
         if (decided || roundKey != currentKey() || firstRollPending) return;
         HashSet<Integer> s = locks.get(roundKey);
         if (s == null) return;
-        for (MP.Player p : MP.players) if (p.connected && !s.contains(p.id)) return;
+        for (MP.Player p : MP.players) if (p.connected && !p.dead && !s.contains(p.id)) return;
         decided = true;
         AbstractRelic r = AbstractDungeon.player.getRelic(BGTheDieRelic.ID);
         if (r instanceof BGTheDieRelic) {

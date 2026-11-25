@@ -26,6 +26,8 @@ public class SharedEvents {
     private static int rollFloor = -1;
     private static final HashMap<Integer, Integer> fishClaims = new HashMap<>(); // option -> player
     private static int fishFloor = -1;
+    private static boolean fishDriven = false;
+    private static int fishWaiting = -1;
 
     private static boolean multi() {
         return MP.inRun && MP.playerCount() > 1;
@@ -80,19 +82,24 @@ public class SharedEvents {
     @SpirePatch2(clz = BGBigFish.class, method = "buttonEffect")
     public static class FishClaim {
         @SpirePrefixPatch
-        public static SpireReturn<Void> prefix(BGBigFish __instance, int buttonPressed, Object ___screen) {
-            if (!multi() || !"INTRO".equals(String.valueOf(___screen)) || buttonPressed > 2) return SpireReturn.Continue();
+        public static SpireReturn<Void> prefix(BGBigFish __instance, int buttonPressed) {
+            Object screen = basemod.ReflectionHacks.getPrivate(__instance, BGBigFish.class, "screen");
+            if (fishDriven || !multi() || !"INTRO".equals(String.valueOf(screen)) || buttonPressed > 2)
+                return SpireReturn.Continue();
             resetFish();
             Integer who = fishClaims.get(buttonPressed);
             if (who != null && who != MP.myId) {
                 Session.toast(Session.nameOf(who) + " already took that option");
                 return SpireReturn.Return();
             }
+            if (fishWaiting >= 0) return SpireReturn.Return();
+            // the option is ours only if our claim comes back first in the shared order
+            fishWaiting = buttonPressed;
             JsonObject o = MP.msg("fish");
             o.addProperty("floor", AbstractDungeon.floorNum);
             o.addProperty("opt", buttonPressed);
             MP.send(o);
-            return SpireReturn.Continue();
+            return SpireReturn.Return();
         }
     }
 
@@ -141,8 +148,28 @@ public class SharedEvents {
         if (!type.equals("fish") || m.get("floor").getAsInt() != AbstractDungeon.floorNum) return;
         resetFish();
         int opt = m.get("opt").getAsInt();
-        fishClaims.putIfAbsent(opt, from);
-        if (from == MP.myId) return;
+        Integer first = fishClaims.putIfAbsent(opt, from);
+        if (from == MP.myId) {
+            fishWaiting = -1;
+            if (first != null && first != MP.myId) {
+                Session.toast(Session.nameOf(first) + " took that option first; pick another");
+                return;
+            }
+            if (AbstractDungeon.getCurrRoom().event instanceof BGBigFish) {
+                fishDriven = true;
+                try {
+                    java.lang.reflect.Method bm = BGBigFish.class.getDeclaredMethod("buttonEffect", int.class);
+                    bm.setAccessible(true);
+                    bm.invoke(AbstractDungeon.getCurrRoom().event, opt);
+                } catch (Throwable t) {
+                    MP.logger.error("Big Fish", t);
+                } finally {
+                    fishDriven = false;
+                }
+            }
+            return;
+        }
+        if (first != null) return;
         try {
             if (AbstractDungeon.getCurrRoom().event instanceof BGBigFish) {
                 AbstractImageEvent ev = (AbstractImageEvent) AbstractDungeon.getCurrRoom().event;

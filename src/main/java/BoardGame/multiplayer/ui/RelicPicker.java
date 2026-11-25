@@ -35,6 +35,7 @@ public class RelicPicker {
     private static final ArrayList<String> revealed = new ArrayList<>();
     private static final HashMap<String, Integer> taken = new HashMap<>(); // relic id -> player
     private static RewardItem pending;
+    private static RewardItem awaitingPick;
     private static boolean granting = false;
     private static boolean wasDown = false;
 
@@ -42,6 +43,19 @@ public class RelicPicker {
         return MP.inRun && MP.playerCount() > 1 && MP.chooseRelic && AbstractDungeon.currMapNode != null
                 && (AbstractDungeon.getCurrRoom() instanceof MonsterRoomElite
                 || AbstractDungeon.getCurrRoom() instanceof TreasureRoom);
+    }
+
+    public static void reset() {
+        revealFloor = -1;
+        revealed.clear();
+        taken.clear();
+        pending = null;
+        awaitingPick = null;
+    }
+
+    /** Host: reveal as soon as the party enters an Elite or Treasure room. */
+    public static void onRoomEntered() {
+        if (ruleActive()) hostReveal();
     }
 
     /** Host: reveal one relic per player for this room. */
@@ -65,8 +79,29 @@ public class RelicPicker {
             for (JsonElement e : m.getAsJsonArray("ids")) revealed.add(e.getAsString());
         } else if (type.equals("relicpick")) {
             if (m.get("floor").getAsInt() != revealFloor) return;
-            taken.putIfAbsent(m.get("id").getAsString(), from);
-            if (from != MP.myId) Session.toast(Session.nameOf(from) + " chose " + nameOf(m.get("id").getAsString()));
+            String id = m.get("id").getAsString();
+            Integer first = taken.putIfAbsent(id, from);
+            if (from != MP.myId) {
+                if (first == null) Session.toast(Session.nameOf(from) + " chose " + nameOf(id));
+                return;
+            }
+            // our own pick came back through the stream: it's ours only if nobody was first
+            RewardItem item = awaitingPick;
+            awaitingPick = null;
+            if (first != null && first != MP.myId) {
+                Session.toast(Session.nameOf(first) + " took " + nameOf(id) + " first; choose another");
+                pending = item;
+                return;
+            }
+            if (item == null) return;
+            item.relic = RelicLibrary.getRelic(id).makeCopy();
+            granting = true;
+            try {
+                if (item.claimReward()) AbstractDungeon.combatRewardScreen.rewards.remove(item);
+                AbstractDungeon.combatRewardScreen.positionRewards();
+            } finally {
+                granting = false;
+            }
         }
     }
 
@@ -126,17 +161,8 @@ public class RelicPicker {
             o.addProperty("floor", revealFloor);
             o.addProperty("id", id);
             MP.send(o);
-            AbstractRelic chosen = RelicLibrary.getRelic(id).makeCopy();
-            RewardItem item = pending;
+            awaitingPick = pending; // granted when our pick comes back first in the shared order
             pending = null;
-            item.relic = chosen;
-            granting = true;
-            try {
-                if (item.claimReward()) AbstractDungeon.combatRewardScreen.rewards.remove(item);
-                AbstractDungeon.combatRewardScreen.positionRewards();
-            } finally {
-                granting = false;
-            }
             return;
         }
     }

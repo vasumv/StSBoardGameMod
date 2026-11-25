@@ -317,11 +317,19 @@ public class BGDeadAdventurer
         partyDriven = true;
         try {
             switch (m.get("a").getAsString()) {
-                case "search": ev.buttonEffect(ev.takePrizeIndex); break;
+                case "search":
+                    ev.pendingReward = 0; // the host rolled (or rerolled): roll the same shared number
+                    ev.buttonEffect(ev.takePrizeIndex);
+                    break;
                 case "leave": ev.buttonEffect(ev.leaveIndex); break;
                 case "result":
                     ev.pendingReward = m.get("v").getAsInt();
-                    ev.takeReward(true);
+                    applyingResult = true;
+                    try {
+                        ev.takeReward(true);
+                    } finally {
+                        applyingResult = false;
+                    }
                     break;
                 case "continue": ev.buttonEffect(0); break;
             }
@@ -330,9 +338,13 @@ public class BGDeadAdventurer
         }
     }
 
+    private static boolean applyingResult = false;
+
     public void takeReward(boolean skipContinueButton){
-        if (BoardGame.multiplayer.MP.inRun && BoardGame.multiplayer.MP.playerCount() > 1
-                && BoardGame.multiplayer.MP.isHost()) partySend("result", pendingReward);
+        if (BoardGame.multiplayer.MP.inRun && BoardGame.multiplayer.MP.playerCount() > 1) {
+            if (BoardGame.multiplayer.MP.isHost()) partySend("result", pendingReward);
+            else if (!applyingResult) return; // only the host's result counts
+        }
         if(pendingReward==1 || pendingReward==2){
             spawnEliteEncounter();
             screen= CUR_SCREEN.FAIL;

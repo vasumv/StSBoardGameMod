@@ -188,7 +188,11 @@ public class MP {
     /** Take back our id from a saved run (the host remaps our connection to it). */
     public static void claimId(int id) {
         myId = id;
-        sendResume();
+        JsonObject o = msg("resume");
+        o.addProperty("id", id);
+        o.addProperty("n", lastSeq);
+        o.addProperty("claim", true);
+        Net.send(o);
     }
 
     private static void sendResume() {
@@ -310,7 +314,23 @@ public class MP {
     public static JsonObject msg(String type) {
         JsonObject o = new JsonObject();
         o.addProperty("t", type);
+        if (inRun) {
+            o.addProperty("fl", roomKey());
+            if (BoardGame.multiplayer.combat.MonsterSync.active())
+                o.addProperty("tn", com.megacrit.cardcrawl.actions.GameActionManager.turn);
+        }
         return o;
+    }
+
+    /** Which room this game is in (act and floor), used to keep messages in step with rooms. */
+    public static int roomKey() {
+        try {
+            if (!com.megacrit.cardcrawl.core.CardCrawlGame.isInARun() || com.megacrit.cardcrawl.dungeons.AbstractDungeon.currMapNode == null)
+                return -1;
+            return com.megacrit.cardcrawl.dungeons.AbstractDungeon.actNum * 1000 + com.megacrit.cardcrawl.dungeons.AbstractDungeon.floorNum;
+        } catch (Throwable t) {
+            return -1;
+        }
     }
 
     public static void send(JsonObject o) {
@@ -325,12 +345,11 @@ public class MP {
         if (!active) return;
         JsonObject m;
         while ((m = Net.inbox.peek()) != null) {
+            if (!Session.canProcess(m)) break;
+            Net.inbox.poll();
             try {
-                if (!Session.canProcess(m)) break;
-                Net.inbox.poll();
                 handle(m);
             } catch (Throwable t) {
-                Net.inbox.poll();
                 logger.error("failed handling " + m, t);
             }
         }
@@ -356,6 +375,7 @@ public class MP {
                 if (reconnecting && inRun) {
                     reconnecting = false;
                     sendResume(); // keep our old id; the host replays what we missed
+                    Net.flushOutbox();
                     Session.toast("Reconnected");
                     return;
                 }
@@ -391,8 +411,11 @@ public class MP {
                 readRoster(m.getAsJsonArray("roster"));
                 return;
             }
-            case "continue":
-                SavedSession.onContinue(m);
+            case "continueask":
+            case "continueok":
+            case "continueno":
+            case "continuego":
+                SavedSession.onMessage(t, from, m);
                 return;
             case "cfg":
                 ascension = m.get("asc").getAsInt();
@@ -415,6 +438,7 @@ public class MP {
                     p.connected = false;
                     if (!inRun) players.remove(p);
                     Session.toast(p.name + " disconnected");
+                    if (inRun) Session.onPlayerLeft(p.id);
                 }
                 return;
             }
@@ -425,6 +449,12 @@ public class MP {
                 lastStand = m.has("lastStand") && m.get("lastStand").getAsBoolean();
                 chooseRelic = m.has("chooseRelic") && m.get("chooseRelic").getAsBoolean();
                 sequential = m.has("sequential") && m.get("sequential").getAsBoolean();
+                if (com.megacrit.cardcrawl.core.CardCrawlGame.mode != com.megacrit.cardcrawl.core.CardCrawlGame.GameMode.CHAR_SELECT
+                        || com.megacrit.cardcrawl.core.CardCrawlGame.isInARun()) {
+                    lastError = "The host started the run while you were not at the main menu";
+                    leave();
+                    return;
+                }
                 inRun = true;
                 logger.info("starting multiplayer run, seed " + seed + ", " + players.size() + " players, I am "
                         + myId + " row " + myRow());

@@ -88,17 +88,8 @@ public class SharedShop {
             if (open) apply(s, m);
             else pendingStock = m;
         } else if (type.equals("shopbuy")) {
-            if (from == MP.myId) return;
-            ShopScreen s = AbstractDungeon.shopScreen;
-            if (s == null || m.get("key").getAsLong() != key()) return;
-            int slot = m.get("slot").getAsInt();
-            String id = m.get("id").getAsString();
-            if (m.get("kind").getAsString().equals("relic")) {
-                for (StoreRelic r : relics(s)) if (r.relic.relicId.equals(id)) r.isPurchased = true;
-            } else {
-                for (StorePotion p : potions(s)) if (p.potion.ID.equals(id)) { p.isPurchased = true; break; }
-            }
-            Session.toast(Session.nameOf(from) + " bought " + id.replace("BoardGame:", ""));
+            if (m.get("key").getAsLong() != key()) return;
+            onClaim(from, m.get("kind").getAsString(), m.get("id").getAsString());
         }
     }
 
@@ -128,20 +119,66 @@ public class SharedShop {
         }
     }
 
+    private static boolean buying = false;
+    private static final java.util.HashMap<String, Integer> claims = new java.util.HashMap<>();
+    private static long claimsKey = -1;
+
     @SpirePatch2(clz = StoreRelic.class, method = "purchaseRelic")
-    public static class ShareRelicBuy {
-        @SpirePostfixPatch
-        public static void postfix(StoreRelic __instance) {
-            if (multi() && __instance.isPurchased) send("relic", __instance.relic.relicId);
+    public static class ClaimRelic {
+        @SpirePrefixPatch
+        public static SpireReturn<Void> prefix(StoreRelic __instance) {
+            if (buying || !multi()) return SpireReturn.Continue();
+            if (AbstractDungeon.player.gold < __instance.price) return SpireReturn.Continue(); // the game says no
+            send("relic", __instance.relic.relicId);
+            return SpireReturn.Return();
         }
     }
 
     @SpirePatch2(clz = StorePotion.class, method = "purchasePotion")
-    public static class SharePotionBuy {
-        @SpirePostfixPatch
-        public static void postfix(StorePotion __instance) {
-            if (multi() && __instance.isPurchased) send("potion", __instance.potion.ID);
+    public static class ClaimPotion {
+        @SpirePrefixPatch
+        public static SpireReturn<Void> prefix(StorePotion __instance) {
+            if (buying || !multi()) return SpireReturn.Continue();
+            if (AbstractDungeon.player.gold < __instance.price) return SpireReturn.Continue();
+            send("potion", __instance.potion.ID);
+            return SpireReturn.Return();
         }
+    }
+
+    /** A purchase claim in the shared order: the first claimer buys, everyone else sees it sold. */
+    private static void onClaim(int from, String kind, String id) {
+        if (claimsKey != key()) {
+            claimsKey = key();
+            claims.clear();
+        }
+        String k = kind + ":" + id;
+        Integer first = claims.putIfAbsent(k, from);
+        ShopScreen s = AbstractDungeon.shopScreen;
+        if (s == null) return;
+        if (from == MP.myId) {
+            if (first != null && first != MP.myId) {
+                Session.toast(Session.nameOf(first) + " bought that first");
+                return;
+            }
+            buying = true;
+            try {
+                if (kind.equals("relic")) {
+                    for (StoreRelic r : new ArrayList<>(relics(s))) if (r.relic.relicId.equals(id) && !r.isPurchased) { r.purchaseRelic(); break; }
+                } else {
+                    for (StorePotion p : new ArrayList<>(potions(s))) if (p.potion.ID.equals(id) && !p.isPurchased) { p.purchasePotion(); break; }
+                }
+            } finally {
+                buying = false;
+            }
+            return;
+        }
+        if (first != null) return;
+        if (kind.equals("relic")) {
+            for (StoreRelic r : relics(s)) if (r.relic.relicId.equals(id)) r.isPurchased = true;
+        } else {
+            for (StorePotion p : potions(s)) if (p.potion.ID.equals(id)) { p.isPurchased = true; break; }
+        }
+        Session.toast(Session.nameOf(from) + " bought " + id.replace("BoardGame:", ""));
     }
 
     private static void send(String kind, String id) {

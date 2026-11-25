@@ -55,6 +55,7 @@ public class Session {
         public int deltaSeq;
         public boolean eot;
         public int to = -1;
+        public int turn;
     }
 
     public static class Step {
@@ -93,8 +94,9 @@ public class Session {
     public static boolean authorizedEndTurn = false;
     private static JsonObject eotBaseline;
     public static boolean eotSent = false;
-    private static final HashSet<Integer> eotReceived = new HashSet<>();
-    private static JsonObject eotHostRng;
+    /** End-of-turn deltas received, per turn (a faster game may already be on the next turn). */
+    private static final HashMap<Integer, HashSet<Integer>> eotByTurn = new HashMap<>();
+    private static final HashMap<Integer, JsonObject> eotHostRngByTurn = new HashMap<>();
     public static boolean eotReleased = false;
     public static boolean sotCapturePending = false;
     private static JsonObject sotBaseline;
@@ -133,6 +135,7 @@ public class Session {
 
     public static void reset() {
         soloBonusRemoved = false;
+        BoardGame.multiplayer.ui.RelicPicker.reset();
         knownRelics.clear();
         queue.clear();
         logicalPending.clear();
@@ -166,10 +169,30 @@ public class Session {
         authorizedEndTurn = false;
         eotBaseline = null;
         eotSent = false;
-        eotReceived.clear();
-        eotHostRng = null;
+        int t = GameActionManager.turn;
+        eotByTurn.keySet().removeIf(k -> k < t);
+        eotHostRngByTurn.keySet().removeIf(k -> k < t);
         eotReleased = false;
-        for (MP.Player p : MP.players) p.endTurnReady = false;
+        // ready flags are cleared at a point in the shared stream (maybeEndTurn), never on local timing
+    }
+
+    /** Someone disconnected: nothing that waits on 'everyone' may keep waiting for them. */
+    public static void onPlayerLeft(int id) {
+        // their queued plays will never be resolved by their game
+        for (Play p : queue) if (!p.isDelta && p.from == id) cancelled.add(p.id);
+        logicalPending.removeIf(pid -> {
+            for (Play p : queue) if (p.id == pid && p.from == id) return true;
+            return resolving != null && resolving.id == pid && resolving.from == id;
+        });
+        if (resolving != null && resolving.from == id && resolving.from != MP.myId) {
+            dropStep(resolving.id);
+            resolving = null;
+        }
+        if (proposal != null && proposal.proposer == id) proposal = null;
+        checkProposal();
+        maybeEndTurn();
+        BoardGame.multiplayer.combat.DiePhase.maybeRelease();
+        if (MP.isHost()) maybeMove();
     }
 
     public static void toast(String text) {
@@ -182,7 +205,19 @@ public class Session {
         }
     }
 
+    /**
+     * False to leave the message at the head of the stream until this game is ready for it:
+     * messages sent from a later room wait until this game has reached that room too.
+     */
     public static boolean canProcess(JsonObject m) {
+        if (!MP.inRun || !m.has("fl")) return true;
+        int theirs = m.get("fl").getAsInt();
+        if (theirs < 0) return true;
+        int mine = MP.roomKey();
+        if (mine < theirs) return false;
+        // in the same fight, messages from a later turn wait until this game reaches that turn
+        if (mine == theirs && m.has("tn") && MonsterSync.active())
+            return GameActionManager.turn >= m.get("tn").getAsInt();
         return true;
     }
 
@@ -421,6 +456,13 @@ public class Session {
         long n = m.has("n") ? m.get("n").getAsLong() : -1;
         switch (type) {
             case "play": {
+                if (endTurnPending) {
+                    if (from == MP.myId) {
+                        requestedCards.remove(m.get("uuid").getAsString());
+                        toast("Too late: the turn is ending");
+                    }
+                    return;
+                }
                 Play p = new Play();
                 p.id = n;
                 p.from = from;
@@ -454,9 +496,10 @@ public class Session {
                 p.delta = m.getAsJsonObject("delta");
                 p.deltaSeq = m.get("seq").getAsInt();
                 p.eot = m.has("eot") && m.get("eot").getAsBoolean();
+                p.turn = m.has("turn") ? m.get("turn").getAsInt() : GameActionManager.turn;
                 if (p.eot) {
-                    eotReceived.add(from);
-                    if (from == 0 && m.has("rng")) eotHostRng = m.getAsJsonObject("rng");
+                    eotByTurn.computeIfAbsent(p.turn, k -> new HashSet<>()).add(from);
+                    if (from == 0 && m.has("rng")) eotHostRngByTurn.put(p.turn, m.getAsJsonObject("rng"));
                 }
                 queue.add(p);
                 return;
@@ -578,7 +621,6 @@ public class Session {
             }
             case "row": {
                 boolean now = m.has("now") && m.get("now").getAsBoolean(); // from a card in a fight
-                if (combat() && !now) return;
                 MP.Player a = MP.player(from), b = MP.player(m.get("with").getAsInt());
                 if (a == null || b == null) return;
                 if (!now) rowRequests.put(a.id, b.id);
@@ -632,7 +674,7 @@ public class Session {
         return true;
     }
 
-    private static void checkProposal() {
+    public static void checkProposal() {
         if (proposal == null) return;
         if (!allConnectedIn(proposal.yes)) return;
         // approved: everything not yet answered is dropped
@@ -644,14 +686,14 @@ public class Session {
         for (MP.Player p : MP.players) p.endTurnReady = false;
     }
 
-    private static void maybeEndTurn() {
+    public static void maybeEndTurn() {
         if (endTurnPending || !logicalPending.isEmpty() || proposal != null) return;
         for (MP.Player p : MP.players) if (p.connected && !p.dead && !p.endTurnReady) return;
         endTurnPending = true;
         for (MP.Player p : MP.players) p.endTurnReady = false;
     }
 
-    private static void maybeMove() {
+    public static void maybeMove() {
         HashMap<String, Integer> count = new HashMap<>();
         HashMap<String, int[]> byKey = new HashMap<>();
         for (MP.Player p : MP.players) {
@@ -1014,6 +1056,7 @@ public class Session {
         JsonObject o = MP.msg("delta");
         int seq = myDeltaSeq++;
         o.addProperty("seq", seq);
+        o.addProperty("turn", GameActionManager.turn);
         o.add("delta", d);
         JsonObject rec = new JsonObject();
         rec.addProperty("seq", seq);
@@ -1034,6 +1077,7 @@ public class Session {
         JsonObject o = MP.msg("delta");
         int seq = myDeltaSeq++;
         o.addProperty("seq", seq);
+        o.addProperty("turn", GameActionManager.turn);
         o.add("delta", d);
         if (eot) {
             o.addProperty("eot", true);
@@ -1055,18 +1099,22 @@ public class Session {
             sendLocalDelta(true);
             eotSent = true;
         }
-        // merge as they arrive (they sit in the queue)
-        while (!queue.isEmpty() && queue.peek().isDelta) {
-            Play p = queue.poll();
+        // merge this turn's deltas as they arrive; later turns' deltas stay queued
+        int t = GameActionManager.turn;
+        for (Iterator<Play> it = queue.iterator(); it.hasNext(); ) {
+            Play p = it.next();
+            if (!p.isDelta || p.turn > t) continue;
+            it.remove();
             if (p.from == MP.myId) myInflight.removeIf(o -> o.get("seq").getAsInt() == p.deltaSeq);
             else {
                 HashSet<Integer> inc = includedDeltas.get(p.from);
                 if (inc == null || !inc.remove(p.deltaSeq)) MonsterSync.applyDelta(p.delta, true);
             }
         }
-        for (MP.Player p : MP.players) if (p.connected && !p.dead && !eotReceived.contains(p.id)) return true;
-        if (!queue.isEmpty() && queue.peek().isDelta) return true;
-        if (eotHostRng != null) RngSync.apply(eotHostRng);
+        HashSet<Integer> got = eotByTurn.getOrDefault(t, new HashSet<>());
+        for (MP.Player p : MP.players) if (p.connected && !p.dead && !got.contains(p.id)) return true;
+        JsonObject hostRng = eotHostRngByTurn.get(t);
+        if (hostRng != null) RngSync.apply(hostRng);
         eotReleased = true;
         BoardGame.multiplayer.combat.MPHooks.enemyTurn = true;
         return false;
@@ -1077,6 +1125,7 @@ public class Session {
         BoardGame.multiplayer.combat.MPHooks.enemyTurn = false;
         if (!combat()) return;
         resetTurnState();
+        maybeEndTurn(); // readies for the next turn may already have arrived
         baseline = MonsterSync.capture();
         wasIdle = false; // the start-of-turn changes are sent when the game next settles
     }
@@ -1085,6 +1134,8 @@ public class Session {
         battleEndHandled = false;
         SavedSession.write();
         BoardGame.multiplayer.combat.DiePhase.reset();
+        // Messages for this room are held back until this game arrives (canProcess), so everything
+        // still in these structures belongs to earlier rooms.
         queue.clear();
         logicalPending.clear();
         cancelled.clear();
@@ -1102,6 +1153,7 @@ public class Session {
         mapVotes.clear();
         trackedTurn = -1;
         wasIdle = false;
+        BoardGame.multiplayer.ui.RelicPicker.onRoomEntered();
         BoardGame.multiplayer.combat.MPHooks.disposeDeferred();
     }
 

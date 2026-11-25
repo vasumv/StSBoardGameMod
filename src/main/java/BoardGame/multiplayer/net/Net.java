@@ -33,7 +33,9 @@ public class Net {
     private static boolean host;
     private static ServerSocket server;
     static final CopyOnWriteArrayList<Peer> peers = new CopyOnWriteArrayList<>();
-    static Peer toHost;
+    static volatile Peer toHost;
+    /** Client: messages sent while disconnected, delivered after reconnecting. */
+    private static final java.util.ArrayList<String> outbox = new java.util.ArrayList<>();
     private static final AtomicLong seq = new AtomicLong();
     private static int nextPeerId = 1;
     private static final Object stampLock = new Object();
@@ -44,6 +46,8 @@ public class Net {
     /** A connection to another player. */
     abstract static class Peer {
         int id;
+        /** Replaced by a reconnect: its disconnect is not announced. */
+        volatile boolean replaced = false;
 
         abstract void write(String line);
 
@@ -123,12 +127,12 @@ public class Net {
     }
 
     /** Host: a new player connected. */
+    /** Host: a new connection. It joins the broadcast only once it says hello (or resume). */
     static void welcome(Peer p) {
         JsonObject welcome = new JsonObject();
         welcome.addProperty("t", "welcome");
         welcome.addProperty("id", p.id);
         p.write(welcome.toString());
-        peers.add(p);
     }
 
     /** Client: connect again after a drop, without resetting anything else. */
@@ -179,26 +183,41 @@ public class Net {
     /** A line arrived from a peer (any thread). */
     static void received(Peer p, String line) {
         JsonObject o = new JsonParser().parse(line).getAsJsonObject();
-        if (host && "resume".equals(o.has("t") ? o.get("t").getAsString() : "")) {
-            resume(p, o.get("id").getAsInt(), o.get("n").getAsLong());
-            return;
-        }
-        if (host) stampAndBroadcast(o, p.id);
-        else inbox.add(o);
+        String t = o.has("t") ? o.get("t").getAsString() : "";
+        if (host) {
+            if (t.equals("resume")) {
+                resume(p, o.get("id").getAsInt(), o.get("n").getAsLong(), o.has("claim") && o.get("claim").getAsBoolean());
+                return;
+            }
+            if (t.equals("knock") && peers.contains(p)) {
+                welcome(p); // a Steam player rejoining a connection we never saw drop
+                return;
+            }
+            synchronized (stampLock) {
+                if (!peers.contains(p)) peers.add(p);
+            }
+            stampAndBroadcast(o, p.id);
+        } else inbox.add(o);
     }
 
     /** Host: a player came back. Give them their old id and replay what they missed. */
-    private static void resume(Peer p, int oldId, long lastSeen) {
+    private static void resume(Peer p, int oldId, long lastSeen, boolean claimOnly) {
         synchronized (stampLock) {
-            for (Peer q : peers) if (q != p && q.id == oldId) {
-                peers.remove(q);
-                q.close();
+            if (!claimOnly) {
+                // a reconnect: the old connection (if the host still has it) is replaced
+                for (Peer q : peers) if (q != p && q.id == oldId) {
+                    q.replaced = true;
+                    peers.remove(q);
+                    q.close();
+                }
             }
             p.id = oldId;
+            // catch up, then go live, inside the lock so nothing slips between
             for (String line : history) {
                 JsonObject o = new JsonParser().parse(line).getAsJsonObject();
                 if (o.get("n").getAsLong() > lastSeen) p.write(line);
             }
+            if (!peers.contains(p)) peers.add(p);
         }
         JsonObject back = new JsonObject();
         back.addProperty("t", "back");
@@ -209,6 +228,7 @@ public class Net {
     /** A peer went away (any thread). */
     static void lost(Peer p) {
         peers.remove(p);
+        if (p.replaced) return;
         JsonObject left = new JsonObject();
         left.addProperty("t", "left");
         if (host) {
@@ -234,8 +254,26 @@ public class Net {
 
     /** Send a message into the shared stream. It comes back through the inbox like everyone else's. */
     public static void send(JsonObject o) {
-        if (host) stampAndBroadcast(o, 0);
-        else if (toHost != null) toHost.write(o.toString());
+        if (host) {
+            stampAndBroadcast(o, 0);
+            return;
+        }
+        Peer h = toHost;
+        String t = o.has("t") ? o.get("t").getAsString() : "";
+        if (h != null) h.write(o.toString());
+        else if (!t.equals("status")) synchronized (outbox) {
+            outbox.add(o.toString());
+        }
+    }
+
+    /** Client, after reconnecting and resuming: deliver what was sent while disconnected. */
+    public static void flushOutbox() {
+        Peer h = toHost;
+        if (h == null) return;
+        synchronized (outbox) {
+            for (String line : outbox) h.write(line);
+            outbox.clear();
+        }
     }
 
     /** Called every frame on the game thread (Steam packets are polled, not pushed). */
@@ -256,6 +294,9 @@ public class Net {
         inbox.clear();
         seq.set(0);
         history.clear();
+        synchronized (outbox) {
+            outbox.clear();
+        }
         nextPeerId = 1;
         if (steamHosting || SteamNet.inLobby()) SteamNet.leaveLobby();
         steamHosting = false;
