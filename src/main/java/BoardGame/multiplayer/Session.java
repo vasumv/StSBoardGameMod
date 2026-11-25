@@ -533,6 +533,7 @@ public class Session {
                 pl.powers = m.get("powers").getAsString();
                 pl.gold = m.has("gold") ? m.get("gold").getAsInt() : pl.gold;
                 pl.where = m.has("where") ? m.get("where").getAsString() : pl.where;
+                if (m.has("deck")) pl.deck = m.get("deck").getAsString();
                 return;
             }
             case "rb": {
@@ -1225,7 +1226,8 @@ public class Session {
         }
         String where = AbstractDungeon.getCurrRoom() == null ? "" : AbstractDungeon.getCurrRoom().getClass().getSimpleName();
         String s = p.currentHealth + "/" + p.maxHealth + "/" + p.currentBlock + "/" + EnergyPanel.totalCount + "/"
-                + p.hand.size() + "/" + pw + "/" + p.gold + "/" + where;
+                + p.hand.size() + "/" + pw + "/" + p.gold + "/" + where + "/"
+                + BoardGame.multiplayer.ui.TeammateDecks.encode(p);
         if (s.equals(lastStatus)) return;
         lastStatus = s;
         JsonObject o = MP.msg("status");
@@ -1237,6 +1239,7 @@ public class Session {
         o.addProperty("powers", pw.toString());
         o.addProperty("gold", p.gold);
         o.addProperty("where", where);
+        o.addProperty("deck", BoardGame.multiplayer.ui.TeammateDecks.encode(p));
         MP.send(o);
     }
 

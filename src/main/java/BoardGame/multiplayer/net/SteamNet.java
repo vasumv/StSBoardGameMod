@@ -267,7 +267,9 @@ public class SteamNet {
                 }
                 SteamID owner = matchmaking.getLobbyOwner(id);
                 SteamPeer hostPeer = new SteamPeer(owner, 0);
-                if (MP.reconnecting) Net.rejoinSteam(hostPeer);
+                boolean sameRun = MP.reconnecting && MP.inRun && id.equals(lastLobby);
+                if (!sameRun) MP.reconnecting = false;
+                if (sameRun) Net.rejoinSteam(hostPeer);
                 else Net.joinSteam(hostPeer);
                 lobby = id;
                 lastLobby = id;

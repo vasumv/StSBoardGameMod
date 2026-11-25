@@ -179,6 +179,14 @@ public class Net {
         logger.info("joined " + address + ":" + port);
     }
 
+    /** Client: a fresh join (not a reconnect): nothing is held back any more. */
+    public static void clearResuming() {
+        resuming = false;
+        synchronized (outbox) {
+            outbox.clear();
+        }
+    }
+
     /** Client over Steam, reconnecting: keep everything else. */
     static void rejoinSteam(Peer hostPeer) {
         resuming = true;

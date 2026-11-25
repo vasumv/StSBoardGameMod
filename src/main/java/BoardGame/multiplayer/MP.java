@@ -30,6 +30,8 @@ public class MP {
         public boolean dead = false;
         public int gold;
         public String where = "";
+        /** Their deck (card id#upgrades|...), for the deck viewer. */
+        public String deck = null;
     }
 
     /** True once a session exists (hosting or joined), in the lobby or in a run. */
@@ -355,6 +357,8 @@ public class MP {
                 && com.megacrit.cardcrawl.core.CardCrawlGame.mode == com.megacrit.cardcrawl.core.CardCrawlGame.GameMode.CHAR_SELECT
                 && !RunStart.starting()) {
             inRun = false;
+            reconnecting = false;
+            Net.clearResuming();
             for (Player p : players) {
                 p.dead = false;
                 p.endTurnReady = false;
@@ -397,6 +401,8 @@ public class MP {
                     Session.toast("Reconnected");
                     return;
                 }
+                reconnecting = false;
+                Net.clearResuming(); // a fresh join: don't hold our messages for a resume
                 myId = m.get("id").getAsInt();
                 sendHello();
                 return;
