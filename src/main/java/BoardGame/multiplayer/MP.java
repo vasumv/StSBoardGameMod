@@ -343,6 +343,19 @@ public class MP {
         autoStartFromProperties();
         Net.poll();
         if (!active) return;
+        // back at the main menu after death/victory: this game's run is over; go back to the lobby
+        if (inRun && !com.megacrit.cardcrawl.core.CardCrawlGame.isInARun()
+                && com.megacrit.cardcrawl.core.CardCrawlGame.mainMenuScreen != null
+                && !com.megacrit.cardcrawl.core.CardCrawlGame.mainMenuScreen.isFadingOut
+                && com.megacrit.cardcrawl.core.CardCrawlGame.mode == com.megacrit.cardcrawl.core.CardCrawlGame.GameMode.CHAR_SELECT
+                && !RunStart.starting()) {
+            inRun = false;
+            for (Player p : players) {
+                p.dead = false;
+                p.endTurnReady = false;
+            }
+            Session.reset();
+        }
         JsonObject m;
         while ((m = Net.inbox.peek()) != null) {
             if (!Session.canProcess(m)) break;

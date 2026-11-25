@@ -33,6 +33,10 @@ public class SavedSession {
             o.addProperty("floor", AbstractDungeon.floorNum);
             o.addProperty("act", AbstractDungeon.actNum);
             o.add("roster", roster());
+            o.addProperty("lastStand", MP.lastStand);
+            o.addProperty("chooseRelic", MP.chooseRelic);
+            o.addProperty("sequential", MP.sequential);
+            o.addProperty("lastStandUsed", Session.lastStandUsed);
             file().writeString(o.toString(), false);
         } catch (Throwable t) {
             MP.logger.error("could not save the multiplayer session", t);
@@ -47,6 +51,7 @@ public class SavedSession {
             pj.addProperty("name", p.name);
             pj.addProperty("char", p.character);
             pj.addProperty("row", p.row);
+            pj.addProperty("dead", p.dead);
             roster.add(pj);
         }
         return roster;
@@ -129,10 +134,14 @@ public class SavedSession {
             MP.leave();
             return;
         }
+        RunStart.resetModStatics();
         int savedId = mine.get("me").getAsInt();
         if (!MP.isHost()) MP.claimId(savedId);
         MP.seed = hostSave.get("seed").getAsLong();
         MP.ascension = hostSave.get("asc").getAsInt();
+        MP.lastStand = hostSave.has("lastStand") && hostSave.get("lastStand").getAsBoolean();
+        MP.chooseRelic = hostSave.has("chooseRelic") && hostSave.get("chooseRelic").getAsBoolean();
+        MP.sequential = hostSave.has("sequential") && hostSave.get("sequential").getAsBoolean();
         MP.players.clear();
         for (JsonElement e : hostSave.getAsJsonArray("roster")) {
             JsonObject pj = e.getAsJsonObject();
@@ -141,10 +150,12 @@ public class SavedSession {
             p.name = pj.get("name").getAsString();
             p.character = pj.get("char").getAsInt();
             p.row = pj.get("row").getAsInt();
+            p.dead = pj.has("dead") && pj.get("dead").getAsBoolean();
             MP.players.add(p);
         }
         MP.inRun = true;
         Session.soloBonusRemoved = true; // already applied in the saved run
+        Session.lastStandUsed = hostSave.has("lastStandUsed") && hostSave.get("lastStandUsed").getAsBoolean();
         BoardGame.multiplayer.ui.LobbyScreen.open = false;
         // what the main menu's Continue button does
         CardCrawlGame.loadingSave = true;

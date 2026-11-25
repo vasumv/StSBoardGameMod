@@ -42,6 +42,7 @@ public class Net {
     private static boolean steamHosting = false;
     /** Host: every stamped message, so a reconnecting player can catch up. */
     private static final java.util.ArrayList<String> history = new java.util.ArrayList<>();
+    private static final java.util.ArrayList<Long> historyN = new java.util.ArrayList<>();
 
     /** A connection to another player. */
     abstract static class Peer {
@@ -57,22 +58,43 @@ public class Net {
     static class TcpPeer extends Peer {
         final Socket socket;
         final OutputStream out;
+        private final java.util.concurrent.LinkedBlockingQueue<String> sendQueue = new java.util.concurrent.LinkedBlockingQueue<>();
 
         TcpPeer(Socket s, int id) throws IOException {
             this.socket = s;
             this.out = s.getOutputStream();
             this.id = id;
             s.setTcpNoDelay(true);
+            s.setSoTimeout(15000); // the other side pings every few seconds; silence means the link is dead
+            Thread w = new Thread(() -> {
+                try {
+                    while (!socket.isClosed()) {
+                        String line = sendQueue.take();
+                        try {
+                            out.write((line + "\n").getBytes(StandardCharsets.UTF_8));
+                            out.flush();
+                        } catch (IOException e) {
+                            unsent(line);
+                            for (String rest : sendQueue) unsent(rest);
+                            sendQueue.clear();
+                            close();
+                            return;
+                        }
+                    }
+                } catch (InterruptedException ignored) {
+                }
+            }, "bg-mp-write");
+            w.setDaemon(true);
+            w.start();
         }
 
         @Override
-        synchronized void write(String line) {
-            try {
-                out.write((line + "\n").getBytes(StandardCharsets.UTF_8));
-                out.flush();
-            } catch (IOException e) {
-                close();
+        void write(String line) {
+            if (socket.isClosed()) {
+                unsent(line);
+                return;
             }
+            sendQueue.add(line);
         }
 
         @Override
@@ -135,8 +157,12 @@ public class Net {
         p.write(welcome.toString());
     }
 
+    /** Client: between reconnecting and resuming, all sends wait in the outbox. */
+    static volatile boolean resuming = false;
+
     /** Client: connect again after a drop, without resetting anything else. */
     public static void rejoin(String address, int port) throws IOException {
+        resuming = true;
         if (toHost != null) toHost.close();
         TcpPeer p = new TcpPeer(new Socket(address, port), 0);
         toHost = p;
@@ -155,6 +181,7 @@ public class Net {
 
     /** Client over Steam, reconnecting: keep everything else. */
     static void rejoinSteam(Peer hostPeer) {
+        resuming = true;
         toHost = hostPeer;
     }
 
@@ -189,15 +216,19 @@ public class Net {
                 resume(p, o.get("id").getAsInt(), o.get("n").getAsLong(), o.has("claim") && o.get("claim").getAsBoolean());
                 return;
             }
-            if (t.equals("knock") && peers.contains(p)) {
-                welcome(p); // a Steam player rejoining a connection we never saw drop
+            if (t.equals("ping")) return;
+            if (t.equals("knock")) {
+                welcome(p); // Steam: answer with the connection id; the player then says hello or resume
                 return;
             }
             synchronized (stampLock) {
-                if (!peers.contains(p)) peers.add(p);
+                if (!peers.contains(p)) {
+                    if (!t.equals("hello")) return; // not live yet: only hello (or resume) lets a connection in
+                    peers.add(p);
+                }
             }
             stampAndBroadcast(o, p.id);
-        } else inbox.add(o);
+        } else if (!t.equals("ping")) inbox.add(o);
     }
 
     /** Host: a player came back. Give them their old id and replay what they missed. */
@@ -213,10 +244,7 @@ public class Net {
             }
             p.id = oldId;
             // catch up, then go live, inside the lock so nothing slips between
-            for (String line : history) {
-                JsonObject o = new JsonParser().parse(line).getAsJsonObject();
-                if (o.get("n").getAsLong() > lastSeen) p.write(line);
-            }
+            for (int i = 0; i < history.size(); i++) if (historyN.get(i) > lastSeen) p.write(history.get(i));
             if (!peers.contains(p)) peers.add(p);
         }
         JsonObject back = new JsonObject();
@@ -246,7 +274,11 @@ public class Net {
             o.addProperty("from", from);
             o.addProperty("n", seq.getAndIncrement());
             String line = o.toString();
-            history.add(line);
+            String t = o.has("t") ? o.get("t").getAsString() : "";
+            if (!t.equals("status")) {
+                history.add(line);
+                historyN.add(o.get("n").getAsLong());
+            }
             for (Peer p : peers) p.write(line);
             inbox.add(o);
         }
@@ -260,14 +292,24 @@ public class Net {
         }
         Peer h = toHost;
         String t = o.has("t") ? o.get("t").getAsString() : "";
-        if (h != null) h.write(o.toString());
-        else if (!t.equals("status")) synchronized (outbox) {
+        boolean control = t.equals("resume") || t.equals("knock") || t.equals("hello") || t.equals("ping");
+        if (h != null && (!resuming || control)) h.write(o.toString());
+        else if (!t.equals("status") && !t.equals("ping")) synchronized (outbox) {
             outbox.add(o.toString());
+        }
+    }
+
+    /** Client: a line that could not be written (connection died) is kept for after reconnecting. */
+    static void unsent(String line) {
+        if (host || line.contains("\"t\":\"status\"") || line.contains("\"t\":\"ping\"")) return;
+        synchronized (outbox) {
+            outbox.add(line);
         }
     }
 
     /** Client, after reconnecting and resuming: deliver what was sent while disconnected. */
     public static void flushOutbox() {
+        resuming = false;
         Peer h = toHost;
         if (h == null) return;
         synchronized (outbox) {
@@ -276,8 +318,34 @@ public class Net {
         }
     }
 
+    private static Thread pinger;
+
+    /** Heartbeat on its own thread, so a long load screen doesn't look like a dead connection. */
+    private static synchronized void startPinger() {
+        if (pinger != null) return;
+        pinger = new Thread(() -> {
+            String ping = "{\"t\":\"ping\"}";
+            while (true) {
+                try {
+                    Thread.sleep(3000);
+                } catch (InterruptedException e) {
+                    return;
+                }
+                if (host) {
+                    for (Peer p : peers) if (p instanceof TcpPeer) p.write(ping);
+                } else {
+                    Peer h = toHost;
+                    if (h instanceof TcpPeer) h.write(ping);
+                }
+            }
+        }, "bg-mp-ping");
+        pinger.setDaemon(true);
+        pinger.start();
+    }
+
     /** Called every frame on the game thread (Steam packets are polled, not pushed). */
     public static void poll() {
+        startPinger();
         if (steamHosting || toHost instanceof SteamNet.SteamPeer) SteamNet.poll();
     }
 
@@ -294,6 +362,8 @@ public class Net {
         inbox.clear();
         seq.set(0);
         history.clear();
+        historyN.clear();
+        resuming = false;
         synchronized (outbox) {
             outbox.clear();
         }

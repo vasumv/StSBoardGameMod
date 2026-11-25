@@ -25,7 +25,38 @@ public class RunStart {
             BGWatcher.class};
     private static int selectStage = -1; // -1 idle, 0 pick character, 1 press proceed, 2 done
 
+    /**
+     * The mod keeps some decks and pools in static fields between runs in the same game
+     * session (map tokens, summon pools, the potion deck). Every player must start from the
+     * same state, whatever they played before, or maps and enemies differ between games.
+     */
+    public static void resetModStatics() {
+        Class<?>[] dungeons = {BoardGame.dungeons.BGExordium.class, BoardGame.dungeons.BGTheCity.class,
+                BoardGame.dungeons.BGTheBeyond.class, BoardGame.dungeons.BGTheEnding.class};
+        for (Class<?> c : dungeons) {
+            for (java.lang.reflect.Field f : c.getDeclaredFields()) {
+                if (!java.lang.reflect.Modifier.isStatic(f.getModifiers())) continue;
+                if (!java.util.Collection.class.isAssignableFrom(f.getType()) || !f.getName().toLowerCase().contains("pool"))
+                    continue;
+                try {
+                    f.setAccessible(true);
+                    ((java.util.Collection<?>) f.get(null)).clear();
+                } catch (Throwable t) {
+                    MP.logger.error("could not reset " + c.getSimpleName() + "." + f.getName(), t);
+                }
+            }
+        }
+        BoardGame.potions.PotionHelperPatch.potionDeck.clear();
+        BoardGame.relics.AbstractBGRelic.relicDeck.clear();
+        BoardGame.relics.AbstractBGRelic.bossRelicDeck.clear();
+        BoardGame.thedie.TheDie.initialRoll = 0;
+        BoardGame.thedie.TheDie.finalRelicRoll = 0;
+        BoardGame.thedie.TheDie.monsterRoll = 0;
+        Session.lastStandUsed = false;
+    }
+
     public static void begin() {
+        resetModStatics();
         BoardGame.multiplayer.ui.LobbyScreen.open = false;
         if (CardCrawlGame.mode != CardCrawlGame.GameMode.CHAR_SELECT || CardCrawlGame.mainMenuScreen == null) {
             Session.toast("Return to the main menu before starting a multiplayer run");
@@ -46,6 +77,11 @@ public class RunStart {
         CardCrawlGame.mainMenuScreen.isFadingOut = true;
         CardCrawlGame.mainMenuScreen.fadeOutMusic();
         selectStage = 0;
+    }
+
+    /** True from the start message until the run has begun in this game. */
+    public static boolean starting() {
+        return selectStage == 0 || selectStage == 1 || com.megacrit.cardcrawl.core.CardCrawlGame.loadingSave;
     }
 
     public static void update() {

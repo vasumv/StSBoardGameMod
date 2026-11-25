@@ -137,7 +137,13 @@ public class SteamNet {
             sendBuf.clear();
             sendBuf.put(b);
             sendBuf.flip();
-            networking.sendP2PPacket(to, sendBuf, SteamNetworking.P2PSend.Reliable, CHANNEL);
+            // a full send buffer can refuse a packet: retry briefly rather than drop it
+            for (int i = 0; i < 50; i++) {
+                if (networking.sendP2PPacket(to, sendBuf, SteamNetworking.P2PSend.Reliable, CHANNEL)) return;
+                sendBuf.rewind();
+                Thread.sleep(10);
+            }
+            Net.logger.error("Steam refused a packet after retries (" + b.length + " bytes)");
         } catch (Throwable t) {
             Net.logger.error("Steam send failed", t);
         }

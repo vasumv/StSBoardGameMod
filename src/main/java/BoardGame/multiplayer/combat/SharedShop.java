@@ -89,7 +89,17 @@ public class SharedShop {
             else pendingStock = m;
         } else if (type.equals("shopbuy")) {
             if (m.get("key").getAsLong() != key()) return;
-            onClaim(from, m.get("kind").getAsString(), m.get("id").getAsString());
+            onClaim(from, m.get("kind").getAsString(), m.get("id").getAsString(), m.get("slot").getAsInt());
+        } else if (type.equals("shoprelease")) {
+            if (m.get("key").getAsLong() != key() || from == MP.myId) return;
+            String k = m.get("kind").getAsString() + ":" + m.get("slot").getAsInt();
+            claims.remove(k);
+            ShopScreen s = AbstractDungeon.shopScreen;
+            int slot = m.get("slot").getAsInt();
+            if (s == null) return;
+            if (m.get("kind").getAsString().equals("relic")) {
+                if (slot >= 0 && slot < relics(s).size()) relics(s).get(slot).isPurchased = false;
+            } else if (slot >= 0 && slot < potions(s).size()) potions(s).get(slot).isPurchased = false;
         }
     }
 
@@ -129,7 +139,7 @@ public class SharedShop {
         public static SpireReturn<Void> prefix(StoreRelic __instance) {
             if (buying || !multi()) return SpireReturn.Continue();
             if (AbstractDungeon.player.gold < __instance.price) return SpireReturn.Continue(); // the game says no
-            send("relic", __instance.relic.relicId);
+            send("relic", __instance.relic.relicId, relics(AbstractDungeon.shopScreen).indexOf(__instance));
             return SpireReturn.Return();
         }
     }
@@ -140,18 +150,23 @@ public class SharedShop {
         public static SpireReturn<Void> prefix(StorePotion __instance) {
             if (buying || !multi()) return SpireReturn.Continue();
             if (AbstractDungeon.player.gold < __instance.price) return SpireReturn.Continue();
-            send("potion", __instance.potion.ID);
+            boolean freeSlot = false;
+            for (com.megacrit.cardcrawl.potions.AbstractPotion p : AbstractDungeon.player.potions)
+                freeSlot |= p instanceof com.megacrit.cardcrawl.potions.PotionSlot;
+            if (!freeSlot || AbstractDungeon.player.hasRelic("BGSozu") || AbstractDungeon.player.hasRelic("Sozu"))
+                return SpireReturn.Continue(); // the game explains why it can't be bought
+            send("potion", __instance.potion.ID, potions(AbstractDungeon.shopScreen).indexOf(__instance));
             return SpireReturn.Return();
         }
     }
 
     /** A purchase claim in the shared order: the first claimer buys, everyone else sees it sold. */
-    private static void onClaim(int from, String kind, String id) {
+    private static void onClaim(int from, String kind, String id, int slot) {
         if (claimsKey != key()) {
             claimsKey = key();
             claims.clear();
         }
-        String k = kind + ":" + id;
+        String k = kind + ":" + slot;
         Integer first = claims.putIfAbsent(k, from);
         ShopScreen s = AbstractDungeon.shopScreen;
         if (s == null) return;
@@ -160,33 +175,49 @@ public class SharedShop {
                 Session.toast(Session.nameOf(first) + " bought that first");
                 return;
             }
+            boolean bought = false;
             buying = true;
             try {
                 if (kind.equals("relic")) {
-                    for (StoreRelic r : new ArrayList<>(relics(s))) if (r.relic.relicId.equals(id) && !r.isPurchased) { r.purchaseRelic(); break; }
+                    ArrayList<StoreRelic> rs = relics(s);
+                    if (slot >= 0 && slot < rs.size() && !rs.get(slot).isPurchased) {
+                        rs.get(slot).purchaseRelic();
+                        bought = rs.get(slot).isPurchased;
+                    }
                 } else {
-                    for (StorePotion p : new ArrayList<>(potions(s))) if (p.potion.ID.equals(id) && !p.isPurchased) { p.purchasePotion(); break; }
+                    ArrayList<StorePotion> ps = potions(s);
+                    if (slot >= 0 && slot < ps.size() && !ps.get(slot).isPurchased) {
+                        ps.get(slot).purchasePotion();
+                        bought = ps.get(slot).isPurchased;
+                    }
                 }
             } finally {
                 buying = false;
+            }
+            if (!bought) { // couldn't buy after all: give the item back to the shop for everyone
+                JsonObject o = MP.msg("shoprelease");
+                o.addProperty("key", key());
+                o.addProperty("kind", kind);
+                o.addProperty("slot", slot);
+                MP.send(o);
             }
             return;
         }
         if (first != null) return;
         if (kind.equals("relic")) {
-            for (StoreRelic r : relics(s)) if (r.relic.relicId.equals(id)) r.isPurchased = true;
+            if (slot >= 0 && slot < relics(s).size()) relics(s).get(slot).isPurchased = true;
         } else {
-            for (StorePotion p : potions(s)) if (p.potion.ID.equals(id)) { p.isPurchased = true; break; }
+            if (slot >= 0 && slot < potions(s).size()) potions(s).get(slot).isPurchased = true;
         }
         Session.toast(Session.nameOf(from) + " bought " + id.replace("BoardGame:", ""));
     }
 
-    private static void send(String kind, String id) {
+    private static void send(String kind, String id, int slot) {
         JsonObject o = MP.msg("shopbuy");
         o.addProperty("key", key());
         o.addProperty("kind", kind);
         o.addProperty("id", id);
-        o.addProperty("slot", -1);
+        o.addProperty("slot", slot);
         MP.send(o);
     }
 }

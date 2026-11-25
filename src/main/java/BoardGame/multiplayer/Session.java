@@ -97,6 +97,7 @@ public class Session {
     /** End-of-turn deltas received, per turn (a faster game may already be on the next turn). */
     private static final HashMap<Integer, HashSet<Integer>> eotByTurn = new HashMap<>();
     private static final HashMap<Integer, JsonObject> eotHostRngByTurn = new HashMap<>();
+    private static final HashMap<Integer, Integer> eotRngFrom = new HashMap<>();
     public static boolean eotReleased = false;
     public static boolean sotCapturePending = false;
     private static JsonObject sotBaseline;
@@ -135,6 +136,7 @@ public class Session {
 
     public static void reset() {
         soloBonusRemoved = false;
+        lastStandUsed = false;
         BoardGame.multiplayer.ui.RelicPicker.reset();
         knownRelics.clear();
         queue.clear();
@@ -172,6 +174,7 @@ public class Session {
         int t = GameActionManager.turn;
         eotByTurn.keySet().removeIf(k -> k < t);
         eotHostRngByTurn.keySet().removeIf(k -> k < t);
+        eotRngFrom.keySet().removeIf(k -> k < t);
         eotReleased = false;
         // ready flags are cleared at a point in the shared stream (maybeEndTurn), never on local timing
     }
@@ -210,6 +213,8 @@ public class Session {
      * messages sent from a later room wait until this game has reached that room too.
      */
     public static boolean canProcess(JsonObject m) {
+        if (MP.inRun && CardCrawlGame.isInARun() && AbstractDungeon.currMapNode != null
+                && AbstractDungeon.getCurrRoom() != trackedRoom) return false; // let onRoomChanged run first
         if (!MP.inRun || !m.has("fl")) return true;
         int theirs = m.get("fl").getAsInt();
         if (theirs < 0) return true;
@@ -499,7 +504,13 @@ public class Session {
                 p.turn = m.has("turn") ? m.get("turn").getAsInt() : GameActionManager.turn;
                 if (p.eot) {
                     eotByTurn.computeIfAbsent(p.turn, k -> new HashSet<>()).add(from);
-                    if (from == 0 && m.has("rng")) eotHostRngByTurn.put(p.turn, m.getAsJsonObject("rng"));
+                    if (m.has("rng")) {
+                        MP.Player cur = eotRngFrom.containsKey(p.turn) ? MP.player(eotRngFrom.get(p.turn)) : null;
+                        if (cur == null || from < cur.id) {
+                            eotHostRngByTurn.put(p.turn, m.getAsJsonObject("rng"));
+                            eotRngFrom.put(p.turn, from);
+                        }
+                    }
                 }
                 queue.add(p);
                 return;
@@ -581,6 +592,7 @@ public class Session {
                 BoardGame.multiplayer.combat.SharedEvents.onMessage(type, from, m);
                 return;
             case "shopstock":
+            case "shoprelease":
             case "shopbuy":
                 BoardGame.multiplayer.combat.SharedShop.onMessage(type, from, m);
                 return;
@@ -1081,7 +1093,7 @@ public class Session {
         o.add("delta", d);
         if (eot) {
             o.addProperty("eot", true);
-            if (MP.isHost()) o.add("rng", RngSync.capture(RngSync.COMBAT));
+            o.add("rng", RngSync.capture(RngSync.COMBAT)); // everyone uses the lowest-id living player's
         }
         JsonObject rec = new JsonObject();
         rec.addProperty("seq", seq);
