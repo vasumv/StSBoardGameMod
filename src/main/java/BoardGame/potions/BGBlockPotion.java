@@ -37,6 +37,12 @@ public class BGBlockPotion extends AbstractPotion {
 
 
     public void use(AbstractCreature target) {
+        if (BoardGame.multiplayer.combat.OtherPlayers.multi()) {
+            final int amt = this.potency;
+            BoardGame.multiplayer.combat.OtherPlayers.askRecipient("Block Potion: who gets the Block?",
+                    id -> BoardGame.multiplayer.combat.OtherPlayers.giveBlock(id, amt, "Block Potion"));
+            return;
+        }
         addToBot((AbstractGameAction)new GainBlockAction((AbstractCreature)AbstractDungeon.player, (AbstractCreature)AbstractDungeon.player, this.potency));
     }
 

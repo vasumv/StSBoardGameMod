@@ -310,6 +310,8 @@ public class Session {
             } else if (a instanceof com.megacrit.cardcrawl.actions.common.DrawCardAction && a.target == me) {
                 kind = "draw";
                 amount = a.amount;
+            } else if (a instanceof com.megacrit.cardcrawl.actions.common.RemoveSpecificPowerAction && a.target == me) {
+                kind = "cleanse";
             } else if (a instanceof com.megacrit.cardcrawl.actions.common.ApplyPowerAction && a.target == me) {
                 AbstractPower p = basemod.ReflectionHacks.getPrivate(a,
                         com.megacrit.cardcrawl.actions.common.ApplyPowerAction.class, "powerToApply");
@@ -333,7 +335,8 @@ public class Session {
     }
 
     private static void receiveGive(int from, JsonObject m) {
-        if (m.get("to").getAsInt() != MP.myId) return;
+        int to = m.get("to").getAsInt();
+        if (to != MP.myId && !(to == -2 && from != MP.myId)) return;
         AbstractPlayer p = AbstractDungeon.player;
         if (p == null || !combat()) return;
         int amount = m.get("amount").getAsInt();
@@ -349,6 +352,11 @@ public class Session {
             case "draw":
                 am.addToBottom(new com.megacrit.cardcrawl.actions.common.DrawCardAction(p, amount));
                 break;
+            case "cleanse":
+                am.addToBottom(new com.megacrit.cardcrawl.actions.common.RemoveSpecificPowerAction(p, p, "BGWeakened"));
+                am.addToBottom(new com.megacrit.cardcrawl.actions.common.RemoveSpecificPowerAction(p, p, "BGVulnerable"));
+                toast(nameOf(from) + "'s " + m.get("card").getAsString() + " removed your Weak and Vulnerable");
+                return;
             case "power":
                 try {
                     Class<?> c = Class.forName(m.get("power").getAsString(), true, Session.class.getClassLoader());
@@ -569,11 +577,12 @@ public class Session {
                 return;
             }
             case "row": {
-                if (combat()) return;
+                boolean now = m.has("now") && m.get("now").getAsBoolean(); // from a card in a fight
+                if (combat() && !now) return;
                 MP.Player a = MP.player(from), b = MP.player(m.get("with").getAsInt());
                 if (a == null || b == null) return;
-                rowRequests.put(a.id, b.id);
-                Integer back = rowRequests.get(b.id);
+                if (!now) rowRequests.put(a.id, b.id);
+                Integer back = now ? Integer.valueOf(a.id) : rowRequests.get(b.id);
                 if (back == null || back != a.id) {
                     toast(a.name + " wants to switch rows with " + b.name);
                     return;
@@ -826,6 +835,7 @@ public class Session {
             trackedTurn = GameActionManager.turn;
             steps.clear();
             requestedCards.clear();
+            BoardGame.multiplayer.combat.OtherPlayers.newTurn();
         }
 
         boolean idle = UndoManager.isIdle();
@@ -857,6 +867,8 @@ public class Session {
                             BoardGame.thedie.TheDie.monsterRoll = r.get("die").getAsInt();
                         reapplyInflight();
                         showRemoteCard(r);
+                        if (r.has("cardId")) BoardGame.multiplayer.combat.OtherPlayers.onRemotePlay(resolving.from,
+                                r.get("cardId").getAsString(), r.get("upgraded").getAsBoolean());
                     } else {
                         dropStep(resolving.id);
                     }
@@ -932,7 +944,15 @@ public class Session {
         resolvingStarted = true;
     }
 
+    private static void cardExtras(AbstractCard c) {
+        if (c == null || c.rawDescription == null) return;
+        String d = c.rawDescription.toLowerCase();
+        if (d.contains("from all players")) BoardGame.multiplayer.combat.OtherPlayers.cleanse(-2, c.name);
+        if (d.contains("switch rows with another player")) BoardGame.multiplayer.combat.OtherPlayers.offerRowSwitch(c.name);
+    }
+
     private static void finishOwnPlay(boolean ok) {
+        if (ok && authorizedItem != null) cardExtras(authorizedItem.card);
         JsonObject o = MP.msg("done");
         o.addProperty("id", resolving.id);
         o.addProperty("ok", ok);

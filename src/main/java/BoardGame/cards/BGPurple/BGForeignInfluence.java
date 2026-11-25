@@ -23,6 +23,26 @@ public class BGForeignInfluence extends AbstractBGCard {
     }
 
     public void use(AbstractPlayer p, AbstractMonster m) {
+        String other = BoardGame.multiplayer.combat.OtherPlayers.lastOtherAttack;
+        if (BoardGame.multiplayer.combat.OtherPlayers.multi() && other != null) {
+            final boolean up = BoardGame.multiplayer.combat.OtherPlayers.lastOtherAttackUpgraded;
+            final String by = BoardGame.multiplayer.combat.OtherPlayers.lastOtherAttackBy;
+            final AbstractCard copy = com.megacrit.cardcrawl.helpers.CardLibrary.getCopy(other, up ? 1 : 0, 0);
+            java.util.ArrayList<String> opts = new java.util.ArrayList<>();
+            opts.add("Deal " + this.damage + " damage");
+            opts.add("Copy " + by + "'s " + (copy == null ? other : copy.name));
+            final int dmg = this.damage;
+            addToBot(BoardGame.multiplayer.ui.ChoicePrompt.action("Foreign Influence", opts, i -> {
+                if (i == 1 && copy != null) {
+                    copy.purgeOnUse = true;
+                    copy.freeToPlayOnce = true;
+                    com.megacrit.cardcrawl.dungeons.AbstractDungeon.actionManager.cardQueue.add(new com.megacrit.cardcrawl.cards.CardQueueItem(copy, m, 0, true, true));
+                } else {
+                    addToTop(new DamageAction(m, new DamageInfo(p, dmg, this.damageTypeForTurn), AbstractGameAction.AttackEffect.BLUNT_HEAVY));
+                }
+            }));
+            return;
+        }
         addToBot((AbstractGameAction)new DamageAction((AbstractCreature)m, new DamageInfo((AbstractCreature)p, this.damage, this.damageTypeForTurn), AbstractGameAction.AttackEffect.BLUNT_HEAVY));
     }
 

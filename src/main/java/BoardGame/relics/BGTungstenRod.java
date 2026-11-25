@@ -43,6 +43,11 @@ public class BGTungstenRod
     public void activateDieAbility(){
         flash();
         addToBot((AbstractGameAction)new RelicAboveCreatureAction((AbstractCreature)AbstractDungeon.player, this));
+        if (BoardGame.multiplayer.combat.OtherPlayers.multi()) {
+            BoardGame.multiplayer.combat.OtherPlayers.giveBlock(BoardGame.multiplayer.MP.myId, 1, "Tungsten Rod");
+            for (BoardGame.multiplayer.MP.Player q : BoardGame.multiplayer.combat.OtherPlayers.teammates())
+                BoardGame.multiplayer.combat.OtherPlayers.giveBlock(q.id, 1, "Tungsten Rod");
+        } else
         addToBot((AbstractGameAction)new GainBlockAction((AbstractCreature) AbstractDungeon.player, AMT));
         stopPulse();
     }

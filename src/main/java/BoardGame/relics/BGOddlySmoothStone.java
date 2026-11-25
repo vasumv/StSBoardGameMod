@@ -42,6 +42,10 @@ public class BGOddlySmoothStone
     public void activateDieAbility(){
         flash();
         addToBot((AbstractGameAction)new RelicAboveCreatureAction((AbstractCreature)AbstractDungeon.player, this));
+        if (BoardGame.multiplayer.combat.OtherPlayers.multi()) {
+            BoardGame.multiplayer.combat.OtherPlayers.askRecipient("Oddly Smooth Stone: who gets " + AMT + " Block?",
+                    id -> BoardGame.multiplayer.combat.OtherPlayers.giveBlock(id, AMT, "Oddly Smooth Stone"));
+        } else
         addToBot((AbstractGameAction)new GainBlockAction((AbstractCreature) AbstractDungeon.player, AMT));
         stopPulse();
     }
