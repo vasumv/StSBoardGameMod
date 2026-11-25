@@ -34,7 +34,12 @@
   Toolbox, Gambling Chip or Gambler's Brew. Everyone presses **Keep N** (or plays a potion /
   ends the turn); then die relics trigger. Cards can't be played before that.
 - Play cards whenever you like; plays from everyone resolve one at a time in order.
-- "Any player" cards: drag the card onto a teammate's panel to give it to them.
+- "Any player" cards: drag the card onto a teammate's panel to give it to them (Block,
+  Energy, Strength, card draw, removing Weak/Vulnerable). "All players" versions reach
+  everyone automatically.
+- Cards that let you switch rows (Dash, Swift Strike, Leap) ask who to switch with.
+  Foreign Influence offers to copy another player's last Attack this turn. Block Potion and
+  Oddly Smooth Stone ask who gets the Block; Tungsten Rod gives everyone 1 Block.
 - **End Turn** marks you ready; enemies act when everyone is ready.
 - **History** (top left): click a play to propose undoing back to before it; everyone
   must accept.
