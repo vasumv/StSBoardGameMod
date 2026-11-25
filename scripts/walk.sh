@@ -5,7 +5,15 @@ B=$(cd "$(dirname "$0")" && pwd); Q=$B/q.sh
 nodes() { $Q p1 "mp map" | sed 's/.*next://' ; }
 for f in $(seq 1 ${1:-5}); do
   $Q p1 skiproom >/dev/null; $Q p2 skiproom >/dev/null; sleep 2
-  nxt=$(nodes | awk '{print $1}'); [ -z "$nxt" ] && { echo "floor $f: no next room ($($Q p1 'mp map' | cut -c1-80))"; break; }
+  nxt=$(nodes | awk '{print $1}')
+  if [ -z "$nxt" ]; then
+    # after a boss: Proceed to the boss chest, take nothing, Proceed to the next act
+    for p in p1 p2; do $Q $p proceed >/dev/null; done; sleep 6
+    for p in p1 p2; do $Q $p proceed >/dev/null; done; sleep 15
+    nxt=$(nodes | awk '{print $1}')
+    [ -z "$nxt" ] && { echo "floor $f: no next room ($($Q p1 'mp map' | cut -c1-80))"; break; }
+    echo "--- next act: $($Q p1 state | head -1 | cut -c1-40)"
+  fi
   xy=${nxt%%=*}; kind=${nxt#*=}; x=${xy%,*}; y=${xy#*,}
   $Q p1 "mp vote $x $y" >/dev/null; $Q p2 "mp vote $x $y" >/dev/null; sleep 6
   ph1=$($Q p1 "mp map" | grep -o "phase=[A-Z]*"); ph2=$($Q p2 "mp map" | grep -o "phase=[A-Z]*")

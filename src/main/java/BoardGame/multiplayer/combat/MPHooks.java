@@ -280,6 +280,23 @@ public class MPHooks {
             if (!multi() || optionalEventFight() || __result == null) return __result;
             int n = MP.playerCount();
             ArrayList<AbstractMonster> all = new ArrayList<>(__result.monsters);
+            boolean sentries = !all.isEmpty();
+            for (AbstractMonster m : all) sentries &= m instanceof BoardGame.monsters.bgexordium.BGSentry;
+            if (sentries) {
+                // the Sentries card: 3 Sentries in every player's row
+                String[] beh = {"3D", "D3", "2D"};
+                float[][] pos = {{-330f, 25f}, {-85f, 10f}, {140f, 30f}};
+                ArrayList<AbstractMonster> rows = new ArrayList<>();
+                for (int r = 0; r < n; r++) {
+                    for (int k = 0; k < 3; k++) {
+                        AbstractMonster m = r == 0 && k < all.size() ? all.get(k)
+                                : new BoardGame.monsters.bgexordium.BGSentry(pos[k][0], pos[k][1], beh[k]);
+                        MultiCreature.Field.currentRow.set(m, r);
+                        rows.add(m);
+                    }
+                }
+                return finishGroup(rows);
+            }
             AbstractMonster elite = null;
             for (AbstractMonster m : all) if (m.type == AbstractMonster.EnemyType.ELITE) { elite = m; break; }
             if (elite == null && !all.isEmpty()) elite = all.get(0);
@@ -299,9 +316,26 @@ public class MPHooks {
         @SpirePostfixPatch
         public static MonsterGroup postfix(MonsterGroup __result) {
             if (!multi() || __result == null) return __result;
+            int n = MP.playerCount();
             for (AbstractMonster m : __result.monsters) {
                 MultiCreature.Field.currentRow.set(m, 0);
-                scaleHp(m, MP.playerCount());
+                scaleHp(m, n);
+            }
+            // Awakened One: 2 Cultists per player, two in each row
+            boolean awakened = false;
+            for (AbstractMonster m : __result.monsters) awakened |= m instanceof BoardGame.monsters.bgbeyond.BGAwakenedOne;
+            if (awakened) {
+                ArrayList<AbstractMonster> cultists = new ArrayList<>();
+                for (AbstractMonster m : __result.monsters)
+                    if (m instanceof BoardGame.monsters.bgexordium.BGCultist) cultists.add(m);
+                while (cultists.size() < 2 * n && cultists.size() >= 2) {
+                    int k = cultists.size();
+                    AbstractMonster c = new BoardGame.monsters.bgexordium.BGCultist(k % 2 == 0 ? -590f : -298f,
+                            k % 2 == 0 ? 10f : -10f, false);
+                    __result.monsters.add(0, c);
+                    cultists.add(c);
+                }
+                for (int i = 0; i < cultists.size(); i++) MultiCreature.Field.currentRow.set(cultists.get(i), (i / 2) % n);
             }
             MonsterSync.sharedRoom = AbstractDungeon.getCurrRoom();
             MonsterSync.resetIds();

@@ -199,6 +199,7 @@ public class DebugChannel {
             }
             case "skiproom":
                 // test helper: finish the current non-combat room and open the map
+                if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.MAP) return "already on the map";
                 if (AbstractDungeon.isScreenUp) AbstractDungeon.closeCurrentScreen();
                 AbstractDungeon.getCurrRoom().phase = com.megacrit.cardcrawl.rooms.AbstractRoom.RoomPhase.COMPLETE;
                 AbstractDungeon.dungeonMapScreen.open(false);
