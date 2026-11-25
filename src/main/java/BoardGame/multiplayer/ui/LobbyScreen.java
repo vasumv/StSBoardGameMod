@@ -194,11 +194,14 @@ public class LobbyScreen {
         if (MP.isHost()) {
             if (button(sb, clicked, x + 420, y + 30, 420, 56, "Last Stand (optional rule): " + (MP.lastStand ? "On" : "Off"),
                     MP.lastStand)) MP.setLastStand(!MP.lastStand);
+            if (button(sb, clicked, x, y + 94, 400, 50, "Sequential Turns: " + (MP.sequential ? "On" : "Off"),
+                    MP.sequential)) MP.setSequential(!MP.sequential);
             if (button(sb, clicked, x + 420, y + 94, 420, 50, "Choose Your Relic (optional rule): "
                     + (MP.chooseRelic ? "On" : "Off"), MP.chooseRelic)) MP.setChooseRelic(!MP.chooseRelic);
         } else if (sb != null) {
             text(sb, "Last Stand: " + (MP.lastStand ? "On" : "Off") + "    Choose Your Relic: "
-                    + (MP.chooseRelic ? "On" : "Off"), x + 420, y + 40, Settings.CREAM_COLOR);
+                    + (MP.chooseRelic ? "On" : "Off") + "    Sequential Turns: " + (MP.sequential ? "On" : "Off"),
+                    x + 420, y + 40, Settings.CREAM_COLOR);
         }
         com.google.gson.JsonObject saved = MP.isHost() ? BoardGame.multiplayer.SavedSession.read() : null;
         if (saved != null && button(sb, clicked, PX + 220, PY + PH - 80, 300, 56,

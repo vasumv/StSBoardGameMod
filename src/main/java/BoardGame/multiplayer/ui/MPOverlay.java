@@ -263,6 +263,8 @@ public class MPOverlay implements PostRenderSubscriber {
             lines.add("You" + (me != null && me.endTurnReady ? ": READY (click End Turn again to cancel)" : ""));
             if (false) lines.add("You: row " + (MP.myRow() + 1) + (me != null && me.endTurnReady
                     ? "  [READY - click End Turn again to cancel]" : ""));
+            MP.Player actor = Session.currentActor();
+            if (actor != null) lines.add(actor.id == MP.myId ? "Your turn (Sequential Turns)" : actor.name + "'s turn");
             String r = Session.resolvingLabel();
             if (r != null) lines.add("Playing: " + r);
             for (String q : Session.queuedLabels()) lines.add("Queued: " + q);

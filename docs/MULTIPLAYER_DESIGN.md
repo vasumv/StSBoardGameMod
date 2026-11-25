@@ -40,15 +40,20 @@ reference implementation: `reference/enemy_audit.md`, `reference/enemy_mp_data.j
 
 ## Known gaps
 
-- Untested in game since the latest batch (compile-checked only): Steam lobbies,
-  shared merchant, boss relic count, keys, party events (Lab, Dead Adventurer, Big
-  Fish), relic deck removals, acts-last, per-player enemy values, Sentries per row,
-  Awakened One Cultists, partial all-player hits. Acts 2-3 untested in multiplayer.
-- Steam: needs two Steam accounts to verify. Accepting an invite while the game is
-  closed may not join automatically (ModTheSpire may not pass +connect_lobby); start
-  the game first, then accept.
-- Snake Plant's A7 card (second hit hits everyone) is not in the mod at all.
-- Ancient Temple (escalating cost) is not an event in this mod.
+- Everything since the Act 1 walk-through is compile-checked only (not run in game):
+  Steam lobbies, reconnect, save/continue, shared merchant, boss relic count, keys,
+  party events (Neow start, Lab, Dead Adventurer, Big Fish, Ancient Temple), relic deck
+  removals, acts-last, per-player enemy values, Sentries per row, Awakened One
+  Cultists, partial all-player hits, new enemy cards (Snake Plant A7, Mugger, Mystic,
+  Taskmaster slavers), optional rules (Last Stand, Choose Your Relic, Sequential Turns).
+  Acts 2-3 have not been played in multiplayer.
+- Steam: needs two Steam accounts to verify. Accepting an invite while the game is closed
+  may not join automatically (ModTheSpire may not pass +connect_lobby); start the game
+  first, then accept.
+- Sequential Turns is approximate: turn order and who may act follow the rule, but
+  everyone's start-of-turn draw still happens at the start of the round.
+- The host is the hub: if the host disconnects, the run cannot continue (clients
+  reconnect to the host, not the other way round). Use Continue saved run.
 
 ## What the code investigation found
 

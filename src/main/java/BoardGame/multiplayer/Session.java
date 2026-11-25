@@ -193,8 +193,24 @@ public class Session {
     // ---------- local requests ----------
 
     /** Called when the local player releases a card: send it to the shared queue instead of playing it. */
+    /** Sequential Turns: whose turn it is (lowest row still playing), or null when everyone plays at once. */
+    public static MP.Player currentActor() {
+        if (!MP.sequential) return null;
+        MP.Player best = null;
+        for (MP.Player p : MP.players) {
+            if (!p.connected || p.dead || p.endTurnReady) continue;
+            if (best == null || p.row < best.row) best = p;
+        }
+        return best;
+    }
+
     public static void requestPlay(CardQueueItem item) {
         if (item.card == null) return;
+        MP.Player actor = currentActor();
+        if (actor != null && actor.id != MP.myId) {
+            toast("It's " + actor.name + "'s turn");
+            return;
+        }
         if (BoardGame.multiplayer.combat.DiePhase.deciding()) {
             toast("Keep or change the die first");
             return;
@@ -221,6 +237,11 @@ public class Session {
     public static void toggleReady() {
         BoardGame.multiplayer.combat.DiePhase.confirm(); // ending the turn accepts the die
         MP.Player me = MP.me();
+        MP.Player actor = currentActor();
+        if (actor != null && actor.id != MP.myId && (me == null || !me.endTurnReady)) {
+            toast("It's " + actor.name + "'s turn");
+            return;
+        }
         JsonObject o = MP.msg("ready");
         o.addProperty("v", me == null || !me.endTurnReady);
         MP.send(o);

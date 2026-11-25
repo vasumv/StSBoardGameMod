@@ -20,7 +20,11 @@
 - **Same network / Tailscale / forwarded port:** the host clicks **Host on port 7777**; the
   panel lists their addresses. Others type or paste the address (`192.168.1.20:7777`) and
   **Join**.
-- Everyone picks a character. The host picks the ascension level and clicks **Start run**.
+- Everyone picks a character. The host picks the ascension level and the optional rules
+  (Last Stand, Choose Your Relic, Sequential Turns) and clicks **Start run**.
+- **Continue saved run**: the party is saved at every room. After quitting, everyone opens
+  the lobby again; the host clicks **Continue saved run** and everyone loads their own save.
+- If your connection to the host drops, your game reconnects by itself and catches up.
 
 ## In a fight
 
@@ -34,6 +38,14 @@
 - **End Turn** marks you ready; enemies act when everyone is ready.
 - **History** (top left): click a play to propose undoing back to before it; everyone
   must accept.
+
+## Party decisions
+
+- Neow: the host picks where the party starts (Act 1 or a Quick Start act).
+- Dead Adventurer: one choice for the party, made by the host; one shared roll; the elite
+  fight is for everyone. Lab: one party roll; the extra potion goes to one player.
+- Big Fish: everyone must take a different option. Ancient Temple: each player who goes
+  inside after another loses 1 more HP.
 
 ## Between fights
 

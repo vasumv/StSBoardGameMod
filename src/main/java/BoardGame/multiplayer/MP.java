@@ -44,6 +44,15 @@ public class MP {
     public static String lastError = "";
     /** Optional rule "Last Stand": in a Boss fight, the others fight on when a player dies. */
     public static boolean lastStand = false;
+    /** Optional rule "Sequential Turns": players act one at a time, bottom row first. */
+    public static boolean sequential = false;
+
+    public static void setSequential(boolean on) {
+        if (!isHost() || inRun) return;
+        sequential = on;
+        sendCfg();
+    }
+
     /** Optional rule "Choose Your Relic": Elite/Treasure relics are revealed one per player and picked. */
     public static boolean chooseRelic = false;
 
@@ -58,6 +67,7 @@ public class MP {
         o.addProperty("asc", ascension);
         o.addProperty("lastStand", lastStand);
         o.addProperty("chooseRelic", chooseRelic);
+        o.addProperty("sequential", sequential);
         Net.send(o);
     }
 
@@ -253,6 +263,7 @@ public class MP {
         ascension = 0;
         lastStand = false;
         chooseRelic = false;
+        sequential = false;
         lastSeq = -1;
         reconnecting = false;
         Session.reset();
@@ -281,6 +292,7 @@ public class MP {
         o.addProperty("asc", ascension);
         o.addProperty("lastStand", lastStand);
         o.addProperty("chooseRelic", chooseRelic);
+        o.addProperty("sequential", sequential);
         JsonArray roster = new JsonArray();
         int row = 0;
         for (Player p : players) {
@@ -386,6 +398,7 @@ public class MP {
                 ascension = m.get("asc").getAsInt();
                 if (m.has("lastStand")) lastStand = m.get("lastStand").getAsBoolean();
                 if (m.has("chooseRelic")) chooseRelic = m.get("chooseRelic").getAsBoolean();
+                if (m.has("sequential")) sequential = m.get("sequential").getAsBoolean();
                 return;
             case "char": {
                 Player p = player(from);
@@ -411,6 +424,7 @@ public class MP {
                 ascension = m.has("asc") ? m.get("asc").getAsInt() : 0;
                 lastStand = m.has("lastStand") && m.get("lastStand").getAsBoolean();
                 chooseRelic = m.has("chooseRelic") && m.get("chooseRelic").getAsBoolean();
+                sequential = m.has("sequential") && m.get("sequential").getAsBoolean();
                 inRun = true;
                 logger.info("starting multiplayer run, seed " + seed + ", " + players.size() + " players, I am "
                         + myId + " row " + myRow());
