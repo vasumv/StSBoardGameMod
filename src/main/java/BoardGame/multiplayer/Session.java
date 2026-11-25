@@ -484,6 +484,16 @@ public class Session {
             case "give":
                 receiveGive(from, m);
                 return;
+            case "key":
+                BoardGame.multiplayer.combat.SharedRewards.onMessage(type, from, m);
+                return;
+            case "fish":
+                BoardGame.multiplayer.combat.SharedEvents.onMessage(type, from, m);
+                return;
+            case "shopstock":
+            case "shopbuy":
+                BoardGame.multiplayer.combat.SharedShop.onMessage(type, from, m);
+                return;
             case "die":
             case "lock":
                 BoardGame.multiplayer.combat.DiePhase.onMessage(type, from, m);

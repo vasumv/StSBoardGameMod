@@ -26,6 +26,7 @@ public class RunStart {
     private static int selectStage = -1; // -1 idle, 0 pick character, 1 press proceed, 2 done
 
     public static void begin() {
+        BoardGame.multiplayer.ui.LobbyScreen.open = false;
         if (CardCrawlGame.mode != CardCrawlGame.GameMode.CHAR_SELECT || CardCrawlGame.mainMenuScreen == null) {
             Session.toast("Return to the main menu before starting a multiplayer run");
             MP.logger.error("cannot start run: not at the main menu");
@@ -39,8 +40,8 @@ public class RunStart {
         Settings.isEndless = false;
         ModHelper.setModsFalse();
         AbstractDungeon.generateSeeds();
-        AbstractDungeon.isAscensionMode = false;
-        AbstractDungeon.ascensionLevel = 0;
+        AbstractDungeon.isAscensionMode = MP.ascension > 0;
+        AbstractDungeon.ascensionLevel = MP.ascension;
         CardCrawlGame.chosenCharacter = MultiCharacter.Enums.BG_MULTICHARACTER;
         CardCrawlGame.mainMenuScreen.isFadingOut = true;
         CardCrawlGame.mainMenuScreen.fadeOutMusic();

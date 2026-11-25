@@ -1,4 +1,5 @@
 package BoardGame.monsters.bgcity;
+import BoardGame.monsters.PerPlayer;
 
 import BoardGame.monsters.AbstractBGMonster;
 import BoardGame.monsters.BGDamageIcons;
@@ -86,7 +87,12 @@ public class BGBronzeAutomaton extends AbstractBGMonster implements BGDamageIcon
             AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new SFXAction("MONSTER_AUTOMATON_SUMMON",
                     MathUtils.random(-0.1F, 0.1F)));
         }
-        AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new SpawnMonsterAction(new BGBronzeOrb(-300.0F, 200.0F, 0), false));
+        // "Start of combat: summon 1 Bronze Orb per player."
+        int orbs = PerPlayer.count();
+        for (int i = 0; i < orbs; i++) {
+            float x = (i % 2 == 0 ? -1.0F : 1.0F) * (300.0F + 200.0F * (i / 2));
+            AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new SpawnMonsterAction(new BGBronzeOrb(x, 200.0F, i), false));
+        }
     }
 
 

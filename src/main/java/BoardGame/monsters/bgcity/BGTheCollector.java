@@ -1,4 +1,5 @@
 package BoardGame.monsters.bgcity;
+import BoardGame.monsters.PerPlayer;
 
 import BoardGame.cards.BGStatus.BGBurn;
 import BoardGame.cards.BGStatus.BGDazed;
@@ -107,13 +108,24 @@ public class BGTheCollector extends AbstractBGMonster implements BGDamageIcons {
 
     }
 
+    /** Torch Head slot i (1-based): two per row of slots; slots 1 and 2 are the solo positions. */
+    private float slotX(int i) {
+        return this.spawnX + -185.0F * (((i - 1) % 2) + 1);
+    }
+
+    private float slotY(int i) {
+        return 230.0F * ((i - 1) / 2);
+    }
+
     public void takeTurn() {
         int i;
         switch (this.nextMove) {
             case 1:
                 if(this.initialSpawn) {
-                    for (i = 1; i < 3; i++) {
-                        AbstractMonster m = new BGTorchHead(this.spawnX + -185.0F * i, MathUtils.random(-5.0F, 25.0F));
+                    // "Summon Torch Heads until there are 2 per player."
+                    int slots = 2 * PerPlayer.count();
+                    for (i = 1; i <= slots; i++) {
+                        AbstractMonster m = new BGTorchHead(slotX(i), slotY(i) + MathUtils.random(-5.0F, 25.0F));
                         AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new SFXAction("MONSTER_COLLECTOR_SUMMON"));
                         AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new SpawnMonsterAction(m, false));
                         this.enemySlots.put(Integer.valueOf(i), m);
@@ -122,7 +134,7 @@ public class BGTheCollector extends AbstractBGMonster implements BGDamageIcons {
                 }else{
                     for (Map.Entry<Integer, AbstractMonster> m : this.enemySlots.entrySet()) {
                         if (((AbstractMonster) m.getValue()).isDying) {
-                            AbstractMonster newMonster = new BGTorchHead(this.spawnX + -185.0F * ((Integer) m.getKey()).intValue(), MathUtils.random(-5.0F, 25.0F));
+                            AbstractMonster newMonster = new BGTorchHead(slotX(m.getKey()), slotY(m.getKey()) + MathUtils.random(-5.0F, 25.0F));
                             int key = ((Integer) m.getKey()).intValue();
                             this.enemySlots.put(Integer.valueOf(key), newMonster);
                             AbstractDungeon.actionManager.addToBottom((AbstractGameAction) new SpawnMonsterAction(newMonster, false));

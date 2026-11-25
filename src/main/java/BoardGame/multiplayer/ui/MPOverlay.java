@@ -128,8 +128,13 @@ public class MPOverlay implements PostRenderSubscriber {
         boolean down = Gdx.input.isButtonPressed(Input.Buttons.LEFT);
         clicked = down && !wasDown;
         wasDown = down;
+        if (onMainMenu()) LobbyScreen.typing();
         if (!clicked) return;
         if (onMainMenu()) {
+            LobbyScreen.frame(null, true);
+            return;
+        }
+        if (false) {
             if (!MP.active) {
                 if (hostBtn.clicked()) {
                     MP.myName = profileName();
@@ -213,7 +218,7 @@ public class MPOverlay implements PostRenderSubscriber {
     }
 
     private static void render(SpriteBatch sb) {
-        if (onMainMenu()) renderLobby(sb);
+        if (onMainMenu()) LobbyScreen.frame(sb, false);
         else if (MP.inRun && CardCrawlGame.isInARun() && AbstractDungeon.player != null) renderRun(sb);
         renderToasts(sb);
     }

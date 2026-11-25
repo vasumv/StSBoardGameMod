@@ -1,6 +1,7 @@
 //TODO: there is an unhandled edge case where right dagger kills itself via Thorns after Reptomancer has already checked if daggers are dead
 
 package BoardGame.monsters.bgbeyond;
+import BoardGame.monsters.PerPlayer;
 
 import BoardGame.cards.BGStatus.BGDazed;
 import BoardGame.monsters.AbstractBGMonster;
@@ -104,6 +105,12 @@ public class BGReptomancer extends AbstractBGMonster implements BGDamageIcons {
     }
 
 
+    /** 2 Dagger slots per player (solo: 2). */
+    private void ensureDaggerSlots() {
+        int want = this.daggersPerSpawn * PerPlayer.count();
+        if (this.daggers.length < want) this.daggers = java.util.Arrays.copyOf(this.daggers, want);
+    }
+
     public void takeTurn() {
         int daggersSpawned, i;
         switch (this.nextMove) {
@@ -111,10 +118,12 @@ public class BGReptomancer extends AbstractBGMonster implements BGDamageIcons {
                 AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new ChangeStateAction(this, "SUMMON"));
                 AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new WaitAction(0.5F));
 
+                // "Summon Daggers until there are 2 per player."
+                ensureDaggerSlots();
                 daggersSpawned = 0;
-                for (i = 0; daggersSpawned < this.daggersPerSpawn && i < this.daggers.length; i++) {
+                for (i = 0; daggersSpawned < this.daggers.length && i < this.daggers.length; i++) {
                     if (this.daggers[i] == null || this.daggers[i].isDeadOrEscaped()) {
-                        BGSnakeDagger daggerToSpawn = new BGSnakeDagger(POSX[i], POSY[i]);
+                        BGSnakeDagger daggerToSpawn = new BGSnakeDagger(POSX[i % POSX.length], POSY[i % POSY.length] + 230.0F * (i / POSX.length));
                         this.daggers[i] = daggerToSpawn;
                         AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new SpawnMonsterAction(daggerToSpawn, false));
                         daggersSpawned++;

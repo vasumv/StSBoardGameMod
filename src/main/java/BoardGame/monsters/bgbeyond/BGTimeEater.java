@@ -2,6 +2,7 @@
 
 
 package BoardGame.monsters.bgbeyond;
+import BoardGame.monsters.PerPlayer;
 
 import BoardGame.cards.BGStatus.BGDazed;
 import BoardGame.cards.BGStatus.BGSlimed;
@@ -201,7 +202,7 @@ public class BGTimeEater extends AbstractBGMonster implements BGDamageIcons {
                 AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new TextAboveCreatureAction((AbstractCreature)this, "Haste"));    //TODO: localization
                 addToBot((AbstractGameAction) new RemoveSpecificPowerAction((AbstractCreature) this, (AbstractCreature) this, "BGTimeEaterPhase2WarningPower"));
                 AbstractDungeon.actionManager.addToBottom((AbstractGameAction) new HealAction((AbstractCreature) this, (AbstractCreature) this,
-                        (AbstractDungeon.ascensionLevel<10) ? 30 : 32));
+                        PerPlayer.scale((AbstractDungeon.ascensionLevel<10) ? 30 : 32))); // "per player"
                 AbstractDungeon.actionManager.addToBottom((AbstractGameAction) new ApplyPowerAction((AbstractCreature)this, (AbstractCreature)this, (AbstractPower)new StrengthPower((AbstractCreature)this, 1), 1));
                 AbstractDungeon.actionManager.addToBottom((AbstractGameAction) new RemoveSpecificPowerAction((AbstractCreature)this,(AbstractCreature)this,"BGVulnerable"));
                 AbstractDungeon.actionManager.addToBottom((AbstractGameAction) new RemoveSpecificPowerAction((AbstractCreature)this,(AbstractCreature)this,"BGWeakened"));

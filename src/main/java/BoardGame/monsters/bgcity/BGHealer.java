@@ -1,4 +1,5 @@
 package BoardGame.monsters.bgcity;
+import BoardGame.monsters.ActsLast;
 
 import BoardGame.dungeons.BGTheCity;
 import BoardGame.monsters.AbstractBGMonster;
@@ -24,7 +25,7 @@ import com.megacrit.cardcrawl.powers.StrengthPower;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class BGHealer extends AbstractBGMonster implements DieControlledMoves, BGDamageIcons {
+public class BGHealer extends AbstractBGMonster implements DieControlledMoves, BGDamageIcons, ActsLast {
     public static final String ID = "BGHealer";
     private static final MonsterStrings monsterStrings = CardCrawlGame.languagePack.getMonsterStrings("Healer");
     public static final String NAME = monsterStrings.NAME;
@@ -137,6 +138,11 @@ public class BGHealer extends AbstractBGMonster implements DieControlledMoves, B
     protected void getMove(int num) {
         setMove((byte) 0, AbstractMonster.Intent.NONE);
     }
+    /** Str to ALL enemies (byte 3) acts last. */
+    public boolean actsLast() {
+        return this.nextMove == BUFF;
+    }
+
     public void dieMove(int roll){
         final Logger logger = LogManager.getLogger(DieControlledMoves.class.getName());
         char move = '-';

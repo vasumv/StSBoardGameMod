@@ -26,19 +26,25 @@ reference implementation: `reference/enemy_audit.md`, `reference/enemy_mp_data.j
   shared as additive deltas. Poison ticks once per round (host).
 - Outside combat: party votes on the map (most votes wins, ties by the die);
   rows switch when both players ask; potions can be given; gold can be paid toward
-  a teammate's purchase at a shop or event; a boss relic taken by one player
-  disappears for the others; a death ends the run for everyone.
+  a teammate's purchase at a shop or event; a death ends the run for everyone.
+- Merchant: one stock for the party (the host's 3 relics and 3 potions); an item
+  one player buys is gone for everyone. Card offers and card removal stay per player.
+- Boss chest: one boss relic per player + 1; a relic one player takes disappears for
+  the others.
+- Keys: Ruby (everyone recalls at the same campfire) and Sapphire (everyone takes the
+  key at the same chest) are granted only when the whole party does it.
+- Events: Lab and Dead Adventurer use one party roll; the Lab's extra potion goes to
+  one player (bottom row); Big Fish options must all be different.
+- Lobby: main menu "Multiplayer" button: host or join (type or paste the address),
+  pick a character; the host picks the ascension level and starts the run.
 
 ## Known gaps
 
-- Merchant stock is per player, not one shared stock; boss relic count stays 3.
 - Relic/potion decks are per-game copies offset per player, not one shared deck.
-- Party events (Dead Adventurer, Lab, Big Fish, Ancient Temple) run per player.
-- Per-player enemy values other than HP (Guardian block per player, Reptomancer
-  daggers per player) and "acts last" are not implemented.
-- Moves where only one hit is "all players" (Spire Growth, Snake Plant A7, Large
-  Slime A7) hit only the enemy's own row.
-- Keys (Act 4) are per player. No Steam invites; direct TCP connection.
+- Dead Adventurer is still chosen per player (shared roll); its elite fight is solo.
+  Ancient Temple's escalating cost is not implemented.
+- No Steam invites; players connect directly by address (LAN, Tailscale, or a
+  forwarded port).
 
 ## What the code investigation found
 

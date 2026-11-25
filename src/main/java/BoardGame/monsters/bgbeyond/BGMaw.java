@@ -1,4 +1,5 @@
 package BoardGame.monsters.bgbeyond;
+import BoardGame.monsters.ActsLast;
 
 import BoardGame.monsters.AbstractBGMonster;
 import BoardGame.monsters.BGDamageIcons;
@@ -26,7 +27,7 @@ import com.megacrit.cardcrawl.powers.StrengthPower;
 import com.megacrit.cardcrawl.vfx.AbstractGameEffect;
 import com.megacrit.cardcrawl.vfx.combat.BiteEffect;
 
-public class BGMaw extends AbstractBGMonster implements BGDamageIcons {
+public class BGMaw extends AbstractBGMonster implements BGDamageIcons, ActsLast {
     public static final String ID = "BGMaw";
     private static final MonsterStrings monsterStrings = CardCrawlGame.languagePack.getMonsterStrings("Maw");
     public static final String NAME = monsterStrings.NAME;
@@ -130,6 +131,11 @@ public class BGMaw extends AbstractBGMonster implements BGDamageIcons {
         //AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new RollMoveAction(this));
     }
 
+
+    /** Turn 1 (Roar: AOE Vulnerable, byte 1) acts last. */
+    public boolean actsLast() {
+        return this.nextMove == 1;
+    }
 
     protected void getMove(int num) {
         if (this.turnCount==1) {

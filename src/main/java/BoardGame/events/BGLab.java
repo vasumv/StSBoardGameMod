@@ -78,7 +78,7 @@ public class BGLab
                         }
                     }
                 }
-                if(playerWins) {
+                if(playerWins && BoardGame.multiplayer.combat.SharedEvents.labExtraPotionIsMine()) {
                     (AbstractDungeon.getCurrRoom()).rewards.add(new RewardItem(PotionHelper.getRandomPotion()));
                 }else{
                     if(BGGamblersBrew.doesPlayerHaveGamblersBrew()>-1) {

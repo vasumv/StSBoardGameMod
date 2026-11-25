@@ -1,4 +1,5 @@
 package BoardGame.monsters.bgexordium;
+import BoardGame.monsters.PerPlayer;
 
 import BoardGame.monsters.AbstractBGMonster;
 import BoardGame.powers.BGModeShiftPower;
@@ -190,7 +191,7 @@ public class BGTheGuardian extends AbstractBGMonster {
 
 
     private void useChargeUp() {
-        AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new GainBlockAction((AbstractCreature)this, (AbstractCreature)this, this.blockAmount));
+        AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new GainBlockAction((AbstractCreature)this, (AbstractCreature)this, PerPlayer.scale(this.blockAmount))); // "per player"
         AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new SFXAction("MONSTER_GUARDIAN_DESTROY"));
         AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new TalkAction((AbstractCreature)this, DIALOG[2], 1.0F, 2.5F));
 

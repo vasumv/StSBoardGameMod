@@ -14,5 +14,5 @@ nix shell nixpkgs#xorg.xorgserver -c Xvfb :$DISP -screen 0 960x540x24 +extension
 XPID=$!; sleep 2
 # own HOME: keeps mod config per instance and stops the game attaching to a running Steam client
 # own memory-capped scope: a runaway instance gets killed alone instead of taking the terminal with it
-HOME="$B/$NAME/home" DISPLAY=:$DISP systemd-run --user --scope --quiet -p MemoryHigh=3G -p MemoryMax=4G ./jre/bin/java -Xmx768m -Dbg.nosteam=true -Dbg.debug.dir="$B/$NAME/dbg" "$@" -jar ModTheSpire.jar --skip-launcher --skip-intro --mods basemod,stslib,ojb_Bestiary,quickrestart,BoardGame > launch.log 2>&1
+HOME="$B/$NAME/home" DISPLAY=:$DISP systemd-run --user --scope --quiet -p MemoryHigh=4200M -p MemoryMax=4600M ./jre/bin/java -Xmx768m -Dbg.nosteam=true -Dbg.debug.dir="$B/$NAME/dbg" "$@" -jar ModTheSpire.jar --skip-launcher --skip-intro --mods basemod,stslib,ojb_Bestiary,quickrestart,BoardGame > launch.log 2>&1
 kill $XPID

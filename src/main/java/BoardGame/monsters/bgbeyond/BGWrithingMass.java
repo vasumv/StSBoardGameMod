@@ -1,4 +1,5 @@
 package BoardGame.monsters.bgbeyond;
+import BoardGame.monsters.ActsLast;
 
 import BoardGame.cards.BGStatus.BGDazed;
 import BoardGame.monsters.AbstractBGMonster;
@@ -29,7 +30,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 //TODO: when hit with Skewer, Writhing Mass *repeatedly* switched to vulnerable and made several overlapping Ominous Noises
-public class BGWrithingMass extends AbstractBGMonster implements DieControlledMoves, BGDamageIcons {
+public class BGWrithingMass extends AbstractBGMonster implements DieControlledMoves, BGDamageIcons, ActsLast {
     public static final String ID = "BGWrithingMass";
     private static final MonsterStrings monsterStrings = CardCrawlGame.languagePack.getMonsterStrings("WrithingMass");
     public static final String NAME = monsterStrings.NAME;
@@ -159,6 +160,11 @@ public class BGWrithingMass extends AbstractBGMonster implements DieControlledMo
     protected void getMove(int num) {
         setMove((byte) 0, AbstractMonster.Intent.NONE);
     }
+    /** Die face 1 (AOE Vulnerable, byte 3) acts last. */
+    public boolean actsLast() {
+        return this.nextMove == 3;
+    }
+
     public void dieMove(int roll){
         final Logger logger = LogManager.getLogger(DieControlledMoves.class.getName());
         //TODO: reorder if-else from 1 to 6 after checking physical card

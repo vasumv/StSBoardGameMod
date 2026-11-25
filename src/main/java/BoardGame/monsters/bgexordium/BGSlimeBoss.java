@@ -1,4 +1,5 @@
 package BoardGame.monsters.bgexordium;
+import BoardGame.monsters.PerPlayer;
 
 import BoardGame.cards.BGStatus.BGSlimed;
 import BoardGame.monsters.AbstractBGMonster;
@@ -141,9 +142,17 @@ public class BGSlimeBoss
                 AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new WaitAction(1.0F));
                 AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new SFXAction("SLIME_SPLIT"));
 
-                AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new SpawnMonsterAction(new BGAcidSlime_L(-385.0F, 20.0F, true), false));
-                AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new SpawnMonsterAction(new BGAcidSlime_M(-132.0F, 6.0F), false));
-                AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new SpawnMonsterAction(new BGSpikeSlime_M(120.0F, -8.0F), false));
+                // "summon a Large, an Acid and a Spike Slime per player". Spawned type by type so that
+                // multiplayer's round-robin summon rows give each row one of each.
+                {
+                    int sets = PerPlayer.count();
+                    for (int s = 0; s < sets; s++)
+                        AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new SpawnMonsterAction(new BGAcidSlime_L(-385.0F, 20.0F + 230.0F * s, true), false));
+                    for (int s = 0; s < sets; s++)
+                        AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new SpawnMonsterAction(new BGAcidSlime_M(-132.0F, 6.0F + 230.0F * s), false));
+                    for (int s = 0; s < sets; s++)
+                        AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new SpawnMonsterAction(new BGSpikeSlime_M(120.0F, -8.0F + 230.0F * s), false));
+                }
 
                 AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new CanLoseAction());
                 setMove(SPLIT_NAME, (byte)5, AbstractMonster.Intent.UNKNOWN);

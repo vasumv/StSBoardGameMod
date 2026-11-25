@@ -1,4 +1,6 @@
 package BoardGame.monsters.bgexordium;
+import BoardGame.monsters.ActsLast;
+import BoardGame.monsters.bgcity.BGTaskmaster;
 
 import BoardGame.BoardGame;
 import BoardGame.cards.BGStatus.BGDazed;
@@ -25,7 +27,7 @@ import com.megacrit.cardcrawl.vfx.SpeechBubble;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class BGRedSlaver extends AbstractBGMonster implements BGDamageIcons, DieControlledMoves {
+public class BGRedSlaver extends AbstractBGMonster implements BGDamageIcons, DieControlledMoves, ActsLast {
     private static final MonsterStrings monsterStrings = CardCrawlGame.languagePack.getMonsterStrings("SlaverRed");
     public static final String ID = "BGRedSlaver";
     public static final String NAME = monsterStrings.NAME;
@@ -164,6 +166,16 @@ public class BGRedSlaver extends AbstractBGMonster implements BGDamageIcons, Die
     }
 
 
+
+    /** Acts last when applying Vulnerable (Scrape), and on all turns in the Taskmaster (Elite) encounter. */
+    public boolean actsLast() {
+        if (this.nextMove == SCRAPE) return true;
+        if (AbstractDungeon.getMonsters() != null) {
+            for (AbstractMonster m : AbstractDungeon.getMonsters().monsters)
+                if (m instanceof BGTaskmaster) return true;
+        }
+        return false;
+    }
 
     public void die() {
         super.die();

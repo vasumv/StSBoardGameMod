@@ -1,4 +1,5 @@
 package BoardGame.monsters.bgending;
+import BoardGame.monsters.PerPlayer;
 
 import BoardGame.cards.BGStatus.BGBurn;
 import BoardGame.cards.BGStatus.BGSlimed;
@@ -83,7 +84,8 @@ public class BGCorruptHeart extends AbstractBGMonster implements BGDamageIcons {
 //        if (AbstractDungeon.ascensionLevel >= 19) {
 //            beatAmount++;
 //        }
-        int invincibleAmt=(AbstractDungeon.ascensionLevel<11) ? 50 : 60;
+        // "can't go below 50 HP per player": the power caps the damage taken, HP (100 per player) - floor
+        int invincibleAmt=PerPlayer.scale((AbstractDungeon.ascensionLevel<11) ? 50 : 60);
         int beatAmount=1;
         AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new ApplyPowerAction((AbstractCreature)this, (AbstractCreature)this, (AbstractPower)new BGInvinciblePower((AbstractCreature)this, invincibleAmt), invincibleAmt));
         AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new ApplyPowerAction((AbstractCreature)this, (AbstractCreature)this, (AbstractPower)new BGBeatOfDeathPower((AbstractCreature)this, beatAmount), beatAmount));

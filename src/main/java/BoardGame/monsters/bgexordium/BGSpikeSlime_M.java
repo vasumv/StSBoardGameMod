@@ -1,4 +1,5 @@
 package BoardGame.monsters.bgexordium;
+import BoardGame.monsters.ActsLast;
 
 import BoardGame.BoardGame;
 import BoardGame.cards.BGStatus.BGDazed;
@@ -29,7 +30,7 @@ import com.megacrit.cardcrawl.vfx.SpeechBubble;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class BGSpikeSlime_M extends AbstractBGMonster implements BGDamageIcons, DieControlledMoves {
+public class BGSpikeSlime_M extends AbstractBGMonster implements BGDamageIcons, DieControlledMoves, ActsLast {
     private static final MonsterStrings monsterStrings = CardCrawlGame.languagePack.getMonsterStrings("SpikeSlime_M");
     public static final String ID = "BGSpikeSlime_M";
     public static final String NAME = monsterStrings.NAME;
@@ -90,6 +91,11 @@ public class BGSpikeSlime_M extends AbstractBGMonster implements BGDamageIcons, 
 
         }
         AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new RollMoveAction(this));
+    }
+
+    /** "Lick" (1 dmg + Vulnerable, byte 4) acts last. */
+    public boolean actsLast() {
+        return this.nextMove == 4;
     }
 
     public void dieMove(int roll){

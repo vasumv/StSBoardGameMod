@@ -41,6 +41,16 @@ public class MP {
     public static String myName = System.getProperty("bg.mp.name", "Player");
     public static int myCharacter = Integer.getInteger("bg.mp.char", 0);
     public static String lastError = "";
+    /** Ascension level for the run; chosen by the host in the lobby. */
+    public static int ascension = 0;
+
+    public static void setAscension(int level) {
+        if (!isHost() || inRun) return;
+        level = Math.max(0, Math.min(BoardGame.patches.Ascension.CURRENT_MAX_ASCENSION, level));
+        JsonObject o = msg("cfg");
+        o.addProperty("asc", level);
+        Net.send(o);
+    }
 
     public static Player me() {
         return player(myId);
@@ -99,6 +109,33 @@ public class MP {
         return true; // hello is sent when the welcome (with our id) arrives
     }
 
+    /** True while a join attempt is in progress (connecting happens off the game thread). */
+    public static volatile boolean connecting = false;
+
+    public static void joinAsync(String address, int port) {
+        if (connecting) return;
+        connecting = true;
+        lastError = "";
+        Thread t = new Thread(() -> {
+            Exception err = null;
+            try {
+                java.net.Socket probe = new java.net.Socket();
+                probe.connect(new java.net.InetSocketAddress(address, port), 6000);
+                probe.close();
+            } catch (Exception e) {
+                err = e;
+            }
+            final Exception fe = err;
+            com.badlogic.gdx.Gdx.app.postRunnable(() -> {
+                connecting = false;
+                if (fe != null) lastError = "Could not reach " + address + ":" + port + " (" + fe.getMessage() + ")";
+                else if (!join(address, port)) Session.toast(lastError);
+            });
+        }, "bg-mp-connect");
+        t.setDaemon(true);
+        t.start();
+    }
+
     public static void leave() {
         Net.shutdown();
         reset();
@@ -110,6 +147,7 @@ public class MP {
         myId = -1;
         players.clear();
         lastError = "";
+        ascension = 0;
         Session.reset();
     }
 
@@ -133,6 +171,7 @@ public class MP {
         if (!isHost() || inRun) return;
         JsonObject o = msg("start");
         o.addProperty("seed", seed);
+        o.addProperty("asc", ascension);
         JsonArray roster = new JsonArray();
         int row = 0;
         for (Player p : players) {
@@ -198,7 +237,12 @@ public class MP {
                 }
                 p.name = m.get("name").getAsString();
                 p.character = m.get("char").getAsInt();
-                if (isHost()) sendRoster();
+                if (isHost()) {
+                    sendRoster();
+                    JsonObject c = msg("cfg");
+                    c.addProperty("asc", ascension);
+                    Net.send(c);
+                }
                 return;
             }
             case "roster": {
@@ -206,6 +250,9 @@ public class MP {
                 readRoster(m.getAsJsonArray("roster"));
                 return;
             }
+            case "cfg":
+                ascension = m.get("asc").getAsInt();
+                return;
             case "char": {
                 Player p = player(from);
                 if (p != null && !inRun) p.character = m.get("char").getAsInt();
@@ -223,6 +270,7 @@ public class MP {
             case "start":
                 readRoster(m.getAsJsonArray("roster"));
                 seed = m.get("seed").getAsLong();
+                ascension = m.has("asc") ? m.get("asc").getAsInt() : 0;
                 inRun = true;
                 logger.info("starting multiplayer run, seed " + seed + ", " + players.size() + " players, I am "
                         + myId + " row " + myRow());
