@@ -349,6 +349,12 @@ public class Net {
         if (steamHosting || toHost instanceof SteamNet.SteamPeer) SteamNet.poll();
     }
 
+    /** Test only: close the link to the host as if the network dropped. */
+    public static void testDrop() {
+        Peer h = toHost;
+        if (h != null) h.close();
+    }
+
     public static void shutdown() {
         try {
             if (server != null) server.close();

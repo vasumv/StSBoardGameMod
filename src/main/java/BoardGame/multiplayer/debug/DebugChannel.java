@@ -75,6 +75,12 @@ public class DebugChannel {
                     case "char":
                         BoardGame.multiplayer.MP.setCharacter(Integer.parseInt(a[2]));
                         return "ok";
+                    case "drop": // test: cut the connection to the host
+                        BoardGame.multiplayer.net.Net.testDrop();
+                        return "dropped";
+                    case "continue":
+                        BoardGame.multiplayer.SavedSession.hostContinue();
+                        return "asked";
                     case "keep":
                         BoardGame.multiplayer.combat.DiePhase.confirm();
                         return "ok";
@@ -183,6 +189,13 @@ public class DebugChannel {
                         m.setAccessible(true);
                         m.invoke(pb, AbstractDungeon.getCurrRoom());
                         return "next dungeon";
+                    }
+                    if (AbstractDungeon.getCurrRoom() instanceof com.megacrit.cardcrawl.rooms.MonsterRoomBoss
+                            && "TheBeyond".equals(AbstractDungeon.id)) { // what the real button does after Act 3
+                        java.lang.reflect.Method v = pb.getClass().getDeclaredMethod("goToVictoryRoomOrTheDoor");
+                        v.setAccessible(true);
+                        v.invoke(pb);
+                        return "victory";
                     }
                     java.lang.reflect.Method m = pb.getClass().getDeclaredMethod("goToTreasureRoom");
                     m.setAccessible(true);

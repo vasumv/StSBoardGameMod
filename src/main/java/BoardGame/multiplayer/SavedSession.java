@@ -159,7 +159,13 @@ public class SavedSession {
         BoardGame.multiplayer.ui.LobbyScreen.open = false;
         // what the main menu's Continue button does
         CardCrawlGame.loadingSave = true;
-        CardCrawlGame.chosenCharacter = CardCrawlGame.characterManager.loadChosenCharacter().chosenClass;
+        // load the save of the character this player had in the run (other saves may exist too)
+        MP.Player me = MP.me();
+        int ch = me == null ? 0 : me.character;
+        com.megacrit.cardcrawl.characters.AbstractPlayer.PlayerClass[] classes = {
+                BoardGame.characters.BGIronclad.Enums.BG_IRONCLAD, BoardGame.characters.BGSilent.Enums.BG_SILENT,
+                BoardGame.characters.BGDefect.Enums.BG_DEFECT, BoardGame.characters.BGWatcher.Enums.BG_WATCHER};
+        CardCrawlGame.chosenCharacter = classes[Math.max(0, Math.min(3, ch))];
         CardCrawlGame.mainMenuScreen.isFadingOut = true;
         CardCrawlGame.mainMenuScreen.fadeOutMusic();
         Settings.isDailyRun = false;

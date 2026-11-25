@@ -1,7 +1,9 @@
 # Multiplayer design
 
-Status (2026-11-25): playable end to end in Act 1 between two players; Acts 2-3
-untested. Rules reference: `MULTIPLAYER_RULES.md`. Audits against the sts-tbg
+Status (2026-11-25): a full two-player run through Acts 1-3 (every fight, event, shop,
+treasure, rest site, elites and all three bosses) stays in sync in automated tests;
+reconnect after a dropped connection and Continue saved run were tested too.
+Rules reference: `MULTIPLAYER_RULES.md`. Audits against the sts-tbg
 reference implementation: `reference/enemy_audit.md`, `reference/enemy_mp_data.json`.
 
 ## How a shared fight works now
@@ -40,20 +42,17 @@ reference implementation: `reference/enemy_audit.md`, `reference/enemy_mp_data.j
 
 ## Known gaps
 
-- Everything since the Act 1 walk-through is compile-checked only (not run in game):
-  Steam lobbies, reconnect, save/continue, shared merchant, boss relic count, keys,
-  party events (Neow start, Lab, Dead Adventurer, Big Fish, Ancient Temple), relic deck
-  removals, acts-last, per-player enemy values, Sentries per row, Awakened One
-  Cultists, partial all-player hits, new enemy cards (Snake Plant A7, Mugger, Mystic,
-  Taskmaster slavers), optional rules (Last Stand, Choose Your Relic, Sequential Turns).
-  Acts 2-3 have not been played in multiplayer.
-- Steam: needs two Steam accounts to verify. Accepting an invite while the game is closed
-  may not join automatically (ModTheSpire may not pass +connect_lobby); start the game
-  first, then accept.
-- Sequential Turns is approximate: turn order and who may act follow the rule, but
-  everyone's start-of-turn draw still happens at the start of the round.
-- The host is the hub: if the host disconnects, the run cannot continue (clients
-  reconnect to the host, not the other way round). Use Continue saved run.
+- Not yet run in game: Steam lobbies (needs two Steam accounts), the optional rules
+  (Last Stand, Choose Your Relic, Sequential Turns), cross-player cards/potions/relics,
+  the party events, shared merchant purchases, boss relic claims, keys and Act 4.
+  The automated walk skips rooms and kills enemies directly, so card-by-card combat
+  in Acts 2-3 has only been exercised through the shared-state checks.
+- Steam: accepting an invite while the game is closed may not join automatically
+  (ModTheSpire may not pass +connect_lobby); start the game first, then accept.
+- Sequential Turns is approximate: everyone's start-of-turn draw still happens at the
+  start of the round.
+- The host is the hub: if the host disconnects, the run cannot continue; use Continue
+  saved run.
 
 ## What the code investigation found
 
