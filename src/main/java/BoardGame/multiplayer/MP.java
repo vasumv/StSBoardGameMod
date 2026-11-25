@@ -44,13 +44,27 @@ public class MP {
     public static String lastError = "";
     /** Optional rule "Last Stand": in a Boss fight, the others fight on when a player dies. */
     public static boolean lastStand = false;
+    /** Optional rule "Choose Your Relic": Elite/Treasure relics are revealed one per player and picked. */
+    public static boolean chooseRelic = false;
+
+    public static void setChooseRelic(boolean on) {
+        if (!isHost() || inRun) return;
+        chooseRelic = on;
+        sendCfg();
+    }
+
+    private static void sendCfg() {
+        JsonObject o = msg("cfg");
+        o.addProperty("asc", ascension);
+        o.addProperty("lastStand", lastStand);
+        o.addProperty("chooseRelic", chooseRelic);
+        Net.send(o);
+    }
 
     public static void setLastStand(boolean on) {
         if (!isHost() || inRun) return;
-        JsonObject o = msg("cfg");
-        o.addProperty("asc", ascension);
-        o.addProperty("lastStand", on);
-        Net.send(o);
+        lastStand = on;
+        sendCfg();
     }
 
     /** Ascension level for the run; chosen by the host in the lobby. */
@@ -59,10 +73,8 @@ public class MP {
     public static void setAscension(int level) {
         if (!isHost() || inRun) return;
         level = Math.max(0, Math.min(BoardGame.patches.Ascension.CURRENT_MAX_ASCENSION, level));
-        JsonObject o = msg("cfg");
-        o.addProperty("asc", level);
-        o.addProperty("lastStand", lastStand);
-        Net.send(o);
+        ascension = level;
+        sendCfg();
     }
 
     public static Player me() {
@@ -240,6 +252,7 @@ public class MP {
         lastError = "";
         ascension = 0;
         lastStand = false;
+        chooseRelic = false;
         lastSeq = -1;
         reconnecting = false;
         Session.reset();
@@ -267,6 +280,7 @@ public class MP {
         o.addProperty("seed", seed);
         o.addProperty("asc", ascension);
         o.addProperty("lastStand", lastStand);
+        o.addProperty("chooseRelic", chooseRelic);
         JsonArray roster = new JsonArray();
         int row = 0;
         for (Player p : players) {
@@ -356,10 +370,7 @@ public class MP {
                 p.character = m.get("char").getAsInt();
                 if (isHost()) {
                     sendRoster();
-                    JsonObject c = msg("cfg");
-                    c.addProperty("asc", ascension);
-                    c.addProperty("lastStand", lastStand);
-                    Net.send(c);
+                    sendCfg();
                 }
                 return;
             }
@@ -374,6 +385,7 @@ public class MP {
             case "cfg":
                 ascension = m.get("asc").getAsInt();
                 if (m.has("lastStand")) lastStand = m.get("lastStand").getAsBoolean();
+                if (m.has("chooseRelic")) chooseRelic = m.get("chooseRelic").getAsBoolean();
                 return;
             case "char": {
                 Player p = player(from);
@@ -398,6 +410,7 @@ public class MP {
                 seed = m.get("seed").getAsLong();
                 ascension = m.has("asc") ? m.get("asc").getAsInt() : 0;
                 lastStand = m.has("lastStand") && m.get("lastStand").getAsBoolean();
+                chooseRelic = m.has("chooseRelic") && m.get("chooseRelic").getAsBoolean();
                 inRun = true;
                 logger.info("starting multiplayer run, seed " + seed + ", " + players.size() + " players, I am "
                         + myId + " row " + myRow());

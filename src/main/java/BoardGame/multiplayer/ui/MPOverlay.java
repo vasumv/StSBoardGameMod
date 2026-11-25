@@ -123,6 +123,7 @@ public class MPOverlay implements PostRenderSubscriber {
     }
 
     public static void update() {
+        RelicPicker.update();
         if (BoardGame.multiplayer.combat.DiePhase.rollAnim > 0)
             BoardGame.multiplayer.combat.DiePhase.rollAnim -= Gdx.graphics.getDeltaTime();
         boolean down = Gdx.input.isButtonPressed(Input.Buttons.LEFT);
@@ -220,6 +221,7 @@ public class MPOverlay implements PostRenderSubscriber {
     private static void render(SpriteBatch sb) {
         if (onMainMenu()) LobbyScreen.frame(sb, false);
         else if (MP.inRun && CardCrawlGame.isInARun() && AbstractDungeon.player != null) renderRun(sb);
+        RelicPicker.render(sb);
         renderToasts(sb);
     }
 

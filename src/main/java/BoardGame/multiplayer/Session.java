@@ -499,6 +499,10 @@ public class Session {
             case "neowstart":
                 BoardGame.neow.BGNeowEvent.onPartyStart(from, m);
                 return;
+            case "relicreveal":
+            case "relicpick":
+                BoardGame.multiplayer.ui.RelicPicker.onMessage(type, from, m);
+                return;
             case "temple":
             case "fish":
                 BoardGame.multiplayer.combat.SharedEvents.onMessage(type, from, m);
