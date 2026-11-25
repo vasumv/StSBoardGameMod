@@ -43,8 +43,9 @@ reference implementation: `reference/enemy_audit.md`, `reference/enemy_mp_data.j
 - Relic/potion decks are per-game copies offset per player, not one shared deck.
 - Dead Adventurer is still chosen per player (shared roll); its elite fight is solo.
   Ancient Temple's escalating cost is not implemented.
-- No Steam invites; players connect directly by address (LAN, Tailscale, or a
-  forwarded port).
+- Steam lobbies/invites (net/SteamNet) are untested with two Steam accounts. Accepting
+  an invite while the game is closed may not join automatically (ModTheSpire may not
+  pass Steam's +connect_lobby argument); start the game first, then accept.
 
 ## What the code investigation found
 

@@ -12,10 +12,14 @@
 ## Connect
 
 - Main menu, top right: **Multiplayer**.
-- Host: **Host on port 7777**. The panel lists your addresses to share.
-- Others: type or paste the host's address (`192.168.1.20:7777`) and **Join**.
-  Same home network: use the host's local address. Over the internet: put everyone on
-  Tailscale (or ZeroTier) and use the host's Tailscale address, or forward TCP 7777.
+- **Different networks (recommended): Steam.** Everyone starts the game through Steam.
+  The host clicks **Host Steam lobby**; the Steam overlay opens to invite friends (also
+  **Invite Steam friends** in the lobby). Friends accept the invite in Steam while the game
+  is running at the main menu, and they join automatically. Steam connects you across
+  networks (relaying if needed); nobody has to open ports.
+- **Same network / Tailscale / forwarded port:** the host clicks **Host on port 7777**; the
+  panel lists their addresses. Others type or paste the address (`192.168.1.20:7777`) and
+  **Join**.
 - Everyone picks a character. The host picks the ascension level and clicks **Start run**.
 
 ## In a fight

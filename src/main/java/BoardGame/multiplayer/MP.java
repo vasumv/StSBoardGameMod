@@ -136,6 +136,25 @@ public class MP {
         t.start();
     }
 
+    /** Steam lobby created: we are the host. */
+    public static void onSteamHosting() {
+        reset();
+        active = true;
+        myId = 0;
+        String n = BoardGame.multiplayer.net.SteamNet.myName();
+        if (n != null) myName = n;
+        sendHello();
+    }
+
+    /** Joined a Steam lobby: knock so the host opens the connection and welcomes us. */
+    public static void onSteamJoined() {
+        reset();
+        active = true;
+        String n = BoardGame.multiplayer.net.SteamNet.myName();
+        if (n != null) myName = n;
+        Net.send(msg("knock"));
+    }
+
     public static void leave() {
         Net.shutdown();
         reset();
@@ -200,6 +219,7 @@ public class MP {
 
     public static void update() {
         autoStartFromProperties();
+        Net.poll();
         if (!active) return;
         JsonObject m;
         while ((m = Net.inbox.peek()) != null) {
@@ -223,6 +243,8 @@ public class MP {
             logger.info("[mp] " + (txt.length() > 400 ? txt.substring(0, 400) + "..." : txt));
         }
         switch (t) {
+            case "knock":
+                return;
             case "welcome":
                 myId = m.get("id").getAsInt();
                 sendHello();
@@ -317,6 +339,7 @@ public class MP {
         if (autoStartDone) return;
         if (com.megacrit.cardcrawl.core.CardCrawlGame.mainMenuScreen == null) return;
         autoStartDone = true;
+        BoardGame.multiplayer.net.SteamNet.checkLaunchArgs();
         if (Boolean.getBoolean("bg.fast")) com.megacrit.cardcrawl.core.Settings.FAST_MODE = true;
         String h = System.getProperty("bg.mp.host"), j = System.getProperty("bg.mp.join");
         if (h != null) host(Integer.parseInt(h));

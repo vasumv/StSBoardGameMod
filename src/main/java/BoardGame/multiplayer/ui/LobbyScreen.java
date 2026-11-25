@@ -111,13 +111,23 @@ public class LobbyScreen {
         if (!MP.active) {
             if (sb != null) text(sb, "Playing as " + profileName() + ". Everyone needs the same BoardGame.jar.", x, y,
                     Settings.CREAM_COLOR);
-            y += 60;
-            if (sb != null) text(sb, "Host a game", x, y, Settings.GOLD_COLOR);
+            y += 50;
+            if (sb != null) text(sb, "Over the internet (Steam): host, then invite friends from the Steam overlay."
+                    + " Friends just accept the invite.", x, y, Settings.GOLD_COLOR);
+            if (button(sb, clicked, x, y + 30, 300, 56, "Host Steam lobby", false)) {
+                MP.lastError = "";
+                BoardGame.multiplayer.net.SteamNet.host();
+            }
+            if (sb != null && !BoardGame.multiplayer.net.SteamNet.status.isEmpty())
+                text(sb, BoardGame.multiplayer.net.SteamNet.status, x + 320, y + 46, Settings.CREAM_COLOR);
+            y += 110;
+            if (sb != null) text(sb, "Same network, Tailscale or a forwarded port: host by address", x, y,
+                    Settings.GOLD_COLOR);
             if (button(sb, clicked, x, y + 30, 300, 56, "Host on port " + port(), false)) {
                 MP.myName = profileName();
                 if (!MP.host(port())) Session.toast(MP.lastError);
             }
-            y += 140;
+            y += 110;
             if (sb != null) {
                 text(sb, "Join a game: type the host's address (e.g. 192.168.1.20:" + port() + ")", x, y, Settings.GOLD_COLOR);
                 rect(sb, x, y + 30, 560, 56, fieldFocused ? new Color(0.1f, 0.1f, 0.14f, 1f) : FIELD);
@@ -134,7 +144,7 @@ public class LobbyScreen {
                 }
             }
             if (button(sb, clicked, x + 740, y + 30, 140, 56, "Join", false)) join();
-            y += 150;
+            y += 110;
             if (sb != null && MP.connecting) text(sb, "Connecting to " + address + " ...", x, y, Settings.CREAM_COLOR);
             else if (sb != null && !MP.lastError.isEmpty()) text(sb, MP.lastError, x, y, Settings.RED_TEXT_COLOR);
             if (button(sb, clicked, PX + PW - 200, PY + PH - 80, 160, 56, "Close", false)) open = false;
@@ -142,13 +152,19 @@ public class LobbyScreen {
         }
         // ---- connected ----
         if (sb != null) {
-            if (MP.isHost()) {
+            if (MP.isHost() && BoardGame.multiplayer.net.Net.usingSteam()) {
+                text(sb, "Hosting a Steam lobby. Invite friends; they accept the invite in Steam.", x, y,
+                        Settings.CREAM_COLOR);
+            } else if (MP.isHost()) {
                 text(sb, "You are hosting. Friends join with one of these addresses:", x, y, Settings.CREAM_COLOR);
                 text(sb, String.join("    ", localAddresses()), x, y + 28, Settings.GOLD_COLOR);
             } else {
                 text(sb, "Connected. The host picks the ascension and starts the run.", x, y, Settings.CREAM_COLOR);
             }
         }
+        if (MP.isHost() && BoardGame.multiplayer.net.Net.usingSteam()
+                && button(sb, clicked, PX + PW - 300, y - 6, 260, 50, "Invite Steam friends", false))
+            BoardGame.multiplayer.net.SteamNet.invite();
         y += 80;
         if (sb != null) text(sb, "Players", x, y, Settings.GOLD_COLOR);
         y += 30;
