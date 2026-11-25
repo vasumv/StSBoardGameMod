@@ -53,8 +53,11 @@ public class SteamNet {
     /** Is Steam running and initialised for this game? */
     public static boolean available() {
         try {
-            return SteamAPI.isSteamRunning() && init();
+            boolean running = SteamAPI.isSteamRunning();
+            if (!running) Net.logger.error("Steam lobby: SteamAPI.isSteamRunning() is false");
+            return running && init();
         } catch (Throwable t) {
+            Net.logger.error("Steam lobby: Steam check failed", t);
             return false;
         }
     }
@@ -96,6 +99,7 @@ public class SteamNet {
         if (creating) return;
         creating = true;
         status = "Creating Steam lobby...";
+        Net.logger.info("Steam lobby: creating");
         matchmaking.createLobby(SteamMatchmaking.LobbyType.FriendsOnly, 4);
     }
 
@@ -187,6 +191,7 @@ public class SteamNet {
         public void onLobbyCreated(SteamResult result, SteamID id) {
             Gdx.app.postRunnable(() -> {
                 creating = false;
+                Net.logger.info("Steam lobby: created " + result + " " + id);
                 if (result != SteamResult.OK) {
                     status = "";
                     MP.lastError = "Could not create a Steam lobby (" + result + ")";

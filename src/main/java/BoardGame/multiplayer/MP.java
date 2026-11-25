@@ -339,7 +339,12 @@ public class MP {
 
     // ---- stream processing ----
 
+    private static String loggedError = "";
+
     public static void update() {
+        if (lastError != null && !lastError.isEmpty() && !lastError.equals(loggedError))
+            logger.error("[shown to player] " + lastError);
+        loggedError = lastError == null ? "" : lastError;
         autoStartFromProperties();
         Net.poll();
         if (!active) return;
