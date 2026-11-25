@@ -166,6 +166,7 @@ public class Session {
     }
 
     private static void resetTurnState() {
+        deferredSelfDamage.clear();
         endTurnPending = false;
         endTurnTriggered = false;
         authorizedEndTurn = false;
@@ -597,6 +598,7 @@ public class Session {
                 BoardGame.multiplayer.combat.SharedShop.onMessage(type, from, m);
                 return;
             case "die":
+            case "dietrig":
             case "lock":
                 BoardGame.multiplayer.combat.DiePhase.onMessage(type, from, m);
                 return;
@@ -1062,6 +1064,17 @@ public class Session {
         p.gold = Math.max(0, p.gold - 2);
     }
 
+    private static final ArrayList<com.megacrit.cardcrawl.actions.AbstractGameAction> deferredSelfDamage = new ArrayList<>();
+
+    /** Between pressing End Turn (for everyone) and the enemy turn. */
+    public static boolean inEndOfTurn() {
+        return endTurnTriggered && !eotReleased;
+    }
+
+    public static void deferSelfDamage(com.megacrit.cardcrawl.actions.AbstractGameAction a) {
+        deferredSelfDamage.add(a);
+    }
+
     /** Enemy changes caused only in this game during the enemy turn. */
     public static void shareReaction(JsonObject d) {
         if (MonsterSync.isEmpty(d)) return;
@@ -1127,6 +1140,14 @@ public class Session {
         for (MP.Player p : MP.players) if (p.connected && !p.dead && !got.contains(p.id)) return true;
         JsonObject hostRng = eotHostRngByTurn.get(t);
         if (hostRng != null) RngSync.apply(hostRng);
+        // held self-damage happens only if the fight is still on
+        if (!AbstractDungeon.getMonsters().areMonstersBasicallyDead())
+            for (int i = deferredSelfDamage.size() - 1; i >= 0; i--) {
+                com.megacrit.cardcrawl.actions.AbstractGameAction a = deferredSelfDamage.get(i);
+                a.isDone = false;
+                AbstractDungeon.actionManager.addToTop(a);
+            }
+        deferredSelfDamage.clear();
         eotReleased = true;
         BoardGame.multiplayer.combat.MPHooks.enemyTurn = true;
         return false;

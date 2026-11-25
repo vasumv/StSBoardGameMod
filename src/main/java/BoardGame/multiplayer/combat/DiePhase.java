@@ -28,6 +28,8 @@ public class DiePhase {
     public static boolean decided = false;
     public static float rollAnim = 0f;  // seconds left of the rolling animation
     public static String lastChange = "";
+    /** Die relics that triggered this round, per player. */
+    public static final HashMap<Integer, String> triggered = new HashMap<>();
     private static boolean firstRollPending = false;
     private static boolean applyingRemote = false;
     private static boolean releasing = false;
@@ -107,6 +109,9 @@ public class DiePhase {
                 firstRollPending = false;
                 Integer v = pendingValue.remove(roundKey); // someone changed it before our roll arrived
                 if (v != null) applyValue(v);
+                triggered.clear();
+                // nothing to decide without a die-changing relic or potion: keep it right away
+                if (!BoardGame.ui.LockInRollButton.playerHasAnyDieChangingAbilities()) confirm();
                 maybeRelease();
                 return;
             }
@@ -159,12 +164,17 @@ public class DiePhase {
                 // someone else's change is the new starting point for your own Abacus/Toolbox, and must
                 // not count as you having used one of yours
                 if (from != MP.myId) TheDie.initialRoll = v;
+                if (!BoardGame.ui.LockInRollButton.playerHasAnyDieChangingAbilities()) confirm();
                 rollAnim = 0.6f;
                 lastChange = Session.nameOf(from) + " changed the die to " + v;
                 Session.toast(lastChange);
             } else if (key > roundKey) {
                 pendingValue.put(key, v);
             }
+        } else if (type.equals("dietrig")) {
+            if (key != roundKey) return;
+            String list = m.get("list").getAsString();
+            triggered.put(from, list);
         } else if (type.equals("lock")) {
             locks.computeIfAbsent(key, k -> new HashSet<>()).add(from);
             maybeRelease();
@@ -187,7 +197,18 @@ public class DiePhase {
                 releasing = false;
             }
         }
-        Session.toast("Die locked in at " + TheDie.monsterRoll);
+        StringBuilder mine = new StringBuilder();
+        for (AbstractRelic rel : AbstractDungeon.player.relics) {
+            if (!(rel instanceof BoardGame.relics.DieControlledRelic) || rel instanceof BGTheDieRelic) continue;
+            String q = ((BoardGame.relics.DieControlledRelic) rel).getQuickSummary();
+            if (q == null || q.isEmpty()) continue;
+            if (mine.length() > 0) mine.append(", ");
+            mine.append(rel.name).append(" (").append(q.replaceAll("#[a-z]", "")).append(")");
+        }
+        JsonObject o = MP.msg("dietrig");
+        o.addProperty("key", roundKey);
+        o.addProperty("list", mine.toString());
+        MP.send(o);
     }
 
     /** Die relics only trigger once everyone has confirmed. */

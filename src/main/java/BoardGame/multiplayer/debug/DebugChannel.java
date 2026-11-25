@@ -58,6 +58,8 @@ public class DebugChannel {
 
     private static String run(String[] a) {
         switch (a[0]) {
+            case "intents":
+                return BoardGame.multiplayer.combat.IntentDetails.dumpAll();
             case "state":
                 return state();
             case "idle":

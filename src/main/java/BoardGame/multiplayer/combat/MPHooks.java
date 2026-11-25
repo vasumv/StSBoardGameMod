@@ -171,6 +171,21 @@ public class MPHooks {
     }
 
     public static void runAction(AbstractGameAction a) {
+        // Combat ends the moment every enemy is dead: no more self-damage (Wrath, Burn...) after that.
+        if (isSelfDamage(a)) {
+            if (AbstractDungeon.getCurrRoom() != null && AbstractDungeon.getCurrRoom().monsters != null
+                    && AbstractDungeon.getCurrRoom().monsters.areMonstersBasicallyDead()) {
+                a.isDone = true;
+                return;
+            }
+            // In a shared fight, wait until everyone's end-of-turn effects are in: a teammate's
+            // poison may have finished the last enemy.
+            if (multi() && MonsterSync.active() && Session.inEndOfTurn()) {
+                Session.deferSelfDamage(a);
+                a.isDone = true;
+                return;
+            }
+        }
         com.megacrit.cardcrawl.cards.AbstractCard card = MPFields.Action.sourceCard.get(a);
         if (card != null && multi() && MonsterSync.active() && Session.redirectToTeammate(a, card)) {
             a.isDone = true;
@@ -230,6 +245,14 @@ public class MPHooks {
             actingMonster = prev;
             actingMove = prevMove;
         }
+    }
+
+    /** Damage or HP loss to you that no enemy caused (stances, status cards, your own powers). */
+    private static boolean isSelfDamage(AbstractGameAction a) {
+        if (a.target != AbstractDungeon.player || MPFields.Action.sourceMonster.get(a) != null) return false;
+        if (a.source instanceof AbstractMonster) return false;
+        return a instanceof com.megacrit.cardcrawl.actions.common.DamageAction
+                || a instanceof com.megacrit.cardcrawl.actions.common.LoseHPAction;
     }
 
     private static boolean affectsPlayer(AbstractGameAction a) {

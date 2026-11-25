@@ -126,6 +126,7 @@ public class MPOverlay implements PostRenderSubscriber {
         RelicPicker.update();
         ChoicePrompt.update();
         PartyEventUI.update();
+        BoardGame.multiplayer.combat.IntentDetails.update();
         if (BoardGame.multiplayer.combat.DiePhase.rollAnim > 0)
             BoardGame.multiplayer.combat.DiePhase.rollAnim -= Gdx.graphics.getDeltaTime();
         boolean down = Gdx.input.isButtonPressed(Input.Buttons.LEFT);
@@ -339,10 +340,22 @@ public class MPOverlay implements PostRenderSubscriber {
                 keepBtn.text = "Keep " + v;
                 keepBtn.render(sb);
             }
-        } else if (!BoardGame.multiplayer.combat.DiePhase.lastChange.isEmpty()) {
-            FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
-                    BoardGame.multiplayer.combat.DiePhase.lastChange, x + 104 * Settings.scale, y,
-                    Settings.CREAM_COLOR);
+        } else {
+            if (!BoardGame.multiplayer.combat.DiePhase.lastChange.isEmpty()) {
+                FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
+                        BoardGame.multiplayer.combat.DiePhase.lastChange, x + 104 * Settings.scale, y,
+                        Settings.CREAM_COLOR);
+                y -= 24 * Settings.scale;
+            }
+            // die relics that triggered on this number, for everyone in the party
+            for (MP.Player p : MP.players) {
+                String list = BoardGame.multiplayer.combat.DiePhase.triggered.get(p.id);
+                if (list == null || list.isEmpty()) continue;
+                FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
+                        (p.id == MP.myId ? "You" : p.name) + ": " + list, x + 104 * Settings.scale, y,
+                        Settings.GREEN_TEXT_COLOR);
+                y -= 24 * Settings.scale;
+            }
         }
     }
 
