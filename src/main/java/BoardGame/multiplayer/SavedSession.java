@@ -102,6 +102,7 @@ public class SavedSession {
             MP.players.add(p);
         }
         MP.inRun = true;
+        Session.soloBonusRemoved = true; // already applied in the saved run
         BoardGame.multiplayer.ui.LobbyScreen.open = false;
         // what the main menu's Continue button does
         CardCrawlGame.loadingSave = true;

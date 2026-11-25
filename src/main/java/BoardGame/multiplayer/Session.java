@@ -132,6 +132,7 @@ public class Session {
     public static final ArrayList<Float> toastTimes = new ArrayList<>();
 
     public static void reset() {
+        soloBonusRemoved = false;
         knownRelics.clear();
         queue.clear();
         logicalPending.clear();
@@ -799,6 +800,7 @@ public class Session {
         }
         sendStatus(dt);
         checkDeath();
+        removeSoloBonus();
         BoardGame.neow.BGNeowEvent.tryPendingStart();
         updatePendingMove();
         offsetSharedDecks();
@@ -973,6 +975,17 @@ public class Session {
 
     private static void reapplyInflight() {
         for (JsonObject d : myInflight) MonsterSync.applyDelta(d.getAsJsonObject("delta"), false);
+    }
+
+    /** The solo setup bonus (+2 gold, rulebook setup step 12) is not for multiplayer runs. */
+    public static boolean soloBonusRemoved = false;
+
+    private static void removeSoloBonus() {
+        if (soloBonusRemoved || MP.playerCount() < 2) return;
+        AbstractPlayer p = AbstractDungeon.player;
+        if (p == null || p instanceof BoardGame.multicharacter.MultiCharacter || AbstractDungeon.floorNum > 0) return;
+        soloBonusRemoved = true;
+        p.gold = Math.max(0, p.gold - 2);
     }
 
     /** Enemy changes caused only in this game during the enemy turn. */
