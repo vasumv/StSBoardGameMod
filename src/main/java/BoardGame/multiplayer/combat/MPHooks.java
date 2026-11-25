@@ -31,6 +31,7 @@ import java.util.ArrayList;
 /** All game patches for multiplayer. Each one does nothing unless a multiplayer run is active. */
 public class MPHooks {
     public static AbstractMonster actingMonster;
+    public static com.megacrit.cardcrawl.cards.AbstractCard actingCard;
 
     private static boolean multi() {
         return MP.inRun && MP.playerCount() > 1;
@@ -129,6 +130,20 @@ public class MPHooks {
         @SpirePostfixPatch
         public static void postfix(AbstractGameAction __instance) {
             if (actingMonster != null) MPFields.Action.sourceMonster.set(__instance, actingMonster);
+            if (actingCard != null) MPFields.Action.sourceCard.set(__instance, actingCard);
+        }
+    }
+
+    @SpirePatch2(clz = com.megacrit.cardcrawl.characters.AbstractPlayer.class, method = "useCard")
+    public static class TrackCardUse {
+        @SpirePrefixPatch
+        public static void prefix(com.megacrit.cardcrawl.cards.AbstractCard c) {
+            actingCard = c;
+        }
+
+        @SpirePostfixPatch
+        public static void postfix() {
+            actingCard = null;
         }
     }
 
@@ -149,12 +164,27 @@ public class MPHooks {
     }
 
     public static void runAction(AbstractGameAction a) {
+        com.megacrit.cardcrawl.cards.AbstractCard card = MPFields.Action.sourceCard.get(a);
+        if (card != null && multi() && MonsterSync.active() && Session.redirectToTeammate(a, card)) {
+            a.isDone = true;
+            return;
+        }
+        com.megacrit.cardcrawl.cards.AbstractCard prevCard = actingCard;
+        if (card != null) actingCard = card;
+        try {
+            runMonsterAction(a);
+        } finally {
+            actingCard = prevCard;
+        }
+    }
+
+    private static void runMonsterAction(AbstractGameAction a) {
         AbstractMonster src = MPFields.Action.sourceMonster.get(a);
         if (src == null || !multi()) {
             a.update();
             return;
         }
-        if (!MonsterSync.targetsMe(src) && affectsPlayer(a)) {
+        if (MonsterSync.active() && !MonsterSync.targetsMe(src) && affectsPlayer(a)) {
             a.isDone = true; // an enemy in another player's row: its attack is aimed at them
             return;
         }
@@ -209,26 +239,24 @@ public class MPHooks {
         }
     }
 
-    @SpirePatch2(clz = MonsterRoom.class, method = "onPlayerEntry")
+    /** Normal encounters (map rooms and forced event fights): one encounter per player row. */
+    @SpirePatch2(clz = AbstractDungeon.class, method = "getMonsterForRoomCreation")
     public static class BuildRows {
         @SpirePrefixPatch
-        public static void prefix(MonsterRoom __instance) {
-            if (!MP.inRun || __instance.monsters != null) return;
-            if (__instance instanceof MonsterRoomElite || __instance instanceof MonsterRoomBoss) return;
+        public static SpireReturn<MonsterGroup> prefix(AbstractDungeon __instance) {
+            if (!multi() || optionalEventFight()) return SpireReturn.Continue();
             int n = MP.playerCount();
-            if (n < 2) return;
             try {
                 while (AbstractDungeon.monsterList.size() < n) {
-                    Method gen = findMethod(CardCrawlGame.dungeon.getClass(), "generateStrongEnemies", int.class);
+                    Method gen = findMethod(__instance.getClass(), "generateStrongEnemies", int.class);
                     gen.setAccessible(true);
-                    gen.invoke(CardCrawlGame.dungeon, 12);
+                    gen.invoke(__instance, 12);
                 }
                 ArrayList<String> keys = new ArrayList<>(AbstractDungeon.monsterList.subList(0, n));
                 for (int i = 1; i < n; i++) AbstractDungeon.monsterList.remove(1);
                 int mine = Math.min(MP.myRow(), n - 1);
-                AbstractDungeon.monsterList.set(0, keys.get(mine));
+                AbstractDungeon.monsterList.set(0, keys.get(mine)); // rewards come from your own row
                 AbstractDungeon.lastCombatMetricKey = keys.get(mine);
-                // build every row in a fixed order so random draws match in every game
                 ArrayList<AbstractMonster> all = new ArrayList<>();
                 for (int row = 0; row < n; row++) {
                     MonsterGroup g = MonsterHelper.getEncounter(keys.get(row));
@@ -237,20 +265,74 @@ public class MPHooks {
                         all.add(m);
                     }
                 }
-                // enemies act from the highest row down
-                ArrayList<AbstractMonster> ordered = new ArrayList<>();
-                for (int row = n - 1; row >= 0; row--)
-                    for (AbstractMonster m : all) if (MonsterSync.row(m) == row) ordered.add(m);
-                MonsterGroup group = new MonsterGroup(ordered.toArray(new AbstractMonster[0]));
-                for (AbstractMonster m : ordered) MonsterSync.applyLayout(m);
-                __instance.monsters = group;
-                MonsterSync.resetIds();
-                MonsterSync.assignIds();
-                group.init();
+                return SpireReturn.Return(finishGroup(all));
             } catch (Throwable t) {
                 MP.logger.error("could not build rows", t);
+                return SpireReturn.Continue();
             }
         }
+    }
+
+    /** Elites: the Elite sits in the bottom row; the rest of its group is spread over the other rows. */
+    @SpirePatch2(clz = AbstractDungeon.class, method = "getEliteMonsterForRoomCreation")
+    public static class EliteRows {
+        @SpirePostfixPatch
+        public static MonsterGroup postfix(MonsterGroup __result) {
+            if (!multi() || optionalEventFight() || __result == null) return __result;
+            int n = MP.playerCount();
+            ArrayList<AbstractMonster> all = new ArrayList<>(__result.monsters);
+            for (int i = 0; i < all.size(); i++) MultiCreature.Field.currentRow.set(all.get(i), i == 0 ? 0 : i % n);
+            if (!all.isEmpty()) scaleHp(all.get(0), n);
+            return finishGroup(all);
+        }
+    }
+
+    /** Bosses are in every row and attack everyone. */
+    @SpirePatch2(clz = AbstractDungeon.class, method = "getBoss")
+    public static class BossRows {
+        @SpirePostfixPatch
+        public static MonsterGroup postfix(MonsterGroup __result) {
+            if (!multi() || __result == null) return __result;
+            for (AbstractMonster m : __result.monsters) {
+                MultiCreature.Field.currentRow.set(m, 0);
+                if (m.type == AbstractMonster.EnemyType.BOSS) scaleHp(m, MP.playerCount());
+            }
+            MonsterSync.sharedRoom = AbstractDungeon.getCurrRoom();
+            MonsterSync.resetIds();
+            for (AbstractMonster m : __result.monsters) MPFields.Monster.id.set(m, MonsterSync.nextId());
+            return __result;
+        }
+    }
+
+    /**
+     * Enemy HP for bigger parties. The board game's HP board values are not in the mod;
+     * this scales the solo value linearly with the number of players.
+     */
+    private static void scaleHp(AbstractMonster m, int players) {
+        m.maxHealth = m.maxHealth * players;
+        m.currentHealth = m.maxHealth;
+    }
+
+    private static MonsterGroup finishGroup(ArrayList<AbstractMonster> all) {
+        int n = MP.playerCount();
+        // enemies act from the highest row down
+        ArrayList<AbstractMonster> ordered = new ArrayList<>();
+        for (int row = n - 1; row >= 0; row--)
+            for (AbstractMonster m : all) if (MonsterSync.row(m) == row) ordered.add(m);
+        MonsterGroup group = new MonsterGroup(ordered.toArray(new AbstractMonster[0]));
+        for (AbstractMonster m : ordered) MonsterSync.applyLayout(m);
+        MonsterSync.sharedRoom = AbstractDungeon.getCurrRoom();
+        MonsterSync.resetIds();
+        for (AbstractMonster m : ordered) MPFields.Monster.id.set(m, MonsterSync.nextId());
+        return group;
+    }
+
+    /** Event fights that only the choosing player enters are played solo. */
+    private static boolean optionalEventFight() {
+        AbstractRoom r = AbstractDungeon.currMapNode == null ? null : AbstractDungeon.getCurrRoom();
+        if (!(r instanceof com.megacrit.cardcrawl.rooms.EventRoom) || r.event == null) return false;
+        String n = r.event.getClass().getSimpleName();
+        return n.contains("Colosseum") || n.contains("DeadAdventurer");
     }
 
     private static Method findMethod(Class<?> c, String name, Class<?>... args) throws NoSuchMethodException {
@@ -284,6 +366,28 @@ public class MPHooks {
                 AbstractDungeon.firstRoomChosen = firstChosenBefore;
                 Session.voteMap(__instance.x, __instance.y);
             }
+        }
+    }
+
+    /** Clicking the boss icon is a vote too. */
+    @SpirePatch2(clz = com.megacrit.cardcrawl.map.DungeonMap.class, method = "update")
+    public static class BossVote {
+        @SpirePrefixPatch
+        public static void prefix(com.megacrit.cardcrawl.map.DungeonMap __instance) {
+            if (!MP.inRun || MP.playerCount() < 2) return;
+            if (AbstractDungeon.screen != AbstractDungeon.CurrentScreen.MAP) return;
+            if (AbstractDungeon.getCurrRoom().phase != AbstractRoom.RoomPhase.COMPLETE) return;
+            if (!__instance.bossHb.hovered || !com.megacrit.cardcrawl.helpers.input.InputHelper.justClickedLeft) return;
+            // only from the last row before the boss
+            MapRoomNode cur = AbstractDungeon.getCurrMapNode();
+            boolean next = false;
+            for (java.util.ArrayList<MapRoomNode> row : AbstractDungeon.map)
+                for (MapRoomNode n : row)
+                    if (n.room instanceof MonsterRoomBoss && cur.isConnectedTo(n)) next = true;
+            boolean lastRow = cur.y >= AbstractDungeon.map.size() - 2;
+            if (!next && !lastRow) return;
+            com.megacrit.cardcrawl.helpers.input.InputHelper.justClickedLeft = false;
+            Session.voteMap(-1, 99);
         }
     }
 

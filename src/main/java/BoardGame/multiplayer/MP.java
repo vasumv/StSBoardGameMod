@@ -265,6 +265,7 @@ public class MP {
         if (autoStartDone) return;
         if (com.megacrit.cardcrawl.core.CardCrawlGame.mainMenuScreen == null) return;
         autoStartDone = true;
+        if (Boolean.getBoolean("bg.fast")) com.megacrit.cardcrawl.core.Settings.FAST_MODE = true;
         String h = System.getProperty("bg.mp.host"), j = System.getProperty("bg.mp.join");
         if (h != null) host(Integer.parseInt(h));
         else if (j != null) join(j.substring(0, j.lastIndexOf(':')), Integer.parseInt(j.substring(j.lastIndexOf(':') + 1)));

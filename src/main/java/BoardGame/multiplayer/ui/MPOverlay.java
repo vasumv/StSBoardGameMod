@@ -72,6 +72,53 @@ public class MPOverlay implements PostRenderSubscriber {
     private static final Button acceptBtn = new Button(760, 520, 190, 50, "Accept");
     private static final Button declineBtn = new Button(970, 520, 190, 50, "Decline");
 
+    // party actions (built fresh each frame; the same list is used for clicks and drawing)
+    private interface Act {
+        void run();
+    }
+
+    private static final ArrayList<Button> partyButtons = new ArrayList<>();
+    private static final ArrayList<Act> partyActs = new ArrayList<>();
+
+    private static void buildPartyButtons() {
+        partyButtons.clear();
+        partyActs.clear();
+        if (!MP.inRun || MP.playerCount() < 2 || !CardCrawlGame.isInARun() || AbstractDungeon.player == null) return;
+        if (AbstractDungeon.currMapNode == null || AbstractDungeon.getCurrRoom() == null) return;
+        float y = 170;
+        if (MonsterSync.active()) {
+            int t = Session.giveTargetId();
+            add(16, 600, "'Any player' effects go to: " + (t == MP.myId ? "You" : Session.nameOf(t)),
+                    Session::cycleGiveTarget);
+            return;
+        }
+        if (AbstractDungeon.getCurrRoom().phase == com.megacrit.cardcrawl.rooms.AbstractRoom.RoomPhase.COMBAT) return;
+        boolean shopOrEvent = AbstractDungeon.getCurrRoom() instanceof com.megacrit.cardcrawl.rooms.ShopRoom
+                || AbstractDungeon.getCurrRoom() instanceof com.megacrit.cardcrawl.rooms.EventRoom;
+        for (MP.Player p : MP.players) {
+            if (p.id == MP.myId || !p.connected) continue;
+            final int to = p.id;
+            add(16, y, "Switch rows with " + p.name, () -> Session.swapRow(to));
+            y += 40;
+            for (int i = 0; i < AbstractDungeon.player.potions.size(); i++) {
+                com.megacrit.cardcrawl.potions.AbstractPotion po = AbstractDungeon.player.potions.get(i);
+                if (po instanceof com.megacrit.cardcrawl.potions.PotionSlot) continue;
+                final int slot = i;
+                add(16, y, "Give " + po.name + " to " + p.name, () -> Session.givePotion(slot, to));
+                y += 40;
+            }
+            if (shopOrEvent && AbstractDungeon.player.gold > 0) {
+                add(16, y, "Pay 1 gold toward " + p.name + "'s purchase", () -> Session.giveGold(1, to));
+                y += 40;
+            }
+        }
+    }
+
+    private static void add(float x, float y, String text, Act a) {
+        partyButtons.add(new Button(x, y, 420, 36, text));
+        partyActs.add(a);
+    }
+
     private static boolean onMainMenu() {
         return CardCrawlGame.mode == CardCrawlGame.GameMode.CHAR_SELECT && CardCrawlGame.mainMenuScreen != null
                 && !CardCrawlGame.isInARun() && CardCrawlGame.mainMenuScreen.screen
@@ -97,6 +144,15 @@ public class MPOverlay implements PostRenderSubscriber {
                 else if (leaveBtn.clicked()) MP.leave();
             }
             return;
+        }
+        if (!AbstractDungeon.isScreenUp || AbstractDungeon.screen == AbstractDungeon.CurrentScreen.MAP) {
+            buildPartyButtons();
+            for (int i = 0; i < partyButtons.size(); i++) {
+                if (partyButtons.get(i).clicked()) {
+                    partyActs.get(i).run();
+                    return;
+                }
+            }
         }
         if (Session.proposal != null && Session.proposal.proposer != MP.myId
                 && !Session.proposal.yes.contains(MP.myId)) {
@@ -211,6 +267,10 @@ public class MPOverlay implements PostRenderSubscriber {
         textBlock(sb, 1180, 110, 720, lines, Settings.CREAM_COLOR);
 
         if (combat) renderRowLabels(sb);
+        if (!AbstractDungeon.isScreenUp || AbstractDungeon.screen == AbstractDungeon.CurrentScreen.MAP) {
+            buildPartyButtons();
+            for (Button b : partyButtons) b.render(sb);
+        }
         if (Session.proposal != null) renderProposal(sb);
     }
 

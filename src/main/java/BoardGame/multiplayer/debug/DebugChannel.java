@@ -145,7 +145,7 @@ public class DebugChannel {
                 com.megacrit.cardcrawl.actions.GameActionManager am = AbstractDungeon.actionManager;
                 StringBuilder sb = new StringBuilder("phase=" + am.phase + " cur=" + (am.currentAction == null ? "-"
                         : am.currentAction.getClass().getName()) + " turnHasEnded=" + am.turnHasEnded + " usingCard="
-                        + am.usingCard + " monsterAttacksQueued=" + am.monsterAttacksQueued + " screenUp="
+                        + am.usingCard + " monsterAttacksQueued=" + am.monsterAttacksQueued + " battleOver=" + AbstractDungeon.getCurrRoom().isBattleOver + " basicallyDead=" + AbstractDungeon.getCurrRoom().monsters.areMonstersBasicallyDead() + " screenUp="
                         + AbstractDungeon.isScreenUp + " screen=" + AbstractDungeon.screen + " endTurnEnabled="
                         + AbstractDungeon.overlayMenu.endTurnButton.enabled + " actions=");
                 for (com.megacrit.cardcrawl.actions.AbstractGameAction x : am.actions) sb.append(x.getClass().getSimpleName()).append(' ');
@@ -206,7 +206,7 @@ public class DebugChannel {
                         .append(m.maxHealth).append(" block=").append(m.currentBlock).append(" dead=")
                         .append(m.isDead).append('/').append(m.isDying).append('/').append(m.escaped)
                         .append(" intent=").append(m.intent).append(" move=").append(m.nextMove).append(" dmg=")
-                        .append(m.getIntentDmg()).append(" powers=").append(powers(m.powers)).append('\n');
+                        .append(m.getIntentDmg()).append(" dt=").append(deathTimer(m)).append(" powers=").append(powers(m.powers)).append('\n');
             }
         }
         sb.append("rng=");
@@ -218,6 +218,16 @@ public class DebugChannel {
                 .append(AbstractDungeon.actionManager.cardsPlayedThisCombat.size()).append(" undoDepth=")
                 .append(UndoManager.undoDepth());
         return sb.toString();
+    }
+
+    private static String deathTimer(AbstractMonster m) {
+        try {
+            java.lang.reflect.Field f = AbstractMonster.class.getDeclaredField("deathTimer");
+            f.setAccessible(true);
+            return String.valueOf(f.getFloat(m));
+        } catch (Throwable t) {
+            return "?";
+        }
     }
 
     private static String powers(java.util.ArrayList<AbstractPower> ps) {

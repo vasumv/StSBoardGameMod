@@ -109,6 +109,9 @@ public class Session {
     public static Proposal proposal;
     private static Long rollbackTo; // approved, waiting to execute locally
 
+    // effects a card gives "to any player": who receives them (player id)
+    public static int giveTarget = -1;
+
     // map
     public static final HashMap<Integer, int[]> mapVotes = new HashMap<>();
     public static MapRoomNode authorizedNode;
@@ -117,6 +120,7 @@ public class Session {
     private static AbstractRoom trackedRoom;
     private static int trackedTurn = -1;
     private static boolean sentDead = false;
+    private static boolean battleEndHandled = false;
     private static String lastStatus = "";
     private static float statusTimer = 0f;
     public static final ArrayList<String> toasts = new ArrayList<>();
@@ -235,6 +239,129 @@ public class Session {
         MP.send(o);
     }
 
+    public static void cycleGiveTarget() {
+        ArrayList<Integer> ids = new ArrayList<>();
+        for (MP.Player p : MP.players) if (p.connected) ids.add(p.id);
+        int cur = ids.indexOf(giveTarget < 0 ? MP.myId : giveTarget);
+        giveTarget = ids.get((cur + 1) % ids.size());
+    }
+
+    public static int giveTargetId() {
+        return giveTarget < 0 || MP.player(giveTarget) == null ? MP.myId : giveTarget;
+    }
+
+    private static boolean givesToAnyPlayer(AbstractCard c) {
+        String d = c.rawDescription == null ? "" : c.rawDescription.toLowerCase();
+        return d.contains("any player");
+    }
+
+    /** For "to any player" cards aimed at a teammate: send the effect over instead of applying it here. */
+    public static boolean redirectToTeammate(com.megacrit.cardcrawl.actions.AbstractGameAction a, AbstractCard card) {
+        int to = giveTargetId();
+        if (to == MP.myId || !givesToAnyPlayer(card)) return false;
+        AbstractPlayer me = AbstractDungeon.player;
+        String kind = null;
+        int amount = 0;
+        String power = null;
+        try {
+            if (a instanceof com.megacrit.cardcrawl.actions.common.GainBlockAction && a.target == me) {
+                kind = "block";
+                amount = a.amount;
+            } else if (a instanceof com.megacrit.cardcrawl.actions.common.GainEnergyAction) {
+                kind = "energy";
+                amount = (Integer) basemod.ReflectionHacks.getPrivate(a,
+                        com.megacrit.cardcrawl.actions.common.GainEnergyAction.class, "energyGain");
+            } else if (a instanceof com.megacrit.cardcrawl.actions.common.DrawCardAction && a.target == me) {
+                kind = "draw";
+                amount = a.amount;
+            } else if (a instanceof com.megacrit.cardcrawl.actions.common.ApplyPowerAction && a.target == me) {
+                AbstractPower p = basemod.ReflectionHacks.getPrivate(a,
+                        com.megacrit.cardcrawl.actions.common.ApplyPowerAction.class, "powerToApply");
+                kind = "power";
+                amount = a.amount;
+                power = p.getClass().getName();
+            }
+        } catch (Throwable t) {
+            MP.logger.error("could not redirect", t);
+            return false;
+        }
+        if (kind == null) return false;
+        JsonObject o = MP.msg("give");
+        o.addProperty("to", to);
+        o.addProperty("kind", kind);
+        o.addProperty("amount", amount);
+        if (power != null) o.addProperty("power", power);
+        o.addProperty("card", card.name);
+        MP.send(o);
+        return true;
+    }
+
+    private static void receiveGive(int from, JsonObject m) {
+        if (m.get("to").getAsInt() != MP.myId) return;
+        AbstractPlayer p = AbstractDungeon.player;
+        if (p == null || !combat()) return;
+        int amount = m.get("amount").getAsInt();
+        String kind = m.get("kind").getAsString();
+        com.megacrit.cardcrawl.actions.GameActionManager am = AbstractDungeon.actionManager;
+        switch (kind) {
+            case "block":
+                am.addToBottom(new com.megacrit.cardcrawl.actions.common.GainBlockAction(p, p, amount));
+                break;
+            case "energy":
+                am.addToBottom(new com.megacrit.cardcrawl.actions.common.GainEnergyAction(amount));
+                break;
+            case "draw":
+                am.addToBottom(new com.megacrit.cardcrawl.actions.common.DrawCardAction(p, amount));
+                break;
+            case "power":
+                try {
+                    Class<?> c = Class.forName(m.get("power").getAsString(), true, Session.class.getClassLoader());
+                    for (java.lang.reflect.Constructor<?> k : c.getConstructors()) {
+                        Class<?>[] ts = k.getParameterTypes();
+                        if (ts.length == 2 && ts[1] == int.class) {
+                            AbstractPower pw = (AbstractPower) k.newInstance(p, amount);
+                            am.addToBottom(new com.megacrit.cardcrawl.actions.common.ApplyPowerAction(p, p, pw, amount));
+                            break;
+                        }
+                    }
+                } catch (Throwable t) {
+                    MP.logger.error("could not apply given power", t);
+                }
+                break;
+        }
+        toast(nameOf(from) + "'s " + m.get("card").getAsString() + ": +" + amount + " " + kind);
+    }
+
+    // ---------- out of combat: potions, gold, rows ----------
+
+    public static void givePotion(int slot, int to) {
+        AbstractPlayer p = AbstractDungeon.player;
+        if (combat() || slot < 0 || slot >= p.potions.size()) return;
+        com.megacrit.cardcrawl.potions.AbstractPotion po = p.potions.get(slot);
+        if (po instanceof com.megacrit.cardcrawl.potions.PotionSlot) return;
+        p.removePotion(po);
+        JsonObject o = MP.msg("potion");
+        o.addProperty("to", to);
+        o.addProperty("id", po.ID);
+        MP.send(o);
+    }
+
+    public static void giveGold(int amount, int to) {
+        AbstractPlayer p = AbstractDungeon.player;
+        if (amount <= 0 || p.gold < amount) return;
+        p.loseGold(amount);
+        JsonObject o = MP.msg("gold");
+        o.addProperty("to", to);
+        o.addProperty("amount", amount);
+        MP.send(o);
+    }
+
+    public static void swapRow(int with) {
+        JsonObject o = MP.msg("row");
+        o.addProperty("with", with);
+        MP.send(o);
+    }
+
     // ---------- stream handling ----------
 
     public static void handle(String type, int from, JsonObject m) {
@@ -333,6 +460,39 @@ public class Session {
                 doMove(m.get("x").getAsInt(), m.get("y").getAsInt());
                 return;
             }
+            case "give":
+                receiveGive(from, m);
+                return;
+            case "potion": {
+                if (m.get("to").getAsInt() != MP.myId) return;
+                com.megacrit.cardcrawl.potions.AbstractPotion po =
+                        com.megacrit.cardcrawl.helpers.PotionHelper.getPotion(m.get("id").getAsString());
+                if (po == null) return;
+                if (!AbstractDungeon.player.obtainPotion(po)) {
+                    toast("No free potion slot for " + nameOf(from) + "'s potion; sending it back");
+                    JsonObject back = MP.msg("potion");
+                    back.addProperty("to", from);
+                    back.addProperty("id", po.ID);
+                    MP.send(back);
+                } else toast(nameOf(from) + " gave you " + po.name);
+                return;
+            }
+            case "gold": {
+                if (m.get("to").getAsInt() != MP.myId) return;
+                AbstractDungeon.player.gainGold(m.get("amount").getAsInt());
+                toast(nameOf(from) + " paid you " + m.get("amount").getAsInt() + " gold");
+                return;
+            }
+            case "row": {
+                if (combat()) return;
+                MP.Player a = MP.player(from), b = MP.player(m.get("with").getAsInt());
+                if (a == null || b == null) return;
+                int r = a.row;
+                a.row = b.row;
+                b.row = r;
+                toast(a.name + " and " + b.name + " switched rows");
+                return;
+            }
             case "dead": {
                 toast(nameOf(from) + " has died. The party is defeated.");
                 AbstractPlayer p = AbstractDungeon.player;
@@ -387,31 +547,84 @@ public class Session {
         MP.send(o);
     }
 
+    /** Move the party: replay the game's own map click for that room. */
     private static void doMove(int x, int y) {
+        pendingMove = new int[]{x, y};
+    }
+
+    private static int[] pendingMove;
+
+    /** Same steps the game takes when the boss icon is clicked. */
+    private static void enterBoss() {
+        AbstractDungeon.getCurrMapNode().taken = true;
+        for (MapEdge e : AbstractDungeon.getCurrMapNode().getEdges()) if (e != null) e.markAsTaken();
+        CardCrawlGame.music.fadeOutTempBGM();
+        MapRoomNode node = new MapRoomNode(-1, 15);
+        node.room = new com.megacrit.cardcrawl.rooms.MonsterRoomBoss();
+        AbstractDungeon.nextRoom = node;
+        if (AbstractDungeon.pathY.size() > 1) {
+            AbstractDungeon.pathX.add(AbstractDungeon.pathX.get(AbstractDungeon.pathX.size() - 1));
+            AbstractDungeon.pathY.add(AbstractDungeon.pathY.get(AbstractDungeon.pathY.size() - 1) + 1);
+        } else {
+            AbstractDungeon.pathX.add(1);
+            AbstractDungeon.pathY.add(15);
+        }
+        AbstractDungeon.nextRoomTransitionStart();
+        AbstractDungeon.dungeonMapScreen.map.bossHb.hovered = false;
+    }
+
+    private static void updatePendingMove() {
+        if (pendingMove == null) return;
         try {
-            MapRoomNode node = AbstractDungeon.map.get(y).get(x);
-            if (AbstractDungeon.isScreenUp && AbstractDungeon.screen != AbstractDungeon.CurrentScreen.MAP) {
-                AbstractDungeon.closeCurrentScreen();
+            if (AbstractDungeon.screen != AbstractDungeon.CurrentScreen.MAP) {
+                if (AbstractDungeon.isScreenUp) AbstractDungeon.closeCurrentScreen();
+                AbstractDungeon.dungeonMapScreen.open(false);
+                return; // let the map open first
+            }
+            boolean boss = pendingMove[1] >= AbstractDungeon.map.size()
+                    || AbstractDungeon.map.get(pendingMove[1]).get(pendingMove[0]).room
+                    instanceof com.megacrit.cardcrawl.rooms.MonsterRoomBoss;
+            if (boss) {
+                pendingMove = null;
+                enterBoss();
+                return;
+            }
+            MapRoomNode node = AbstractDungeon.map.get(pendingMove[1]).get(pendingMove[0]);
+            if (AbstractDungeon.screen != AbstractDungeon.CurrentScreen.MAP) {
+                if (AbstractDungeon.isScreenUp) AbstractDungeon.closeCurrentScreen();
+                AbstractDungeon.dungeonMapScreen.open(false);
+                return; // let the map open first
             }
             authorizedNode = node;
             if (!AbstractDungeon.firstRoomChosen) {
                 AbstractDungeon.firstRoomChosen = true;
-                AbstractDungeon.setCurrMapNode(node);
-            } else {
-                AbstractDungeon.getCurrMapNode().taken = true;
+                AbstractDungeon.dungeonMapScreen.dismissable = true;
             }
-            MapEdge edge = AbstractDungeon.getCurrMapNode().getEdgeConnectedTo(node);
-            if (edge != null) edge.markAsTaken();
-            AbstractDungeon.nextRoom = node;
-            AbstractDungeon.pathX.add(node.x);
-            AbstractDungeon.pathY.add(node.y);
-            CardCrawlGame.metricData.path_taken.add(node.getRoom().getMapSymbol());
-            if (!AbstractDungeon.isDungeonBeaten) {
-                AbstractDungeon.nextRoomTransitionStart();
-                CardCrawlGame.music.fadeOutTempBGM();
-            }
+            basemod.ReflectionHacks.setPrivate(node, MapRoomNode.class, "animWaitTimer", 0.25f);
         } catch (Throwable t) {
-            MP.logger.error("could not move to " + x + "," + y, t);
+            MP.logger.error("could not move", t);
+        }
+        pendingMove = null;
+    }
+
+    private static Object rotatedRelicDeck, rotatedPotionDeck;
+
+    /**
+     * Relic and potion decks are shared in the board game. Every game holds the same shuffled
+     * copy, so each player starts drawing at a different point of it to avoid duplicates.
+     */
+    private static void offsetSharedDecks() {
+        int n = MP.playerCount(), row = MP.myRow();
+        if (n < 2) return;
+        java.util.ArrayList<com.megacrit.cardcrawl.relics.AbstractRelic> rd = BoardGame.relics.AbstractBGRelic.relicDeck;
+        if (rd != null && rd != rotatedRelicDeck && rd.size() > 0) {
+            java.util.Collections.rotate(rd, -(row * rd.size() / n));
+            rotatedRelicDeck = rd;
+        }
+        java.util.ArrayList<String> pd = BoardGame.potions.PotionHelperPatch.potionDeck;
+        if (pd != null && pd != rotatedPotionDeck && pd.size() > 0) {
+            java.util.Collections.rotate(pd, -(row * pd.size() / n));
+            rotatedPotionDeck = pd;
         }
     }
 
@@ -433,6 +646,8 @@ public class Session {
         }
         sendStatus(dt);
         checkDeath();
+        updatePendingMove();
+        offsetSharedDecks();
         if (!CardCrawlGame.isInARun() || AbstractDungeon.currMapNode == null) return;
 
         AbstractRoom room = AbstractDungeon.getCurrRoom();
@@ -440,7 +655,16 @@ public class Session {
             trackedRoom = room;
             onRoomChanged();
         }
-        if (!combat()) return;
+        if (!combat()) {
+            // the local game may have just won the fight: share what ended it
+            if (room != null && room.monsters != null && room.isBattleOver && !battleEndHandled && baseline != null
+                    && AbstractDungeon.actionManager.actions.isEmpty()) {
+                battleEndHandled = true;
+                if (resolving != null && resolving.from == MP.myId && resolvingStarted) finishOwnPlay(true);
+                else sendLocalDelta(false);
+            }
+            return;
+        }
         if (GameActionManager.turn != trackedTurn) {
             trackedTurn = GameActionManager.turn;
             steps.clear();
@@ -461,7 +685,9 @@ public class Session {
         // 2. finish the play we are resolving
         if (resolving != null) {
             if (resolving.from == MP.myId) {
-                if (resolvingStarted && idle && !AbstractDungeon.actionManager.cardQueue.contains(authorizedItem)) {
+                boolean settled = idle || (AbstractDungeon.getCurrRoom().isBattleOver
+                        && AbstractDungeon.actionManager.actions.isEmpty());
+                if (resolvingStarted && settled && !AbstractDungeon.actionManager.cardQueue.contains(authorizedItem)) {
                     finishOwnPlay(true);
                 }
             } else {
@@ -646,6 +872,7 @@ public class Session {
     }
 
     private static void onRoomChanged() {
+        battleEndHandled = false;
         queue.clear();
         logicalPending.clear();
         cancelled.clear();
@@ -661,9 +888,7 @@ public class Session {
         proposal = null;
         rollbackTo = null;
         mapVotes.clear();
-        authorizedNode = null;
         trackedTurn = -1;
-        MonsterSync.resetIds();
         wasIdle = false;
         BoardGame.multiplayer.combat.MPHooks.disposeDeferred();
     }

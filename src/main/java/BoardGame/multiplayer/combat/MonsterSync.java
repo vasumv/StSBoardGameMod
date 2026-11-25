@@ -55,17 +55,28 @@ public class MonsterSync {
     }
 
     private static int nextSpawn = 0;
+    /** The room whose fight is shared by the whole party (null when the local fight is solo). */
+    public static AbstractRoom sharedRoom;
 
     public static void resetIds() {
         nextSpawn = 0;
+    }
+
+    public static String nextId() {
+        return "m" + (nextSpawn++);
     }
 
     /** Give ids to monsters that lack one, in list order (identical in every game). */
     public static void assignIds() {
         MonsterGroup g = group();
         if (g == null) return;
+        HashSet<String> seen = new HashSet<>();
         for (AbstractMonster m : g.monsters) {
-            if (id(m) == null) MPFields.Monster.id.set(m, "m" + (nextSpawn++));
+            // summons can be pooled objects that still carry an id from an earlier fight
+            if (id(m) == null || !seen.add(id(m))) {
+                MPFields.Monster.id.set(m, "m" + (nextSpawn++));
+                seen.add(id(m));
+            }
         }
     }
 
@@ -87,14 +98,14 @@ public class MonsterSync {
 
     /** Does this enemy act against the local player? (Its row, or a Boss.) */
     public static boolean targetsMe(AbstractMonster m) {
-        if (!MP.inRun || MP.playerCount() < 2) return true;
+        if (!MP.inRun || MP.playerCount() < 2 || !active()) return true;
         if (isBossRoom()) return true;
         return row(m) == MP.myRow();
     }
 
     /** Screen offset for a row other than the local player's. */
     public static float[] layoutFor(int row) {
-        if (!MP.inRun || isBossRoom() || row == MP.myRow()) return new float[]{0f, 0f};
+        if (!MP.inRun || MP.playerCount() < 2 || isBossRoom() || row == MP.myRow()) return new float[]{0f, 0f};
         ArrayList<Integer> others = new ArrayList<>();
         for (MP.Player p : MP.players) if (p.row != MP.myRow()) others.add(p.row);
         if (!others.contains(row)) others.add(row);
@@ -703,7 +714,8 @@ public class MonsterSync {
 
     /** True while the room is a multi-row multiplayer combat. */
     public static boolean active() {
-        return MP.inRun && AbstractDungeon.currMapNode != null && AbstractDungeon.getCurrRoom() != null
+        return MP.inRun && MP.playerCount() > 1 && AbstractDungeon.currMapNode != null
+                && AbstractDungeon.getCurrRoom() != null && AbstractDungeon.getCurrRoom() == sharedRoom
                 && AbstractDungeon.getCurrRoom().phase == AbstractRoom.RoomPhase.COMBAT;
     }
 }
