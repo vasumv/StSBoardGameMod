@@ -5,7 +5,7 @@ B=$(cd "$(dirname "$0")" && pwd)
 for pid in $(pgrep -f "java .*bg.debug.dir=$B/"); do kill $pid; done
 sleep 2; for pid in $(pgrep -f "java .*bg.debug.dir=$B/"); do kill -9 $pid; done
 avail=$(awk '/MemAvailable/{print int($2/1024/1024)}' /proc/meminfo)
-[ "$avail" -ge 8 ] || { echo "only ${avail}G memory available; not starting two game copies"; exit 1; }
+[ "$avail" -ge 5 ] || { echo "only ${avail}G memory available; not starting two game copies"; exit 1; }
 pkill -f "^Xvfb :[0-9]+ -screen 0 1280x720x24" 2>/dev/null
 sleep 4; 
 setsid nohup $B/start.sh p1 99 -Dbg.mp.host=7777 -Dbg.fast=true -Dbg.mp.name=Alice -Dbg.mp.char=${C1:-0} >/dev/null 2>&1 &

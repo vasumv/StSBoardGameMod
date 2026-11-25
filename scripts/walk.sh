@@ -15,7 +15,7 @@ for f in $(seq 1 ${1:-5}); do
     m1=$($Q p1 state | grep "^monster" | cut -d' ' -f2-4); m2=$($Q p2 state | grep "^monster" | cut -d' ' -f2-4)
     [ "$m1" = "$m2" ] && line="$line same-fight[$(echo $m1 | tr '\n' ' ')]" || line="$line FIGHT-DIFFERS[$m1 | $m2]"
     n=$(echo "$m1" | wc -l)
-    for r in 1 2 3 4; do
+    for r in 1 2 3 4 5 6 7 8; do
       for i in $(seq 0 $((n-1))); do $Q p1 "hit $i 99" >/dev/null; sleep 0.6; done
       sleep 3; $Q p1 "mp map" | grep -q "phase=COMBAT" || break
     done

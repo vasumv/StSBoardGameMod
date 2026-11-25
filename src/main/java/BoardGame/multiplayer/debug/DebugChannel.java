@@ -160,6 +160,25 @@ public class DebugChannel {
                                 com.megacrit.cardcrawl.cards.DamageInfo.DamageType.THORNS)));
                 return "ok";
             }
+            case "proceed": {
+                // test helper: what the Proceed button does after a boss and at the boss chest
+                com.megacrit.cardcrawl.ui.buttons.ProceedButton pb = AbstractDungeon.overlayMenu.proceedButton;
+                try {
+                    if (AbstractDungeon.getCurrRoom() instanceof com.megacrit.cardcrawl.rooms.TreasureRoomBoss) {
+                        java.lang.reflect.Method m = pb.getClass().getDeclaredMethod("goToNextDungeon",
+                                com.megacrit.cardcrawl.rooms.AbstractRoom.class);
+                        m.setAccessible(true);
+                        m.invoke(pb, AbstractDungeon.getCurrRoom());
+                        return "next dungeon";
+                    }
+                    java.lang.reflect.Method m = pb.getClass().getDeclaredMethod("goToTreasureRoom");
+                    m.setAccessible(true);
+                    m.invoke(pb);
+                    return "boss chest";
+                } catch (Throwable t) {
+                    return "ERROR " + t;
+                }
+            }
             case "skiproom":
                 // test helper: finish the current non-combat room and open the map
                 if (AbstractDungeon.isScreenUp) AbstractDungeon.closeCurrentScreen();
