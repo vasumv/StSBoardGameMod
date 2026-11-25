@@ -105,7 +105,7 @@ public class MonsterSync {
 
     /** Screen offset for a row other than the local player's. */
     public static float[] layoutFor(int row) {
-        if (!MP.inRun || MP.playerCount() < 2 || isBossRoom() || row == MP.myRow()) return new float[]{0f, 0f};
+        if (true) return new float[]{0f, 0f}; // other rows are drawn in teammate panels (ui.RowView)
         ArrayList<Integer> others = new ArrayList<>();
         for (MP.Player p : MP.players) if (p.row != MP.myRow()) others.add(p.row);
         if (!others.contains(row)) others.add(row);

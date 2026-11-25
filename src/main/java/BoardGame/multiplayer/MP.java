@@ -179,6 +179,10 @@ public class MP {
     private static void handle(JsonObject m) {
         String t = m.get("t").getAsString();
         int from = m.has("from") ? m.get("from").getAsInt() : -1;
+        if (!t.equals("status")) {
+            String txt = m.toString();
+            logger.info("[mp] " + (txt.length() > 400 ? txt.substring(0, 400) + "..." : txt));
+        }
         switch (t) {
             case "welcome":
                 myId = m.get("id").getAsInt();

@@ -54,6 +54,7 @@ public class Session {
         public JsonObject delta;
         public int deltaSeq;
         public boolean eot;
+        public int to = -1;
     }
 
     public static class Step {
@@ -109,8 +110,10 @@ public class Session {
     public static Proposal proposal;
     private static Long rollbackTo; // approved, waiting to execute locally
 
-    // effects a card gives "to any player": who receives them (player id)
+    // effects a card gives "to any player": who receives them (player id); set per play
     public static int giveTarget = -1;
+    /** Teammate the card being released was dropped on (-1: yourself). */
+    public static int nextRecipient = -1;
 
     // map
     public static final HashMap<Integer, int[]> mapVotes = new HashMap<>();
@@ -189,6 +192,10 @@ public class Session {
     /** Called when the local player releases a card: send it to the shared queue instead of playing it. */
     public static void requestPlay(CardQueueItem item) {
         if (item.card == null) return;
+        if (BoardGame.multiplayer.combat.DiePhase.deciding()) {
+            toast("Keep or change the die first");
+            return;
+        }
         String uuid = item.card.uuid.toString();
         if (requestedCards.contains(uuid)) return;
         requestedCards.add(uuid);
@@ -198,6 +205,9 @@ public class Session {
         o.addProperty("label", item.card.name + (item.monster != null ? " > " + item.monster.name : ""));
         o.addProperty("cardId", item.card.cardID);
         o.addProperty("upgraded", item.card.upgraded);
+        o.addProperty("to", nextRecipient);
+        if (nextRecipient >= 0) o.addProperty("label", item.card.name + " > " + nameOf(nextRecipient));
+        nextRecipient = -1;
         MP.send(o);
     }
 
@@ -206,6 +216,7 @@ public class Session {
     }
 
     public static void toggleReady() {
+        BoardGame.multiplayer.combat.DiePhase.confirm(); // ending the turn accepts the die
         MP.Player me = MP.me();
         JsonObject o = MP.msg("ready");
         o.addProperty("v", me == null || !me.endTurnReady);
@@ -374,6 +385,7 @@ public class Session {
                 p.uuid = m.get("uuid").getAsString();
                 p.target = m.get("target").getAsString();
                 p.label = nameOf(from) + ": " + m.get("label").getAsString();
+                p.to = m.has("to") ? m.get("to").getAsInt() : -1;
                 queue.add(p);
                 logicalPending.add(n);
                 MP.Player pl = MP.player(from);
@@ -462,6 +474,10 @@ public class Session {
             }
             case "give":
                 receiveGive(from, m);
+                return;
+            case "die":
+            case "lock":
+                BoardGame.multiplayer.combat.DiePhase.onMessage(type, from, m);
                 return;
             case "potion": {
                 if (m.get("to").getAsInt() != MP.myId) return;
@@ -766,6 +782,7 @@ public class Session {
             finishOwnPlay(false);
             return;
         }
+        giveTarget = p.to;
         authorizedItem = new CardQueueItem(card, target);
         AbstractDungeon.actionManager.cardQueue.add(authorizedItem);
         resolvingStarted = true;
@@ -791,6 +808,7 @@ public class Session {
         }
         MP.send(o);
         baseline = MonsterSync.capture();
+        giveTarget = -1;
         authorizedItem = null;
         resolving = null;
         resolvingStarted = false;
@@ -873,6 +891,7 @@ public class Session {
 
     private static void onRoomChanged() {
         battleEndHandled = false;
+        BoardGame.multiplayer.combat.DiePhase.reset();
         queue.clear();
         logicalPending.clear();
         cancelled.clear();

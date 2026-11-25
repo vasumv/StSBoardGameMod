@@ -75,6 +75,19 @@ public class DebugChannel {
                     case "char":
                         BoardGame.multiplayer.MP.setCharacter(Integer.parseInt(a[2]));
                         return "ok";
+                    case "keep":
+                        BoardGame.multiplayer.combat.DiePhase.confirm();
+                        return "ok";
+                    case "setdie":
+                        BoardGame.thedie.TheDie.tentativeRoll(Integer.parseInt(a[2]));
+                        return "ok";
+                    case "die":
+                        return "key=" + BoardGame.multiplayer.combat.DiePhase.roundKey + " deciding="
+                                + BoardGame.multiplayer.combat.DiePhase.deciding() + " decided="
+                                + BoardGame.multiplayer.combat.DiePhase.decided + " me="
+                                + BoardGame.multiplayer.combat.DiePhase.iConfirmed() + " roll="
+                                + BoardGame.thedie.TheDie.initialRoll + "/" + BoardGame.thedie.TheDie.finalRelicRoll
+                                + "/" + BoardGame.thedie.TheDie.monsterRoll;
                     case "ready":
                         BoardGame.multiplayer.Session.toggleReady();
                         return "ok";

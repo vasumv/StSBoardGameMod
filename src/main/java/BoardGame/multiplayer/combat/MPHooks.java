@@ -205,29 +205,7 @@ public class MPHooks {
                 || n.contains("Slime") || n.contains("Status") || n.contains("Void");
     }
 
-    // ---------------- one shared die per round ----------------
-
-    @SpirePatch2(clz = TheDie.class, method = "roll")
-    public static class SharedDie {
-        @SpireInstrumentPatch
-        public static ExprEditor edit() {
-            return new ExprEditor() {
-                @Override
-                public void edit(MethodCall m) throws CannotCompileException {
-                    if (m.getMethodName().equals("random") && m.getClassName().equals(
-                            "com.megacrit.cardcrawl.random.Random")) {
-                        m.replace("{ if (BoardGame.multiplayer.MP.inRun) $_ = BoardGame.multiplayer.combat.MPHooks.sharedDie();"
-                                + " else $_ = $proceed($$); }");
-                    }
-                }
-            };
-        }
-    }
-
-    public static int sharedDie() {
-        long s = MP.seed * 1000003L + AbstractDungeon.floorNum * 1009L + GameActionManager.turn * 31L;
-        return new java.util.Random(s).nextInt(6) + 1;
-    }
+    // the shared die lives in DiePhase
 
     // ---------------- rows: one encounter per player ----------------
 
