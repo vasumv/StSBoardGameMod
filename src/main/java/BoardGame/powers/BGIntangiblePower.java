@@ -45,14 +45,10 @@ public class BGIntangiblePower extends AbstractBGPower {
     }
 
 
-    public void atEndOfTurn(boolean isPlayer) {
-        if (this.justApplied) {
-            this.justApplied = false;
-            return;
-        }
-        flash();
-
-        addToBot((AbstractGameAction)new RemoveSpecificPowerAction(this.owner, this.owner, "BGIntangible"));
+    //No longer expires on its own: the owner (Nemesis) adds and removes it as its cube moves
+    //on and off its "can't lose HP" rows.
+    public void stackPower(int stackAmount) {
+        //amount stays 0; re-applying while already present is a no-op
     }
 }
 

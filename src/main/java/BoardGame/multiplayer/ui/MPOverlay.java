@@ -263,7 +263,7 @@ public class MPOverlay implements PostRenderSubscriber {
             else if (!Session.eotReleased && Session.eotSent) lines.add("Waiting for everyone's end of turn...");
         }
         if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.MAP && !Session.mapVotes.isEmpty()) {
-            lines.add("Path votes (everyone must pick the same room):");
+            lines.add("Path votes (most votes wins; a tie is decided by the die):");
             for (MP.Player p : MP.players) {
                 int[] v = Session.mapVotes.get(p.id);
                 lines.add("  " + p.name + ": " + (v == null ? "-" : roomName(v[0], v[1])));

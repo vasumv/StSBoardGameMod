@@ -56,9 +56,9 @@ public class BGGremlinNob extends AbstractBGMonster implements BGDamageIcons {
         this.canVuln = setVuln;
 
         if(AbstractDungeon.ascensionLevel==0)
-            setHp(14);
-        else if(AbstractDungeon.ascensionLevel<12)
             setHp(17);
+        else if(AbstractDungeon.ascensionLevel<12)
+            setHp(18);
         else
             setHp(19);
 

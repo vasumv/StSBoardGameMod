@@ -20,7 +20,7 @@ import com.megacrit.cardcrawl.localization.MonsterStrings;
 import com.megacrit.cardcrawl.monsters.AbstractMonster;
 import com.megacrit.cardcrawl.powers.AbstractPower;
 import com.megacrit.cardcrawl.powers.StrengthPower;
-import com.megacrit.cardcrawl.powers.WeakPower;
+import BoardGame.powers.BGWeakPower;
 
 import java.util.ArrayList;
 
@@ -73,7 +73,7 @@ public class BGGiantHead extends AbstractBGMonster implements BGDamageIcons {
             this.startingDeathDmg = 7;
         }else if(AbstractDungeon.ascensionLevel<12){
             setHp(85);
-            secondaryDmg=5;
+            secondaryDmg=3; //harder elite card: grey AOE Weak, grey AOE 3, grey quote, then AOE 8 + Str
             this.startingDeathDmg = 8;
         }else{
             setHp(90);
@@ -110,9 +110,7 @@ public class BGGiantHead extends AbstractBGMonster implements BGDamageIcons {
                 playSfx();
                 AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new ShoutAction((AbstractCreature)this, "#r~" +
                         Integer.toString(this.count) + "...~", 1.7F, 1.7F));
-                if(false) {
-                    AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new ApplyPowerAction((AbstractCreature)AbstractDungeon.player, (AbstractCreature)this, (AbstractPower)new WeakPower((AbstractCreature)AbstractDungeon.player, 1, true), 1));
-                }
+                AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new ApplyPowerAction((AbstractCreature)AbstractDungeon.player, (AbstractCreature)this, (AbstractPower)new BGWeakPower((AbstractCreature)AbstractDungeon.player, 1, true), 1));
                 break;
             case 3:
                 playSfx();
@@ -197,7 +195,10 @@ public class BGGiantHead extends AbstractBGMonster implements BGDamageIcons {
         }
         this.count--;
 
-        if(AbstractDungeon.ascensionLevel>=1 && this.count==2) {
+        if(AbstractDungeon.ascensionLevel>=1 && this.count>2) {
+            //A1+ first row: AOE Weak
+            setMove((byte) 1, AbstractMonster.Intent.DEBUFF);
+        }else if(AbstractDungeon.ascensionLevel>=1 && this.count==2) {
             setMove((byte) 4, AbstractMonster.Intent.ATTACK, this.damage.get(0).base);
         }else{
             setMove((byte) 0, AbstractMonster.Intent.UNKNOWN);

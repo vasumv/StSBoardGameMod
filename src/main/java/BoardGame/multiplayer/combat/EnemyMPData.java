@@ -47,7 +47,7 @@ public class EnemyMPData {
         AOE.put("BGBronzeAutomaton", new int[]{2, 4});
         AOE.put("BGTheCollector", new int[]{2, 3, 4});
         AOE.put("BGChamp", new int[]{1, 2, 3, 5});
-        AOE.put("BGGiantHead", new int[]{2, 4});
+        AOE.put("BGGiantHead", new int[]{1, 2, 4});
         AOE.put("BGNemesis", new int[]{0, 1, 2, 3});
         AOE.put("BGReptomancer", new int[]{1, 2, 3, 4});
         AOE.put("BGExploder", new int[]{3});

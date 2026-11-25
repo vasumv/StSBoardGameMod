@@ -134,7 +134,10 @@ public class BGTimeEater extends AbstractBGMonster implements BGDamageIcons {
                 AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new WaitAction(0.4F));
                 AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new DamageAction((AbstractCreature)AbstractDungeon.player, this.damage
                         .get(1), AbstractGameAction.AttackEffect.POISON));
-                addToBot((AbstractGameAction)new MakeTempCardInDrawPileAction((AbstractCard)new BGDazed(), 1, false, true));
+                if(AbstractDungeon.ascensionLevel>=10) {
+                    //only the A10 card adds Dazed to this row
+                    addToBot((AbstractGameAction) new MakeTempCardInDrawPileAction((AbstractCard) new BGDazed(), 1, false, true));
+                }
                 AbstractDungeon.actionManager.addToBottom((AbstractGameAction) new ApplyPowerAction((AbstractCreature)this, (AbstractCreature)this, (AbstractPower)new StrengthPower((AbstractCreature)this, 1), 1));
                 addToBot((AbstractGameAction)new ApplyPowerAction((AbstractCreature)AbstractDungeon.player, (AbstractCreature)this, (AbstractPower)new BGTimeWarpPower((AbstractCreature)AbstractDungeon.player, 5), 5));
                 break;

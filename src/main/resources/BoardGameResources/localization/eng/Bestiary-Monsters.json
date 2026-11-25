@@ -427,6 +427,31 @@
           "moves": [
             {
               "effects": [{"name": "<a","color": "GRAY"}],
+              "name": "Turn 1: [] [] [] [BoardGame:AOEIcon] [BoardGame:DazedIcon]"
+
+            },
+            {
+              "effects": [{"name": "<b","color": "GRAY"}],
+              "name": "Turn 2: [] [] [] 2 [BoardGame:HitIcon] [BoardGame:DazedIcon] [BoardGame:DazedIcon]"
+
+            },
+            {
+              "effects": [{"name": "<c","color": "GRAY"}],
+              "name": "Turn 3: [] [] [] 4 [BoardGame:HitIcon] [BoardGame:StrIcon]"
+            },
+            {
+              "effects": [{"name": "<d","color": "GRAY"}],
+              "name": "Repeat from 1."
+            }
+          ]
+        },
+        {
+          "min_asc": 7,
+          "desc": "Chosen and Cultist (14 HP) uses the harder card. Chosen and Byrd (16 HP) is unchanged.",
+          "hp": "",
+          "moves": [
+            {
+              "effects": [{"name": "<a","color": "GRAY"}],
               "name": "Turn 1: [] [] [] [BoardGame:AOEIcon] 1 [BoardGame:HitIcon] [BoardGame:DazedIcon]"
 
             },
@@ -720,7 +745,7 @@
             },
             {
               "effects": [{"name": "S","color": "GRAY"}],
-              "name": "[BoardGame:StrIcon] [BoardGame:StrIcon]"
+              "name": "[BoardGame:StrIcon]"
             },
             {
               "effects": [{"name": "s","color": "GRAY"}],
@@ -770,7 +795,7 @@
             },
             {
               "effects": [{"name": "<f","color": "GRAY"}],
-              "name": "#ySlow: Giant Head takes +1 damage from all [BoardGame:HitIcon] ."
+              "name": "#ySlow: For each player, Giant Head gains [BoardGame:VulnIcon] after they play their 4th card each turn."
             }
           ]
         },
@@ -781,12 +806,12 @@
             "moves": [
               {
                 "effects": [{"name": "<a","color": "GRAY"}],
-                "name": "Turn 1: [] [] [] \"3...\""
+                "name": "Turn 1: [] [] [] \"3...\" [] [BoardGame:AOEIcon] [BoardGame:WeakIcon]"
 
               },
               {
                 "effects": [{"name": "<b","color": "GRAY"}],
-                "name": "Turn 2: [] [] [] \"2...\" [] [BoardGame:AOEIcon] 5 [BoardGame:HitIcon]"
+                "name": "Turn 2: [] [] [] \"2...\" [] [BoardGame:AOEIcon] 3 [BoardGame:HitIcon]"
               },
               {
                 "effects": [{"name": "<c","color": "GRAY"}],
@@ -802,7 +827,7 @@
               },
               {
                 "effects": [{"name": "<f","color": "GRAY"}],
-                "name": "#ySlow: Giant Head takes +1 damage from all [BoardGame:HitIcon] ."
+                "name": "#ySlow: For each player, Giant Head gains [BoardGame:VulnIcon] after they play their 4th card each turn."
               }
             ]
           },
@@ -813,7 +838,7 @@
           "moves": [
             {
               "effects": [{"name": "<a","color": "GRAY"}],
-              "name": "Turn 1: [] [] [] \"3...\""
+              "name": "Turn 1: [] [] [] \"3...\" [] [BoardGame:AOEIcon] [BoardGame:WeakIcon]"
 
             },
             {
@@ -834,7 +859,7 @@
             },
             {
               "effects": [{"name": "<f","color": "GRAY"}],
-              "name": "#ySlow: Giant Head takes +1 damage from all [BoardGame:HitIcon] ."
+              "name": "#ySlow: For each player, Giant Head gains [BoardGame:VulnIcon] after they play their 4th card each turn."
             }
           ]
         }
@@ -1233,23 +1258,23 @@
           "moves": [
             {
               "effects": [{"name": "<a","color": "GRAY"}],
-              "name": "Turn 1: [] [] [] [BoardGame:AOEIcon] [BoardGame:BurnIcon] [BoardGame:BurnIcon] [BoardGame:BurnIcon] [BoardGame:BurnIcon]"
+              "name": "Turn 1: [] [] [] [BoardGame:AOEIcon] [BoardGame:BurnIcon] [BoardGame:BurnIcon] [BoardGame:BurnIcon] [BoardGame:BurnIcon] [BoardGame:BurnIcon]"
             },
             {
               "effects": [{"name": "<b","color": "GRAY"}],
-              "name": "Turn 2: [] [] [] [BoardGame:AOEIcon] 4 [BoardGame:HitIcon] [] Nemesis can't lose HP this turn."
+              "name": "Turn 2: [] [] [] [BoardGame:AOEIcon] 5 [BoardGame:HitIcon] [] Nemesis can't lose HP while the cube is on this action."
             },
             {
               "effects": [{"name": "<c","color": "GRAY"}],
-              "name": "Turn 3: [] [] [] [BoardGame:AOEIcon] 2 [BoardGame:HitIcon] 2 [BoardGame:HitIcon] [BoardGame:BurnIcon]"
+              "name": "Turn 3: [] [] [] [BoardGame:AOEIcon] 2 [BoardGame:HitIcon] 2 [BoardGame:HitIcon] 2 [BoardGame:HitIcon]"
             },
             {
               "effects": [{"name": "<d","color": "GRAY"}],
-              "name": "Turn 4: [] [] [] [BoardGame:AOEIcon] 7 [BoardGame:HitIcon] [] Nemesis can't lose HP this turn."
+              "name": "Turn 4: [] [] [] [BoardGame:AOEIcon] 8 [BoardGame:HitIcon] [] Nemesis can't lose HP while the cube is on this action."
             },
             {
               "effects": [{"name": "<e","color": "GRAY"}],
-              "name": "Repeat from 3."
+              "name": "Repeat from 1."
             }
           ]
         },
@@ -1264,19 +1289,19 @@
             },
             {
               "effects": [{"name": "<b","color": "GRAY"}],
-              "name": "Turn 2: [] [] [] [BoardGame:AOEIcon] 5 [BoardGame:HitIcon] [] Nemesis can't lose HP this turn."
+              "name": "Turn 2: [] [] [] [BoardGame:AOEIcon] 5 [BoardGame:HitIcon] [] Nemesis can't lose HP while the cube is on this action."
             },
             {
               "effects": [{"name": "<c","color": "GRAY"}],
-              "name": "Turn 3: [] [] [] [BoardGame:AOEIcon] 2 [BoardGame:HitIcon] 2 [BoardGame:HitIcon] [BoardGame:BurnIcon]"
+              "name": "Turn 3: [] [] [] [BoardGame:AOEIcon] 2 [BoardGame:HitIcon] 2 [BoardGame:HitIcon] 2 [BoardGame:HitIcon] [BoardGame:BurnIcon] [BoardGame:BurnIcon]"
             },
             {
               "effects": [{"name": "<d","color": "GRAY"}],
-              "name": "Turn 4: [] [] [] [BoardGame:AOEIcon] 8 [BoardGame:HitIcon] [] Nemesis can't lose HP this turn."
+              "name": "Turn 4: [] [] [] [BoardGame:AOEIcon] 9 [BoardGame:HitIcon] [] Nemesis can't lose HP while the cube is on this action."
             },
             {
               "effects": [{"name": "<e","color": "GRAY"}],
-              "name": "Repeat from 3."
+              "name": "Repeat from 1."
             }
           ]
         },
@@ -1291,7 +1316,7 @@
             },
             {
               "effects": [{"name": "<b","color": "GRAY"}],
-              "name": "Turn 2: [] [] [] [BoardGame:AOEIcon] 6 [BoardGame:HitIcon] [] Nemesis can't lose HP this turn."
+              "name": "Turn 2: [] [] [] [BoardGame:AOEIcon] 6 [BoardGame:HitIcon] [] Nemesis can't lose HP while the cube is on this action."
             },
             {
               "effects": [{"name": "<c","color": "GRAY"}],
@@ -1299,11 +1324,11 @@
             },
             {
               "effects": [{"name": "<d","color": "GRAY"}],
-              "name": "Turn 4: [] [] [] [BoardGame:AOEIcon] 8 [BoardGame:HitIcon] [] Nemesis can't lose HP this turn."
+              "name": "Turn 4: [] [] [] [BoardGame:AOEIcon] 8 [BoardGame:HitIcon] [] Nemesis can't lose HP while the cube is on this action."
             },
             {
               "effects": [{"name": "<e","color": "GRAY"}],
-              "name": "Repeat from 3."
+              "name": "Repeat from 1."
             }
           ]
         }
@@ -1319,20 +1344,20 @@
           "hp": "",
           "moves": [
             {
-              "effects": [{"name": "-a","color": "GRAY"}],
-              "name": "Turn 1: [] [] [] [BoardGame:AOEIcon] 1 [BoardGame:HitIcon]"
+              "effects": [{"name": "3","color": "GRAY"}],
+              "name": "3 [BoardGame:HitIcon]"
             },
             {
-              "effects": [{"name": "-b","color": "GRAY"}],
-              "name": "Turn 2: [] [] [] 4 [BoardGame:HitIcon] [BoardGame:DazedIcon]"
+              "effects": [{"name": "w","color": "GRAY"}],
+              "name": "[BoardGame:WeakIcon] [BoardGame:WeakIcon]"
             },
             {
-              "effects": [{"name": "-c","color": "GRAY"}],
-              "name": "Turn 3: [] [] [] #ySummon an Acid Slime at the start of the next round."
+              "effects": [{"name": "D","color": "GRAY"}],
+              "name": "2 [BoardGame:HitIcon] [BoardGame:DazedIcon] [BoardGame:DazedIcon]"
             },
             {
-              "effects": [{"name": "-d","color": "GRAY"}],
-              "name": "Repeat from 1."
+              "effects": [{"name": ">","color": "GRAY"}],
+              "name": "#ySplit: On death, summon an Acid Slime and a Spike Slime at the start of the next round."
             },
             {
               "effects": [{"name": "W","color": "GRAY"}],
@@ -1586,7 +1611,7 @@
             },
             {
               "effects": [{"name": "<c","color": "GRAY"}],
-              "name": "Turn 3: [] [] [] [BoardGame:AOEIcon] 7 [BoardGame:HitIcon]"
+              "name": "Turn 3: [] [] [] [BoardGame:AOEIcon] 7 [BoardGame:HitIcon] [BoardGame:WeakIcon]"
             },
             {
               "effects": [{"name": "<d","color": "GRAY"}],
@@ -1605,11 +1630,11 @@
             },
             {
               "effects": [{"name": "<b","color": "GRAY"}],
-              "name": "Turn 2: [] [] [] NL [BoardGame:AOEIcon] 7 [BoardGame:HitIcon] [BoardGame:DazedIcon] Then, if there are no Daggers, skip to turn 1."
+              "name": "Turn 2: [] [] [] NL [BoardGame:AOEIcon] 7 [BoardGame:HitIcon] [BoardGame:WeakIcon] Then, if there are no Daggers, skip to turn 1."
             },
             {
               "effects": [{"name": "<c","color": "GRAY"}],
-              "name": "Turn 3: [] [] [] [BoardGame:AOEIcon] 4 [BoardGame:HitIcon] 4 [BoardGame:HitIcon] [BoardGame:StrIcon]"
+              "name": "Turn 3: [] [] [] [BoardGame:AOEIcon] 3 [BoardGame:HitIcon] 3 [BoardGame:HitIcon] [BoardGame:StrIcon]"
             },
             {
               "effects": [{"name": "<d","color": "GRAY"}],
@@ -1628,7 +1653,7 @@
             },
             {
               "effects": [{"name": "<b","color": "GRAY"}],
-              "name": "Turn 2: [] [] [] NL [BoardGame:AOEIcon] 7 [BoardGame:HitIcon] [BoardGame:DazedIcon] [BoardGame:DazedIcon] Then, if there are no Daggers, skip to turn 1."
+              "name": "Turn 2: [] [] [] NL [BoardGame:AOEIcon] 7 [BoardGame:HitIcon] [BoardGame:WeakIcon] [BoardGame:DazedIcon] [BoardGame:DazedIcon] Then, if there are no Daggers, skip to turn 1."
             },
             {
               "effects": [{"name": "<c","color": "GRAY"}],
@@ -1981,7 +2006,7 @@
             },
             {
               "effects": [{"name": "4","color": "GRAY"}],
-              "name": "5 [BoardGame:HitIcon] [] #yConfused: 1"
+              "name": "4 [BoardGame:HitIcon] [] #yConfused: 1"
             },
             {
               "effects": [{"name": "2","color": "GRAY"}],

@@ -1,8 +1,44 @@
 # Multiplayer design
 
-Status: milestones 1 and 2 are done (test harness; undo in solo play, tested on basic
-Ironclad cards only). Networking has not been started. Rules reference:
-`MULTIPLAYER_RULES.md`.
+Status (2026-11-25): playable end to end in Act 1 between two players; Acts 2-3
+untested. Rules reference: `MULTIPLAYER_RULES.md`. Audits against the sts-tbg
+reference implementation: `reference/enemy_audit.md`, `reference/enemy_mp_data.json`.
+
+## How a shared fight works now
+
+- Rows: one encounter per player row (normal and forced event fights); the Elite
+  in the bottom row with the rest of its group spread over the other rows; the
+  Boss in every row. Summons go to the summoner's row (Elite/Boss summons are
+  spread over the rows). Elite/Boss HP comes from the card's HP board for the
+  number of players (`combat/EnemyMPData`, generated from the reference data).
+- Targeting: enemies hit the player in their row; Bosses and moves marked as
+  "all players" on the card hit everyone.
+- Screen: your row is the normal battlefield; each teammate has a panel along the
+  top with their character, HP/block/energy/hand/ready and their row's enemies
+  drawn small (targetable). Drag an "any player" card onto a teammate's panel to
+  give them its effect.
+- Die: one roll per round, shown to everyone. Anyone may change it with a die
+  ability; the change is shared and everyone confirms again. When everyone has
+  confirmed, die relics trigger on the final number. No card plays before that.
+  The solo Loaded Die ability is off.
+- Play queue and rollback: as below. Enemy changes outside the queue (potions,
+  end/start-of-turn effects, reactions such as Thorns during the enemy turn) are
+  shared as additive deltas. Poison ticks once per round (host).
+- Outside combat: party votes on the map (most votes wins, ties by the die);
+  rows switch when both players ask; potions can be given; gold can be paid toward
+  a teammate's purchase at a shop or event; a boss relic taken by one player
+  disappears for the others; a death ends the run for everyone.
+
+## Known gaps
+
+- Merchant stock is per player, not one shared stock; boss relic count stays 3.
+- Relic/potion decks are per-game copies offset per player, not one shared deck.
+- Party events (Dead Adventurer, Lab, Big Fish, Ancient Temple) run per player.
+- Per-player enemy values other than HP (Guardian block per player, Reptomancer
+  daggers per player) and "acts last" are not implemented.
+- Moves where only one hit is "all players" (Spire Growth, Snake Plant A7, Large
+  Slime A7) hit only the enemy's own row.
+- Keys (Act 4) are per player. No Steam invites; direct TCP connection.
 
 ## What the code investigation found
 

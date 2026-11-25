@@ -156,6 +156,9 @@ public class DiePhase {
             locks.remove(key); // a new number: everyone confirms again
             if (key == roundKey && !decided) {
                 if (TheDie.monsterRoll != v) applyValue(v);
+                // someone else's change is the new starting point for your own Abacus/Toolbox, and must
+                // not count as you having used one of yours
+                if (from != MP.myId) TheDie.initialRoll = v;
                 rollAnim = 0.6f;
                 lastChange = Session.nameOf(from) + " changed the die to " + v;
                 Session.toast(lastChange);

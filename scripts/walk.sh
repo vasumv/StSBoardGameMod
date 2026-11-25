@@ -16,8 +16,11 @@ for f in $(seq 1 ${1:-5}); do
     [ "$m1" = "$m2" ] && line="$line same-fight[$(echo $m1 | tr '\n' ' ')]" || line="$line FIGHT-DIFFERS[$m1 | $m2]"
     n=$(echo "$m1" | wc -l)
     for r in 1 2 3 4 5 6 7 8; do
+      n=$($Q p1 state | grep -c "^monster")
       for i in $(seq 0 $((n-1))); do $Q p1 "hit $i 99" >/dev/null; sleep 0.6; done
       sleep 3; $Q p1 "mp map" | grep -q "phase=COMBAT" || break
+      # enemies like Slime Boss split on their own turn: end the turn so they can
+      $Q p1 "mp keep" >/dev/null; $Q p2 "mp keep" >/dev/null; $Q p1 "mp ready" >/dev/null; $Q p2 "mp ready" >/dev/null; sleep 8
     done
     sleep 3; e1=$($Q p1 "mp map" | grep -o "phase=[A-Z]*"); e2=$($Q p2 "mp map" | grep -o "phase=[A-Z]*")
     line="$line after: p1:$e1 p2:$e2"

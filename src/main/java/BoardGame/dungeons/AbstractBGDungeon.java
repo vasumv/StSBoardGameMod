@@ -339,8 +339,10 @@ public abstract class AbstractBGDungeon extends AbstractDungeon {
                         card  = DrawFromRareRewardDeck();
 
                     if(card!=null) {
+                        //Only Act 2 elite cards show an upgraded card reward (2c_relic_upgrade);
+                        //Act 1 and Act 3 elite cards are 2c_relic_card (no upgrade).
                         if(CardCrawlGame.dungeon instanceof AbstractBGDungeon
-                                && (!(CardCrawlGame.dungeon instanceof BGExordium) && getCurrRoom() instanceof MonsterRoomElite)
+                                && ((CardCrawlGame.dungeon instanceof BGTheCity) && getCurrRoom() instanceof MonsterRoomElite)
                                 || (getCurrRoom() instanceof EventRoom && getCurrRoom().event instanceof BGColosseum && ((BGColosseum)getCurrRoom().event).isElite)){
                             card.upgrade();
                         }

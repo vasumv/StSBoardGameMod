@@ -51,7 +51,7 @@ public class BGBlueSlaver extends AbstractBGMonster implements BGDamageIcons, Di
 
     //Summoned Act2 Slavers are thankfully identical to Act1 Slavers with the exception of behavior arrangement
     public BGBlueSlaver(float x, float y) {
-        this(x,y,"W2d");
+        this(x,y,"dW3"); //Act 2 minion card (Taskmaster)
     }
     public BGBlueSlaver(float x, float y, String behavior) {
         super(NAME, "BGBlueSlaver", 50, 0.0F, 0.0F, 170.0F, 230.0F, null, x, y);

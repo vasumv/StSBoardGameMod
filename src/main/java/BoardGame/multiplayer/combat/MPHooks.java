@@ -185,6 +185,12 @@ public class MPHooks {
 
     private static void runMonsterAction(AbstractGameAction a) {
         AbstractMonster src = MPFields.Action.sourceMonster.get(a);
+        if (multi() && MonsterSync.active() && isReaction(a)) {
+            com.google.gson.JsonObject before = MonsterSync.capture();
+            a.update();
+            Session.shareReaction(MonsterSync.diff(before, MonsterSync.capture()));
+            return;
+        }
         if (src == null || !multi()) {
             a.update();
             return;
@@ -192,6 +198,12 @@ public class MPHooks {
         boolean aoe = EnemyMPData.isAoe(src.getClass().getSimpleName(), MPFields.Action.sourceMove.get(a));
         if (MonsterSync.active() && !aoe && !MonsterSync.targetsMe(src) && affectsPlayer(a)) {
             a.isDone = true; // an enemy in another player's row: its attack is aimed at them
+            return;
+        }
+        if (isReaction(a)) {
+            com.google.gson.JsonObject before = MonsterSync.capture();
+            a.update();
+            Session.shareReaction(MonsterSync.diff(before, MonsterSync.capture()));
             return;
         }
         AbstractMonster prev = actingMonster;
@@ -268,7 +280,14 @@ public class MPHooks {
             if (!multi() || optionalEventFight() || __result == null) return __result;
             int n = MP.playerCount();
             ArrayList<AbstractMonster> all = new ArrayList<>(__result.monsters);
-            for (int i = 0; i < all.size(); i++) MultiCreature.Field.currentRow.set(all.get(i), i == 0 ? 0 : i % n);
+            AbstractMonster elite = null;
+            for (AbstractMonster m : all) if (m.type == AbstractMonster.EnemyType.ELITE) { elite = m; break; }
+            if (elite == null && !all.isEmpty()) elite = all.get(0);
+            int next = 1;
+            for (AbstractMonster m : all) {
+                if (m == elite) MultiCreature.Field.currentRow.set(m, 0);
+                else MultiCreature.Field.currentRow.set(m, (next++) % n);
+            }
             for (AbstractMonster m : all) scaleHp(m, n);
             return finishGroup(all);
         }
@@ -352,6 +371,64 @@ public class MPHooks {
                 AbstractDungeon.firstRoomChosen = firstChosenBefore;
                 Session.voteMap(__instance.x, __instance.y);
             }
+        }
+    }
+
+    // ---------------- summons ----------------
+
+    private static int summonRobin = 0;
+
+    /** A summoned enemy goes in its summoner's row; an Elite's or Boss's summons are spread over the rows. */
+    @SpirePatch2(clz = com.megacrit.cardcrawl.actions.common.SpawnMonsterAction.class, method = "update")
+    public static class SummonRow {
+        @SpirePrefixPatch
+        public static void prefix(com.megacrit.cardcrawl.actions.common.SpawnMonsterAction __instance,
+                                  AbstractMonster ___m, boolean ___used) {
+            if (!multi() || ___used || ___m == null || !MonsterSync.active()) return;
+            AbstractMonster src = MPFields.Action.sourceMonster.get(__instance);
+            int n = MP.playerCount();
+            int row;
+            if (src == null || src.type == AbstractMonster.EnemyType.BOSS || src.type == AbstractMonster.EnemyType.ELITE)
+                row = (summonRobin++) % n;
+            else row = MonsterSync.row(src);
+            MultiCreature.Field.currentRow.set(___m, row);
+        }
+    }
+
+    // ---------------- poison ticks once per round ----------------
+
+    /** Every player who applied poison has a poison ticker; in multiplayer only the host's game ticks. */
+    @SpirePatch2(clz = BoardGame.powers.BGPoisonProccerPower.class, method = "atEndOfTurnPreEndTurnCards")
+    public static class OnePoisonTick {
+        @SpirePrefixPatch
+        public static SpireReturn<Void> prefix() {
+            return multi() && MonsterSync.active() ? SpireReturn.Return() : SpireReturn.Continue();
+        }
+    }
+
+    /** Host: make every poisoned enemy lose HP at the end of the player turn. */
+    public static void hostPoisonTick() {
+        if (!multi() || !MP.isHost() || !MonsterSync.active()) return;
+        for (AbstractMonster m : AbstractDungeon.getCurrRoom().monsters.monsters) {
+            com.megacrit.cardcrawl.powers.AbstractPower p = m.getPower(BoardGame.powers.BGPoisonPower.POWER_ID);
+            if (p instanceof BoardGame.powers.BGPoisonPower) ((BoardGame.powers.BGPoisonPower) p).proc();
+        }
+    }
+
+    // ---------------- reactions during the enemy turn (Thorns, Flame Barrier...) ----------------
+
+    public static boolean enemyTurn = false;
+
+    /** Damage the local player deals back to an enemy during the enemy turn only happens in this game: share it. */
+    private static boolean isReaction(AbstractGameAction a) {
+        return enemyTurn && a.target instanceof AbstractMonster && a.source == AbstractDungeon.player;
+    }
+
+    @SpirePatch2(clz = com.megacrit.cardcrawl.screens.select.BossRelicSelectScreen.class, method = "relicObtainLogic")
+    public static class ClaimBossRelic {
+        @SpirePrefixPatch
+        public static void prefix(com.megacrit.cardcrawl.relics.AbstractRelic r) {
+            if (multi() && r != null) Session.claimBossRelic(r.relicId);
         }
     }
 

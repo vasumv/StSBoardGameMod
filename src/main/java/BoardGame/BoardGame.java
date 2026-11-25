@@ -560,7 +560,7 @@ public class BoardGame implements
         addMonster("BoardGame:Large Slime", ()->new BGAcidSlime_L(-480.0F,0.0F,false));
         addMonster("BoardGame:Sneaky Gremlin Team", ()->new BGGremlinSneaky(-220.0F,0.0F,true));
         addMonster("BoardGame:Angry Gremlin Team", ()->new BGGremlinAngry(-220.0F,0.0F,true));
-        addMonster("BoardGame:Blue Slaver", ()->new BGBlueSlaver(0.0F, 0.0F,"W3D"));
+        addMonster("BoardGame:Blue Slaver", ()->new BGBlueSlaver(0.0F, 0.0F,"W3d"));
         addMonster("BoardGame:Red Slaver", ()->new BGRedSlaver(0.0F, 0.0F,"DV3"));
         addMonster("BoardGame:Looter", ()->new BGLooter(0.0F, 0.0F, false));
         addMonster("BoardGame:Jaw Worm (Medium)", ()->new BGJawWorm(0,0, 1, ""));
@@ -622,7 +622,7 @@ public class BoardGame implements
                 new BGCultist(200.0F, -5.0F)
         }));
         addMonster("BoardGame:3 Byrds",()->new MonsterGroup(new AbstractMonster[]{
-                new BGByrd(-360.0F,MathUtils.random(25.0F, 70.0F), "1S3", 5),
+                new BGByrd(-360.0F,MathUtils.random(25.0F, 70.0F), "1S3", 4),
                 new BGByrd(-80.0F,MathUtils.random(25.0F, 70.0F)),
                 new BGByrd(200.0F, MathUtils.random(25.0F, 70.0F))
         }));

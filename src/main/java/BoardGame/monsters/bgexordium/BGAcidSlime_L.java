@@ -14,7 +14,11 @@ import com.esotericsoftware.spine.AnimationState;
 import com.megacrit.cardcrawl.actions.AbstractGameAction;
 import com.megacrit.cardcrawl.actions.animations.AnimateShakeAction;
 import com.megacrit.cardcrawl.actions.animations.AnimateSlowAttackAction;
+import com.megacrit.cardcrawl.actions.utility.HideHealthBarAction;
 import com.megacrit.cardcrawl.actions.common.*;
+import com.megacrit.cardcrawl.actions.unique.CanLoseAction;
+import com.megacrit.cardcrawl.actions.unique.CannotLoseAction;
+import com.megacrit.cardcrawl.actions.utility.TextAboveCreatureAction;
 import com.megacrit.cardcrawl.actions.utility.SFXAction;
 import com.megacrit.cardcrawl.actions.utility.WaitAction;
 import com.megacrit.cardcrawl.cards.AbstractCard;
@@ -59,6 +63,10 @@ public class BGAcidSlime_L
     public boolean hard;
     private int dazeAmount=1;
     private AbstractMonster[] mediumslimes = new AbstractMonster[4];
+    //A0 "Large Slime" encounter card: dice 1-2 ATK3 / 3-4 Weak Weak / 5-6 ATK2 + Dazed Dazed,
+    //Split: on death, summon an Acid Slime and a Spike Slime at the start of the next round.
+    private boolean splitter = false;
+    private boolean splitDone = false;
 
     public static final int WEAK_TURNS = 2; public static final int WOUND_COUNT = 2; private static final byte SLIME_TACKLE = 1; private static final byte NORMAL_TACKLE = 2; private static final byte SPLIT = 3; private static final byte WEAK_LICK = 4; private float saveX; private float saveY; private boolean splitTriggered;
     public BGAcidSlime_L(float x, float y, boolean hard) {
@@ -75,11 +83,13 @@ public class BGAcidSlime_L
                 addToBot(new ApplyPowerAction(this,this,new StrengthPower(this,1),1));
             }
         }else{
-            //this.behavior="4XD";
-            this.behavior="----";
             if(AbstractDungeon.ascensionLevel<7){
-                setHp(8);
+                this.behavior="3wD";
+                this.splitter=true;
+                setHp(6);
             }else{
+                //A7 card: cube loop (AOE 2 / 4 + 2 Dazed / summon Acid Slime)
+                this.behavior="----";
                 setHp(9);
             }
         }
@@ -195,6 +205,47 @@ public class BGAcidSlime_L
                 AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new SetMoveAction(this,"Splash",(byte)6,Intent.ATTACK,damage.get(4).base));
                 break;
             }
+            case 9: //3 damage (A0 dice card)
+                AbstractDungeon.actionManager.addToBottom((AbstractGameAction) new AnimateSlowAttackAction((AbstractCreature) this));
+                AbstractDungeon.actionManager.addToBottom((AbstractGameAction) new DamageAction((AbstractCreature) AbstractDungeon.player, this.damage
+                        .get(2), AbstractGameAction.AttackEffect.BLUNT_HEAVY));
+                AbstractDungeon.actionManager.addToBottom((AbstractGameAction) new RollMoveAction(this));
+                break;
+            case 10: //2x weak, no damage (A0 dice card)
+                AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new ApplyPowerAction((AbstractCreature)AbstractDungeon.player, (AbstractCreature)this, (AbstractPower)new BGWeakPower((AbstractCreature)AbstractDungeon.player, 2, true), 2));
+                AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new RollMoveAction(this));
+                break;
+            case 11: //split (A0 dice card): this slime dies, summon an Acid Slime and a Spike Slime
+                splitDone = true;
+                AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new CannotLoseAction());
+                AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new AnimateShakeAction((AbstractCreature)this, 1.0F, 0.1F));
+                AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new HideHealthBarAction((AbstractCreature)this));
+                AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new SuicideAction(this, false));
+                AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new WaitAction(1.0F));
+                AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new SFXAction("SLIME_SPLIT"));
+                AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new SpawnMonsterAction(new BGAcidSlime_M(POSX[0], POSY[0]), false));
+                AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new SpawnMonsterAction(new BGSpikeSlime_M(POSX[1], POSY[1]), false));
+                AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new CanLoseAction());
+                break;
+        }
+    }
+
+    public void usePreBattleAction() {
+        super.usePreBattleAction();
+        if (splitter) {
+            //keep the combat going while the split is pending
+            (AbstractDungeon.getCurrRoom()).cannotLose = true;
+        }
+    }
+
+    public void damage(DamageInfo info) {
+        super.damage(info);
+        if (splitter && !splitDone && this.currentHealth <= 0 && !this.halfDead) {
+            this.halfDead = true;
+            setMove(SPLIT_NAME, (byte) 11, AbstractMonster.Intent.UNKNOWN);
+            createIntent();
+            AbstractDungeon.actionManager.addToBottom((AbstractGameAction) new TextAboveCreatureAction((AbstractCreature) this, TextAboveCreatureAction.TextType.INTERRUPTED));
+            AbstractDungeon.actionManager.addToBottom((AbstractGameAction) new SetMoveAction(this, SPLIT_NAME, (byte) 11, AbstractMonster.Intent.UNKNOWN));
         }
     }
 
@@ -205,6 +256,9 @@ public class BGAcidSlime_L
         setMove((byte) 0, AbstractMonster.Intent.NONE);
     }
     public void dieMove(int roll){
+        if(splitter && this.halfDead){
+            return; //split is pending; keep move 11
+        }
         if(this.behavior.equals("----")){
             if(firstMove) {
                 firstMove=false;
@@ -233,6 +287,10 @@ public class BGAcidSlime_L
             setMove(WOUND_NAME, (byte)5, AbstractMonster.Intent.ATTACK_DEBUFF, ((DamageInfo)this.damage.get(1)).base);
         else if(move=='W')
             setMove(WEAK_NAME, (byte)4, AbstractMonster.Intent.ATTACK_DEBUFF, ((DamageInfo)this.damage.get(0)).base);
+        else if(move=='3')
+            setMove((byte)9, AbstractMonster.Intent.ATTACK, ((DamageInfo)this.damage.get(2)).base);
+        else if(move=='w')
+            setMove(WEAK_NAME, (byte)10, AbstractMonster.Intent.DEBUFF);
 
 
     }
@@ -241,6 +299,9 @@ public class BGAcidSlime_L
 
 
     public void die() {
+        if (splitter && !splitDone) {
+            return; //0 HP: the split (move 11) happens on its next turn instead
+        }
         super.die();
 
         for (AbstractGameAction a : AbstractDungeon.actionManager.actions) {

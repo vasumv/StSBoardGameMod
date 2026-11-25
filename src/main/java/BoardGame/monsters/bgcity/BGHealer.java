@@ -46,7 +46,7 @@ public class BGHealer extends AbstractBGMonster implements DieControlledMoves, B
         super(NAME, "BGHealer", 56, 0.0F, -20.0F, 230.0F, 250.0F, null, x, y);
 
         this.behavior = BGTheCity.getSummonHealer();
-        setHp(12);
+        setHp(this.behavior.equals("H2S") ? 10 : 12); //mystic_a2_minion (H2S) is 10 HP, variant (2SH) is 12 HP
 
         this.magicDmg = 2;
         this.strAmt = 1;

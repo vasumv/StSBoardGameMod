@@ -42,7 +42,7 @@ public class BGTaskmaster extends AbstractBGMonster implements BGDamageIcons {
 
         if(AbstractDungeon.ascensionLevel>=12) {
             setHp(16);
-        }else if(AbstractDungeon.ascensionLevel>1){
+        }else if(AbstractDungeon.ascensionLevel>=1){
             setHp(15);
         }else{
             setHp(13);

@@ -50,9 +50,10 @@ public class BGSentry extends AbstractBGMonster implements BGDamageIcons, DieCon
 
         this.type = AbstractMonster.EnemyType.ELITE;
 
-        if(behavior.equals("D3") || (behavior.equals("2D") && AbstractDungeon.ascensionLevel==0))
+        //Sentries card ("2D"): 8 HP, harder (A1+) side 9 HP. Sentry A ("D3"): 7 HP.
+        if(behavior.equals("D3"))
             setHp(7);
-        else if(behavior.equals("2D") && AbstractDungeon.ascensionLevel>=12)
+        else if(behavior.equals("2D") && AbstractDungeon.ascensionLevel>=1)
             setHp(9);
         else
             setHp(8);

@@ -53,13 +53,9 @@ public class BGFungiBeast extends AbstractBGMonster implements BGDamageIcons, Di
 
         this.behavior=behavior;
 
-        if(a7summon){
-            setHp(6);
-            strAmount=1;
-        }else {
-            setHp(5);
-            strAmount=2;
-        }
+        //Both the Act 1 card and the A7 summon card are HP 6, gain 1 Str.
+        setHp(6);
+        strAmount=1;
 
         loadAnimation("images/monsters/theBottom/fungi/skeleton.atlas", "images/monsters/theBottom/fungi/skeleton.json", 1.0F);
 

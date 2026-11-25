@@ -99,7 +99,7 @@ public class MonsterSync {
     /** Does this enemy act against the local player? (Its row, or a Boss.) */
     public static boolean targetsMe(AbstractMonster m) {
         if (!MP.inRun || MP.playerCount() < 2 || !active()) return true;
-        if (isBossRoom()) return true;
+        if (m.type == AbstractMonster.EnemyType.BOSS) return true;
         return row(m) == MP.myRow();
     }
 
@@ -563,6 +563,10 @@ public class MonsterSync {
             if (dmax != 0) { c.addProperty("dmax", dmax); any = true; }
             int dbl = a.get("block").getAsInt() - o.get("block").getAsInt();
             if (dbl != 0) { c.addProperty("dblock", dbl); any = true; }
+            if (a.get("halfDead").getAsBoolean() != o.get("halfDead").getAsBoolean()) {
+                c.addProperty("halfDead", a.get("halfDead").getAsBoolean());
+                any = true;
+            }
             if (a.get("dead").getAsBoolean() != o.get("dead").getAsBoolean()) {
                 c.addProperty("dead", a.get("dead").getAsBoolean());
                 any = true;
@@ -660,6 +664,7 @@ public class MonsterSync {
             AbstractMonster m = byId(c.get("id").getAsString());
             if (m == null) continue;
             int oldHp = m.currentHealth;
+            if (c.has("halfDead")) m.halfDead = c.get("halfDead").getAsBoolean();
             if (c.has("f")) applyFields(m, AbstractCreature.class, c.getAsJsonObject("f"));
             if (c.has("dmax")) m.maxHealth += c.get("dmax").getAsInt();
             if (c.has("dblock")) m.currentBlock = Math.max(0, m.currentBlock + c.get("dblock").getAsInt());

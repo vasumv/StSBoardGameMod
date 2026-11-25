@@ -44,7 +44,7 @@ public class MonsterGroupRewardsList {
         rewards.put("BoardGame:Red Slaver",new MonsterGroupRewards(1));
         rewards.put("BoardGame:Looter",new MonsterGroupRewards(0,true));
         rewards.put("BoardGame:Jaw Worm (Medium)",new MonsterGroupRewards(1));
-        rewards.put("BoardGame:A7 Looter and Acid Slime",new MonsterGroupRewards(0,true));
+        rewards.put("BoardGame:A7 Looter and Acid Slime",new MonsterGroupRewards(2));
         rewards.put("BoardGame:A7 Jaw Worm and Spike Slime",new MonsterGroupRewards(1));
 
         rewards.put("BoardGame:Lagavulin",new MonsterGroupRewards(2,false,true));
@@ -86,11 +86,11 @@ public class MonsterGroupRewardsList {
         rewards.put("BoardGame:Orb Walker v3.2",new MonsterGroupRewards(1));
         rewards.put("BoardGame:Transient",new MonsterGroupRewards(2));
         rewards.put("BoardGame:Maw",new MonsterGroupRewards(1));
-        rewards.put("BoardGame:Writhing Mass",new MonsterGroupRewards(0,true));
+        rewards.put("BoardGame:Writhing Mass",new MonsterGroupRewards(2));
         rewards.put("BoardGame:3 Darklings",new MonsterGroupRewards(0,true));
-        rewards.put("BoardGame:Giant Head",new MonsterGroupRewards(3,false, true));
-        rewards.put("BoardGame:Nemesis",new MonsterGroupRewards(3,false, true));
-        rewards.put("BoardGame:Reptomancer",new MonsterGroupRewards(3,false, true));
+        rewards.put("BoardGame:Giant Head",new MonsterGroupRewards(2,false, true));
+        rewards.put("BoardGame:Nemesis",new MonsterGroupRewards(2,false, true));
+        rewards.put("BoardGame:Reptomancer",new MonsterGroupRewards(2,false, true));
         rewards.put("BoardGame:A7 Exploder and Friends",new MonsterGroupRewards(1));
         rewards.put("BoardGame:A7 Repulsor and Friends",new MonsterGroupRewards(0,true));
 

@@ -44,7 +44,7 @@ public class BGGremlinAngry extends AbstractBGMonster implements BGDamageIcons {
         this.leader=leader;
 
 
-        setHp(4);
+        setHp(this.leader ? 4 : 5); //minion (summoned) card is HP 5
 
 
         this.damage.add(new DamageInfo((AbstractCreature)this, 1));

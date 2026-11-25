@@ -82,18 +82,21 @@ public class BGNemesis extends AbstractBGMonster implements BGDamageIcons {
 //            this.fireDmg = 6;
 //        }
 
+        //Card rows (all red, loop back to the top): AOE Burn x5 / AOE 5 / AOE 2x3 / AOE 8.
+        //Harder elite card: Burn x5 / 5 / 2x3 + 2 Burn / 9.
+        //Nemesis can't lose HP while the cube is on the 5 or 8/9 row (i.e. while move 1 or 3 is its next move).
         if(ascensionLevel<1) {
             setHp(30);
-            burnCount=4;secondaryBurnCount=1;multiAmt=2;
-            this.damage.add(new DamageInfo((AbstractCreature) this, 4));
-            this.damage.add(new DamageInfo((AbstractCreature) this, 2));
-            this.damage.add(new DamageInfo((AbstractCreature) this, 7));
-        } else if(ascensionLevel<12) {
-            setHp(35);
-            burnCount=5;secondaryBurnCount=1;multiAmt=2;
+            burnCount=5;secondaryBurnCount=0;multiAmt=3;
             this.damage.add(new DamageInfo((AbstractCreature) this, 5));
             this.damage.add(new DamageInfo((AbstractCreature) this, 2));
             this.damage.add(new DamageInfo((AbstractCreature) this, 8));
+        } else if(ascensionLevel<12) {
+            setHp(35);
+            burnCount=5;secondaryBurnCount=2;multiAmt=3;
+            this.damage.add(new DamageInfo((AbstractCreature) this, 5));
+            this.damage.add(new DamageInfo((AbstractCreature) this, 2));
+            this.damage.add(new DamageInfo((AbstractCreature) this, 9));
         } else {
             setHp(36);
             burnCount=5;secondaryBurnCount=2;multiAmt=3;
@@ -115,6 +118,7 @@ public class BGNemesis extends AbstractBGMonster implements BGDamageIcons {
 
                 AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new MakeTempCardInDiscardAction((AbstractCard)new BGBurn(), burnCount));
                 AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new SetMoveAction(this, (byte)1, AbstractMonster.Intent.ATTACK, this.damage.get(0).base));
+                setIntangible(true);
                 break;
 
             case 1:
@@ -123,7 +127,8 @@ public class BGNemesis extends AbstractBGMonster implements BGDamageIcons {
                 AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new WaitAction(0.4F));
                 AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new DamageAction((AbstractCreature)AbstractDungeon.player, this.damage
                         .get(0), AbstractGameAction.AttackEffect.SLASH_DIAGONAL));
-                AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new SetMoveAction(this, (byte)2, AbstractMonster.Intent.ATTACK_DEBUFF, this.damage.get(1).base,multiAmt,true));
+                AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new SetMoveAction(this, (byte)2, secondaryBurnCount>0 ? AbstractMonster.Intent.ATTACK_DEBUFF : AbstractMonster.Intent.ATTACK, this.damage.get(1).base,multiAmt,true));
+                setIntangible(false);
                 break;
 
             case 2:
@@ -131,8 +136,11 @@ public class BGNemesis extends AbstractBGMonster implements BGDamageIcons {
                     AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new DamageAction((AbstractCreature)AbstractDungeon.player, this.damage
                             .get(1), AbstractGameAction.AttackEffect.FIRE));
                 }
-                AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new MakeTempCardInDiscardAction((AbstractCard)new BGBurn(), secondaryBurnCount));
+                if(secondaryBurnCount>0) {
+                    AbstractDungeon.actionManager.addToBottom((AbstractGameAction) new MakeTempCardInDiscardAction((AbstractCard) new BGBurn(), secondaryBurnCount));
+                }
                 AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new SetMoveAction(this, (byte)3, AbstractMonster.Intent.ATTACK, this.damage.get(2).base));
+                setIntangible(true);
                 break;
 
             case 3:
@@ -141,18 +149,23 @@ public class BGNemesis extends AbstractBGMonster implements BGDamageIcons {
                 AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new WaitAction(0.4F));
                 AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new DamageAction((AbstractCreature)AbstractDungeon.player, this.damage
                         .get(2), AbstractGameAction.AttackEffect.SLASH_HEAVY));
-                AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new SetMoveAction(this, (byte)2, AbstractMonster.Intent.ATTACK_DEBUFF, this.damage.get(1).base,multiAmt,true));
+                //loop back to the Burn row
+                AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new SetMoveAction(this, (byte)0, AbstractMonster.Intent.DEBUFF));
+                setIntangible(false);
                 break;
 
         }
 
 
+    }
 
-        if (!hasPower("Intangible")) {
+    //Intangible is tied to the cube position: on while the next move is 1 or 3, off otherwise.
+    private void setIntangible(boolean on) {
+        if (on) {
             AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new ApplyPowerAction((AbstractCreature)this, (AbstractCreature)this, (AbstractPower)new BGIntangiblePower((AbstractCreature)this, 0)));
+        } else {
+            AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new RemoveSpecificPowerAction((AbstractCreature)this, (AbstractCreature)this, "BGIntangible"));
         }
-
-
     }
 
 

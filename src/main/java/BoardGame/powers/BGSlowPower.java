@@ -2,7 +2,12 @@
 
 package BoardGame.powers;
 
+import com.megacrit.cardcrawl.actions.AbstractGameAction;
+import com.megacrit.cardcrawl.actions.common.ApplyPowerAction;
+import com.megacrit.cardcrawl.actions.utility.UseCardAction;
+import com.megacrit.cardcrawl.cards.AbstractCard;
 import com.megacrit.cardcrawl.cards.DamageInfo;
+import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.core.AbstractCreature;
 import com.megacrit.cardcrawl.core.CardCrawlGame;
 import com.megacrit.cardcrawl.helpers.FontHelper;
@@ -15,11 +20,15 @@ public class BGSlowPower extends AbstractBGPower {
     public static final String NAME = powerStrings.NAME;
     public static final String[] DESCRIPTIONS = powerStrings.DESCRIPTIONS;
 
+    //Board game Slow: for each player, the owner gains Vulnerable after that player plays their 4th card each turn.
+    //amount = cards left to play this turn before the owner gains Vulnerable (0 = already triggered this turn).
+    public static final int CARDS_PER_TURN = 4;
+
     public BGSlowPower(AbstractCreature owner,int amount) {
         this.name = NAME;
         this.ID = "BGSlowPower";
         this.owner = owner;
-        this.amount = 1;
+        this.amount = CARDS_PER_TURN;
         updateDescription();
         loadRegion("slow");
         this.type = AbstractPower.PowerType.DEBUFF;
@@ -27,18 +36,28 @@ public class BGSlowPower extends AbstractBGPower {
 
     public void updateDescription() {
         this.description = FontHelper.colorString(this.owner.name, "y");
-
-        this.description += DESCRIPTIONS[0] + (this.amount) + DESCRIPTIONS[1];
+        if (this.amount > 1) {
+            this.description += DESCRIPTIONS[2] + this.amount + DESCRIPTIONS[3];
+        } else if (this.amount == 1) {
+            this.description += DESCRIPTIONS[2] + this.amount + DESCRIPTIONS[4];
+        } else {
+            this.description += DESCRIPTIONS[5];
+        }
     }
 
-    public float atDamageReceive(float damage, DamageInfo.DamageType type) {
-        if (type == DamageInfo.DamageType.NORMAL) {
-            if(this.amount>0){
-                return damage + this.amount;
-            }
+    public void onAfterUseCard(AbstractCard card, UseCardAction action) {
+        if (this.amount <= 0) return;
+        this.amount--;
+        if (this.amount == 0) {
+            flash();
+            addToBot((AbstractGameAction)new ApplyPowerAction(this.owner, AbstractDungeon.player, new BGVulnerablePower(this.owner, 1, false), 1));
         }
+        updateDescription();
+    }
 
-        return damage;
+    public void atEndOfRound() {
+        this.amount = CARDS_PER_TURN;
+        updateDescription();
     }
 
 //    public void atEndOfRound() {

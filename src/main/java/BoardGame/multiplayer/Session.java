@@ -367,6 +367,15 @@ public class Session {
         MP.send(o);
     }
 
+    private static final HashMap<Integer, Integer> rowRequests = new HashMap<>();
+
+    /** Boss relics: once a player takes one, it is gone for the others. */
+    public static void claimBossRelic(String id) {
+        JsonObject o = MP.msg("bossrelic");
+        o.addProperty("id", id);
+        MP.send(o);
+    }
+
     public static void swapRow(int with) {
         JsonObject o = MP.msg("row");
         o.addProperty("with", with);
@@ -499,10 +508,29 @@ public class Session {
                 toast(nameOf(from) + " paid you " + m.get("amount").getAsInt() + " gold");
                 return;
             }
+            case "note":
+                toast(m.get("text").getAsString());
+                return;
+            case "bossrelic": {
+                if (from == MP.myId) return;
+                String id = m.get("id").getAsString();
+                if (AbstractDungeon.bossRelicScreen != null && AbstractDungeon.bossRelicScreen.relics != null)
+                    AbstractDungeon.bossRelicScreen.relics.removeIf(r -> r.relicId.equals(id));
+                toast(nameOf(from) + " took " + id.replace("BoardGame:", ""));
+                return;
+            }
             case "row": {
                 if (combat()) return;
                 MP.Player a = MP.player(from), b = MP.player(m.get("with").getAsInt());
                 if (a == null || b == null) return;
+                rowRequests.put(a.id, b.id);
+                Integer back = rowRequests.get(b.id);
+                if (back == null || back != a.id) {
+                    toast(a.name + " wants to switch rows with " + b.name);
+                    return;
+                }
+                rowRequests.remove(a.id);
+                rowRequests.remove(b.id);
                 int r = a.row;
                 a.row = b.row;
                 b.row = r;
@@ -512,8 +540,12 @@ public class Session {
             case "dead": {
                 toast(nameOf(from) + " has died. The party is defeated.");
                 AbstractPlayer p = AbstractDungeon.player;
-                if (p != null && !p.isDead && CardCrawlGame.isInARun()) {
-                    p.damage(new DamageInfo(null, 9999, DamageInfo.DamageType.HP_LOSS));
+                if (p != null && !p.isDead && CardCrawlGame.isInARun() && from != MP.myId) {
+                    sentDead = true;
+                    p.currentHealth = 0;
+                    p.isDead = true;
+                    AbstractDungeon.deathScreen = new com.megacrit.cardcrawl.screens.DeathScreen(
+                            AbstractDungeon.getMonsters());
                 }
                 return;
             }
@@ -547,15 +579,34 @@ public class Session {
     }
 
     private static void maybeMove() {
-        int[] first = null;
+        HashMap<String, Integer> count = new HashMap<>();
+        HashMap<String, int[]> byKey = new HashMap<>();
         for (MP.Player p : MP.players) {
             if (!p.connected) continue;
             int[] v = mapVotes.get(p.id);
-            if (v == null) return;
-            if (first == null) first = v;
-            else if (first[0] != v[0] || first[1] != v[1]) return;
+            if (v == null) return; // wait for everyone
+            String k = v[0] + "," + v[1];
+            count.merge(k, 1, Integer::sum);
+            byKey.put(k, v);
         }
-        if (first == null) return;
+        if (count.isEmpty()) return;
+        int best = 0;
+        ArrayList<String> tied = new ArrayList<>();
+        for (java.util.Map.Entry<String, Integer> e : count.entrySet()) {
+            if (e.getValue() > best) {
+                best = e.getValue();
+                tied.clear();
+            }
+            if (e.getValue() == best) tied.add(e.getKey());
+        }
+        java.util.Collections.sort(tied);
+        int pick = tied.size() == 1 ? 0 : new java.util.Random(MP.seed * 31 + AbstractDungeon.floorNum).nextInt(tied.size());
+        if (tied.size() > 1) {
+            JsonObject t = MP.msg("note");
+            t.addProperty("text", "Tied vote: the die picked a room");
+            MP.send(t);
+        }
+        int[] first = byKey.get(tied.get(pick));
         JsonObject o = MP.msg("move");
         o.addProperty("x", first[0]);
         o.addProperty("y", first[1]);
@@ -712,6 +763,8 @@ public class Session {
                     if (r.get("ok").getAsBoolean()) {
                         RngSync.apply(r.getAsJsonObject("rng"));
                         MonsterSync.applyFull(r.getAsJsonObject("state"), true);
+                        if (r.has("die") && !BoardGame.multiplayer.combat.DiePhase.deciding())
+                            BoardGame.thedie.TheDie.monsterRoll = r.get("die").getAsInt();
                         reapplyInflight();
                         showRemoteCard(r);
                     } else {
@@ -728,6 +781,7 @@ public class Session {
         if (endTurnPending && !endTurnTriggered && idle && queue.isEmpty()) {
             endTurnTriggered = true;
             eotBaseline = MonsterSync.capture();
+            BoardGame.multiplayer.combat.MPHooks.hostPoisonTick();
             authorizedEndTurn = true;
             AbstractDungeon.overlayMenu.endTurnButton.disable(true);
             authorizedEndTurn = false;
@@ -795,6 +849,7 @@ public class Session {
         if (ok) {
             o.add("state", MonsterSync.capture());
             o.add("rng", RngSync.capture(RngSync.COMBAT));
+            o.addProperty("die", BoardGame.thedie.TheDie.monsterRoll);
             com.google.gson.JsonArray inc = new com.google.gson.JsonArray();
             for (JsonObject d : myInflight) inc.add(new com.google.gson.JsonPrimitive(d.get("seq").getAsInt()));
             o.add("included", inc);
@@ -830,6 +885,20 @@ public class Session {
 
     private static void reapplyInflight() {
         for (JsonObject d : myInflight) MonsterSync.applyDelta(d.getAsJsonObject("delta"), false);
+    }
+
+    /** Enemy changes caused only in this game during the enemy turn. */
+    public static void shareReaction(JsonObject d) {
+        if (MonsterSync.isEmpty(d)) return;
+        JsonObject o = MP.msg("delta");
+        int seq = myDeltaSeq++;
+        o.addProperty("seq", seq);
+        o.add("delta", d);
+        JsonObject rec = new JsonObject();
+        rec.addProperty("seq", seq);
+        rec.add("delta", d);
+        myInflight.add(rec);
+        MP.send(o);
     }
 
     private static void sendLocalDelta(boolean eot) {
@@ -878,11 +947,13 @@ public class Session {
         if (!queue.isEmpty() && queue.peek().isDelta) return true;
         if (eotHostRng != null) RngSync.apply(eotHostRng);
         eotReleased = true;
+        BoardGame.multiplayer.combat.MPHooks.enemyTurn = true;
         return false;
     }
 
     /** Enemy turn finished (before the player's start-of-turn effects): new agreed baseline. */
     public static void onEnemyTurnDone() {
+        BoardGame.multiplayer.combat.MPHooks.enemyTurn = false;
         if (!combat()) return;
         resetTurnState();
         baseline = MonsterSync.capture();
