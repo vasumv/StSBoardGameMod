@@ -147,10 +147,17 @@
                         <id>copy</id>
                         <phase>package</phase>
                         <configuration>
-                            <target>
+                            <target xmlns:if="ant:if" xmlns:unless="ant:unless">
                                 <!--This puts a copy of your mod's jar file into the SlayTheSpire mods folder so it will be loaded.-->
                                 <!--On mac, it will be copied to another location. See further below.-->
-                                <copy file="target/${project.artifactId}.jar" tofile="${steam.path}/common/SlayTheSpire/mods/${project.artifactId}.jar"/>
+                                <!--Skipped while the game is running: replacing the jar under a running game crashes it.-->
+                                <exec executable="pgrep" resultproperty="pgrep.result" outputproperty="pgrep.out" failifexecutionfails="false">
+                                    <arg value="-f"/>
+                                    <arg value="ModTheSpire.jar"/>
+                                </exec>
+                                <condition property="game.running"><equals arg1="${pgrep.result}" arg2="0"/></condition>
+                                <echo if:set="game.running" message="Slay the Spire is running: NOT copying the jar into mods/. Rebuild after closing the game."/>
+                                <copy unless:set="game.running" file="target/${project.artifactId}.jar" tofile="${steam.path}/common/SlayTheSpire/mods/${project.artifactId}.jar"/>
                             </target>
                         </configuration>
                         <goals>

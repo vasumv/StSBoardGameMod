@@ -129,6 +129,55 @@ public class SteamNet {
         status = "";
     }
 
+    // ---------------- friends' lobbies ----------------
+
+    /** A Steam friend who is in Slay the Spire and in a lobby. */
+    public static class FriendLobby {
+        public final String name;
+        public final SteamID lobby;
+
+        FriendLobby(String name, SteamID lobby) {
+            this.name = name;
+            this.lobby = lobby;
+        }
+    }
+
+    private static final int APP_ID = 646570;
+    private static final java.util.ArrayList<FriendLobby> friendLobbies = new java.util.ArrayList<>();
+    private static long friendsCheckedAt = 0;
+
+    /** Friends hosting (or in) a lobby right now; refreshed every two seconds. */
+    public static java.util.List<FriendLobby> friendLobbies() {
+        long now = System.currentTimeMillis();
+        if (now - friendsCheckedAt < 2000) return friendLobbies;
+        friendsCheckedAt = now;
+        friendLobbies.clear();
+        if (!available()) return friendLobbies;
+        try {
+            SteamFriends.FriendGameInfo info = new SteamFriends.FriendGameInfo();
+            int n = friends.getFriendCount(SteamFriends.FriendFlags.Immediate);
+            for (int i = 0; i < n; i++) {
+                SteamID f = friends.getFriendByIndex(i, SteamFriends.FriendFlags.Immediate);
+                if (!friends.getFriendGamePlayed(f, info) || info.getGameID() != APP_ID) continue;
+                SteamID l = info.getSteamIDLobby();
+                if (l == null || !l.isValid() || (lobby != null && l.equals(lobby))) continue;
+                friendLobbies.add(new FriendLobby(friends.getFriendPersonaName(f), l));
+            }
+        } catch (Throwable t) {
+            Net.logger.error("Steam: could not list friends' lobbies", t);
+        }
+        return friendLobbies;
+    }
+
+    /** Join a friend's lobby directly (no invite needed). */
+    public static void joinFriend(FriendLobby f) {
+        if (!available() || MP.inRun) return;
+        Net.logger.info("Steam: joining " + f.name + "'s lobby " + f.lobby);
+        Net.shutdown();
+        status = "Joining " + f.name + "'s lobby...";
+        matchmaking.joinLobby(f.lobby);
+    }
+
     // ---------------- packets ----------------
 
     private static synchronized void send(SteamID to, String line) {
