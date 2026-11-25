@@ -44,3 +44,9 @@ the game jars can read and edit code but cannot compile or run it.
 `scripts/run-sandbox.sh p1 --headless` launches the built mod from an isolated
 folder (`../sandbox/p1`, own saves) on a hidden virtual display. Use different
 names for several instances. Log output goes to stdout.
+
+## Releases
+
+Built jars are published as GitHub releases on vasumv/StSBoardGameMod (tag
+`mp-YYYY.MM.DD`, marked pre-release) with `gh release create <tag> target/BoardGame.jar
+--target multiplayer`. Players download `BoardGame.jar` from there.
