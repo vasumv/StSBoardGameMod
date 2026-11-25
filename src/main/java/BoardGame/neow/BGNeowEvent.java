@@ -298,6 +298,35 @@ public class BGNeowEvent
     }
 
 
+    // ---- multiplayer: the host picks the starting act for everyone ----
+    public static boolean partyDriven = false;
+    private static boolean toldWaiting = false;
+    private static int pendingStart = -1;
+
+    public static void onPartyStart(int from, com.google.gson.JsonObject m) {
+        if (BoardGame.multiplayer.MP.isHost()) return;
+        pendingStart = m.get("b").getAsInt();
+        String where = pendingStart == 0 ? "Act 1" : "Act " + (pendingStart + 1) + " (Quick Start)";
+        BoardGame.multiplayer.Session.toast("The host starts the party at " + where);
+        tryPendingStart();
+    }
+
+    /** Apply the host's choice once this game reaches the same Neow screen. */
+    public static void tryPendingStart() {
+        if (pendingStart < 0 || AbstractDungeon.getCurrRoom() == null
+                || !(AbstractDungeon.getCurrRoom().event instanceof BGNeowEvent)) return;
+        BGNeowEvent ev = (BGNeowEvent) AbstractDungeon.getCurrRoom().event;
+        if (ev.screenNum != 99) return;
+        int b = pendingStart;
+        pendingStart = -1;
+        partyDriven = true;
+        try {
+            ev.buttonEffect(b);
+        } finally {
+            partyDriven = false;
+        }
+    }
+
     protected void buttonEffect(int buttonPressed) {
         switch (this.screenNum) {
             case -1:    //DISCLAIMER
@@ -394,6 +423,21 @@ public class BGNeowEvent
 
 
             case 99:    //leave event or choose quickskip
+                // multiplayer: where the party starts is one choice, made by the host
+                if (BoardGame.multiplayer.MP.inRun && BoardGame.multiplayer.MP.playerCount() > 1) {
+                    if (!BoardGame.multiplayer.MP.isHost() && !partyDriven) {
+                        if (buttonPressed >= 0 && !toldWaiting) {
+                            toldWaiting = true;
+                            BoardGame.multiplayer.Session.toast("The host chooses where the party starts");
+                        }
+                        return;
+                    }
+                    if (BoardGame.multiplayer.MP.isHost()) {
+                        com.google.gson.JsonObject o = BoardGame.multiplayer.MP.msg("neowstart");
+                        o.addProperty("b", buttonPressed);
+                        BoardGame.multiplayer.MP.send(o);
+                    }
+                }
                 dismissBubble();
                 this.roomEventText.clearRemainingOptions();
                 switch (buttonPressed) {

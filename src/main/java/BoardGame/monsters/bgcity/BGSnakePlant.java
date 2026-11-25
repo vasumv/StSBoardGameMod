@@ -5,7 +5,7 @@
     //intent dmg is determined during AbstractMonster.calculateDamage(int damage)
     //attacking should be easy enough, just have a 3 dmg action then a delay action then a 2 dmg action
 
-    //TODO: ascension 7+ attacks with 3 + AOE2 instead of 3 + 2.  no other changes though
+    //Ascension 7+ uses the snake_plant_a2_asc7 card: faces 1-4 attack 3, then AOE 2 (move byte 3) instead of 3 + 2.
 
  package BoardGame.monsters.bgcity;
 
@@ -55,6 +55,9 @@
         private static final int CHOMPY_DMG = 7;
         private static final int A_2_CHOMPY_DMG = 8;
         private int rainBlowsDmg;
+        //A7 card (snake_plant_a2_asc7): the second (2 dmg) hit of the chomp hits all players; move byte 3.
+        private static final byte CHOMPY_CHOMPS_A7 = 3;
+        public boolean a7 = false;
 
 
 
@@ -63,6 +66,7 @@
             loadAnimation("images/monsters/theCity/snakePlant/skeleton.atlas", "images/monsters/theCity/snakePlant/skeleton.json", 1.0F);
 
             behavior="MMW";
+            this.a7 = AbstractDungeon.ascensionLevel >= 7;
 
 
             AnimationState.TrackEntry e = this.state.setAnimation(0, "Idle", true);
@@ -106,6 +110,7 @@
             AbstractPlayer abstractPlayer = AbstractDungeon.player;
             switch (this.nextMove) {
                 case 1:
+                case 3: //A7: same hits; the 2-dmg hit is "all players" (EnemyMPData AOE_HITS BGSnakePlant#3)
                     AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new ChangeStateAction(this, "ATTACK"));
                     AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new WaitAction(0.5F));
                     AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new VFXAction((AbstractGameEffect)new BiteEffect(AbstractDungeon.player.hb.cX +
@@ -139,7 +144,7 @@
                 move = this.behavior.charAt(2);
 
             if (move == 'M') {
-                setMove((byte) 1, AbstractMonster.Intent.ATTACK, ((DamageInfo) this.damage.get(0)).base);
+                setMove(a7 ? CHOMPY_CHOMPS_A7 : CHOMPY_CHOMPS, AbstractMonster.Intent.ATTACK, ((DamageInfo) this.damage.get(0)).base);
             } else if (move == 'W') {
                 setMove((byte) 2, AbstractMonster.Intent.DEBUFF);
             }
@@ -156,7 +161,7 @@
             return ReflectionHacks.getPrivate((AbstractMonster)this,AbstractMonster.class,"intentDmg");
         }
         public boolean isMixedAttacking(){
-            return (this.nextMove==1);
+            return (this.nextMove==CHOMPY_CHOMPS || this.nextMove==CHOMPY_CHOMPS_A7);
         }
     }
 

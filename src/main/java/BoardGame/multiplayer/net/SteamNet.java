@@ -99,6 +99,15 @@ public class SteamNet {
         matchmaking.createLobby(SteamMatchmaking.LobbyType.FriendsOnly, 4);
     }
 
+    private static SteamID lastLobby;
+
+    /** Client: join the same lobby again after losing the connection. */
+    public static void rejoin() {
+        if (lastLobby == null || matchmaking == null) return;
+        status = "Reconnecting...";
+        matchmaking.joinLobby(lastLobby);
+    }
+
     /** Opens the Steam overlay to invite friends to the lobby. */
     public static void invite() {
         if (lobby != null && friends != null) friends.activateGameOverlayInviteDialog(lobby);
@@ -197,8 +206,10 @@ public class SteamNet {
                 }
                 SteamID owner = matchmaking.getLobbyOwner(id);
                 SteamPeer hostPeer = new SteamPeer(owner, 0);
-                Net.joinSteam(hostPeer);
+                if (MP.reconnecting) Net.rejoinSteam(hostPeer);
+                else Net.joinSteam(hostPeer);
                 lobby = id;
+                lastLobby = id;
                 byUser.clear();
                 byUser.put(SteamNativeHandle.getNativeHandle(owner), hostPeer);
                 status = "Joined " + friends.getFriendPersonaName(owner) + "'s lobby";

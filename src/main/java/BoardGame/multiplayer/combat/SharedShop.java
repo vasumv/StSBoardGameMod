@@ -26,6 +26,7 @@ import java.util.ArrayList;
 public class SharedShop {
     private static JsonObject pendingStock;
     private static boolean applying = false;
+    private static long shopInitKey = -1;
 
     private static boolean multi() {
         return MP.inRun && MP.playerCount() > 1;
@@ -50,6 +51,7 @@ public class SharedShop {
         @SpirePostfixPatch
         public static void postfix(ShopScreen __instance) {
             if (!multi()) return;
+            shopInitKey = key();
             if (MP.isHost()) {
                 JsonObject o = MP.msg("shopstock");
                 o.addProperty("key", key());
@@ -80,8 +82,9 @@ public class SharedShop {
         if (type.equals("shopstock")) {
             if (from == MP.myId) return;
             ShopScreen s = AbstractDungeon.shopScreen;
-            boolean open = s != null && relics(s) != null && AbstractDungeon.getCurrRoom()
-                    instanceof com.megacrit.cardcrawl.rooms.ShopRoom && m.get("key").getAsLong() == key();
+            // also covers events that turn the room into a shop (The Merchant)
+            boolean open = s != null && relics(s) != null && !relics(s).isEmpty()
+                    && m.get("key").getAsLong() == key() && shopInitKey == key();
             if (open) apply(s, m);
             else pendingStock = m;
         } else if (type.equals("shopbuy")) {

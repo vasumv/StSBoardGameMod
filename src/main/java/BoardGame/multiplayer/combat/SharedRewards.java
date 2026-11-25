@@ -46,6 +46,27 @@ public class SharedRewards {
         }
     }
 
+    // ---------------- Last Stand: a won boss fight ends the run ----------------
+
+    @SpirePatch2(clz = com.megacrit.cardcrawl.ui.buttons.ProceedButton.class, method = "goToNextDungeon")
+    public static class LastStandEndsRun {
+        @SpirePrefixPatch
+        public static SpireReturn<Void> prefix(com.megacrit.cardcrawl.ui.buttons.ProceedButton __instance) {
+            if (!multi() || !BoardGame.multiplayer.Session.lastStandUsed) return SpireReturn.Continue();
+            Session.toast("Last Stand: the Act is won, but the party can't go on. Victory!");
+            try {
+                java.lang.reflect.Method m = com.megacrit.cardcrawl.ui.buttons.ProceedButton.class
+                        .getDeclaredMethod("goToVictoryRoomOrTheDoor");
+                m.setAccessible(true);
+                m.invoke(__instance);
+            } catch (Throwable t) {
+                MP.logger.error("could not end the run", t);
+                return SpireReturn.Continue();
+            }
+            return SpireReturn.Return();
+        }
+    }
+
     // ---------------- keys ----------------
 
     private static final HashMap<String, HashSet<Integer>> keyVotes = new HashMap<>();

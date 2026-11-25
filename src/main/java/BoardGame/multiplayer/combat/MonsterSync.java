@@ -100,7 +100,22 @@ public class MonsterSync {
     public static boolean targetsMe(AbstractMonster m) {
         if (!MP.inRun || MP.playerCount() < 2 || !active()) return true;
         if (m.type == AbstractMonster.EnemyType.BOSS) return true;
-        return row(m) == MP.myRow();
+        return targetRow(row(m)) == MP.myRow();
+    }
+
+    /** The row an enemy in this row attacks: its own, or (Last Stand) the nearest living row below, else above. */
+    public static int targetRow(int row) {
+        MP.Player owner = MP.playerInRow(row);
+        if (owner == null || !owner.dead) return row;
+        for (int r = row - 1; r >= 0; r--) {
+            MP.Player p = MP.playerInRow(r);
+            if (p != null && !p.dead) return r;
+        }
+        for (int r = row + 1; r < MP.playerCount(); r++) {
+            MP.Player p = MP.playerInRow(r);
+            if (p != null && !p.dead) return r;
+        }
+        return row;
     }
 
     /** Screen offset for a row other than the local player's. */

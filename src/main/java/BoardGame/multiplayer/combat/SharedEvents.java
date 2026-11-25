@@ -103,7 +103,41 @@ public class SharedEvents {
         }
     }
 
+    // ---------------- Ancient Temple: escalating HP cost ----------------
+
+    private static final java.util.ArrayList<Integer> templeOrder = new java.util.ArrayList<>();
+    private static int templeFloor = -1;
+
+    private static void resetTemple() {
+        if (templeFloor != AbstractDungeon.floorNum) {
+            templeFloor = AbstractDungeon.floorNum;
+            templeOrder.clear();
+        }
+    }
+
+    public static void templeEnter() {
+        if (!multi()) return;
+        JsonObject o = MP.msg("temple");
+        o.addProperty("floor", AbstractDungeon.floorNum);
+        MP.send(o);
+    }
+
+    /** How many players went inside before you (in the shared message order). */
+    public static int templeExtra() {
+        if (!multi()) return 0;
+        resetTemple();
+        int i = templeOrder.indexOf(MP.myId);
+        return i >= 0 ? i : templeOrder.size();
+    }
+
     public static void onMessage(String type, int from, JsonObject m) {
+        if (type.equals("temple")) {
+            if (m.get("floor").getAsInt() != AbstractDungeon.floorNum) return;
+            resetTemple();
+            if (!templeOrder.contains(from)) templeOrder.add(from);
+            if (from != MP.myId) Session.toast(Session.nameOf(from) + " went into the temple");
+            return;
+        }
         if (!type.equals("fish") || m.get("floor").getAsInt() != AbstractDungeon.floorNum) return;
         resetFish();
         int opt = m.get("opt").getAsInt();

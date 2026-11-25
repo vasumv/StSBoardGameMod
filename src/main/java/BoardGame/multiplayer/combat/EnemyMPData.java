@@ -19,6 +19,8 @@ public class EnemyMPData {
         // only the second hit is "all players" on the card
         AOE_HITS.put("BGSpireGrowth#1", new int[]{1});
         AOE_HITS.put("BGSpireGrowth#2", new int[]{1});
+        // A7 Snake Plant card (snake_plant_a2_asc7): 3, then AOE 2
+        AOE_HITS.put("BGSnakePlant#3", new int[]{1});
         // A7 Large Slime (cube card): its splash attack hits all players
         AOE.put("BGAcidSlime_L", new int[]{6});
         HP.put("BGGremlinNob", new int[]{17, 33, 48, 64});

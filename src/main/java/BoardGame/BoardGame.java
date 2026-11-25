@@ -646,9 +646,10 @@ public class BoardGame implements
             new BGGremlinLeader()
         }));
         addMonster("BoardGame:Taskmaster",()->new MonsterGroup(new AbstractMonster[]{
-                new BGBlueSlaver(-385.0F, -15.0F),
+                //slaver minions are drawn from the Act 2 summon decks (4 Blue and 4 Red Slaver cards)
+                new BGBlueSlaver(-385.0F, -15.0F, BGTheCity.getSummonBlueSlaver()),
                 new BGTaskmaster(-133.0F, 0.0F), (AbstractMonster)
-                new BGRedSlaver(125.0F, -30.0F)
+                new BGRedSlaver(125.0F, -30.0F, BGTheCity.getSummonRedSlaver())
         }));
 
         addMonster("BoardGame:Automaton", ()->new BGBronzeAutomaton());

@@ -38,6 +38,8 @@ public class Net {
     private static int nextPeerId = 1;
     private static final Object stampLock = new Object();
     private static boolean steamHosting = false;
+    /** Host: every stamped message, so a reconnecting player can catch up. */
+    private static final java.util.ArrayList<String> history = new java.util.ArrayList<>();
 
     /** A connection to another player. */
     abstract static class Peer {
@@ -129,6 +131,15 @@ public class Net {
         peers.add(p);
     }
 
+    /** Client: connect again after a drop, without resetting anything else. */
+    public static void rejoin(String address, int port) throws IOException {
+        if (toHost != null) toHost.close();
+        TcpPeer p = new TcpPeer(new Socket(address, port), 0);
+        toHost = p;
+        startReader(p);
+        logger.info("reconnected to " + address + ":" + port);
+    }
+
     public static void join(String address, int port) throws IOException {
         shutdown();
         host = false;
@@ -136,6 +147,11 @@ public class Net {
         toHost = p;
         startReader(p);
         logger.info("joined " + address + ":" + port);
+    }
+
+    /** Client over Steam, reconnecting: keep everything else. */
+    static void rejoinSteam(Peer hostPeer) {
+        toHost = hostPeer;
     }
 
     /** Client over Steam. */
@@ -163,8 +179,31 @@ public class Net {
     /** A line arrived from a peer (any thread). */
     static void received(Peer p, String line) {
         JsonObject o = new JsonParser().parse(line).getAsJsonObject();
+        if (host && "resume".equals(o.has("t") ? o.get("t").getAsString() : "")) {
+            resume(p, o.get("id").getAsInt(), o.get("n").getAsLong());
+            return;
+        }
         if (host) stampAndBroadcast(o, p.id);
         else inbox.add(o);
+    }
+
+    /** Host: a player came back. Give them their old id and replay what they missed. */
+    private static void resume(Peer p, int oldId, long lastSeen) {
+        synchronized (stampLock) {
+            for (Peer q : peers) if (q != p && q.id == oldId) {
+                peers.remove(q);
+                q.close();
+            }
+            p.id = oldId;
+            for (String line : history) {
+                JsonObject o = new JsonParser().parse(line).getAsJsonObject();
+                if (o.get("n").getAsLong() > lastSeen) p.write(line);
+            }
+        }
+        JsonObject back = new JsonObject();
+        back.addProperty("t", "back");
+        stampAndBroadcast(back, oldId);
+        logger.info("player " + oldId + " reconnected, replayed from " + lastSeen);
     }
 
     /** A peer went away (any thread). */
@@ -187,6 +226,7 @@ public class Net {
             o.addProperty("from", from);
             o.addProperty("n", seq.getAndIncrement());
             String line = o.toString();
+            history.add(line);
             for (Peer p : peers) p.write(line);
             inbox.add(o);
         }
@@ -215,6 +255,7 @@ public class Net {
         toHost = null;
         inbox.clear();
         seq.set(0);
+        history.clear();
         nextPeerId = 1;
         if (steamHosting || SteamNet.inLobby()) SteamNet.leaveLobby();
         steamHosting = false;

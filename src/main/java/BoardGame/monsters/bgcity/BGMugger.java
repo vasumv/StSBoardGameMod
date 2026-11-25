@@ -1,6 +1,7 @@
 package BoardGame.monsters.bgcity;
 
 import BoardGame.actions.BGFakeStealGoldDamageAction;
+import BoardGame.dungeons.BGTheCity;
 import BoardGame.monsters.AbstractBGMonster;
 import BoardGame.monsters.BGDamageIcons;
 import BoardGame.powers.BGThieveryPower;
@@ -46,14 +47,24 @@ public class BGMugger extends AbstractBGMonster implements BGDamageIcons {
     private int slashCount = 0;
     private int stolenGold = 0;
 
+    //Two Mugger summon cards: "10" = mugger_a2_minion (10 HP; 2 / 2 / 4 + 2 block / escape, first step is move 5),
+    //"12" = mugger_minion_variant (12 HP; 2 + 1 block / 2 / 4 + 2 block / escape, first step is move 1).
+    public String card = "12";
+    private static final byte MUG_NO_BLOCK = 5;
+
     public BGMugger(float x, float y) {
+        this(x, y, BGTheCity.getSummonMugger());
+    }
+
+    public BGMugger(float x, float y, String card) {
         super(NAME, "BGMugger", 52, 0.0F, 0.0F, 200.0F, 220.0F, null, x, y);
         this.dialogX = -30.0F * Settings.scale;
         this.dialogY = 50.0F * Settings.scale;
 
 
         this.goldAmt = 2;
-        setHp(12);
+        this.card = card;
+        setHp("10".equals(card) ? 10 : 12);
 
 
         this.damage.add(new DamageInfo((AbstractCreature)this, 2));
@@ -93,10 +104,15 @@ public class BGMugger extends AbstractBGMonster implements BGDamageIcons {
 
                 AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new SetMoveAction(this, (byte)2, AbstractMonster.Intent.ATTACK, 2));
                 break;
+            case 5: //10-HP card, first step: 2 dmg, no block
+                playSfx();
+                this.slashCount++;
+                AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new AnimateSlowAttackAction((AbstractCreature)this));
+                AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new BGFakeStealGoldDamageAction((AbstractCreature)AbstractDungeon.player, this.damage
+                        .get(0), this.fakeGoldAmt));
+                AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new SetMoveAction(this, (byte)2, AbstractMonster.Intent.ATTACK, 2));
+                break;
             case 2:
-
-
-
                 playSfx();
                 AbstractDungeon.actionManager.addToBottom((AbstractGameAction)new AnimateSlowAttackAction((AbstractCreature)this));
 
@@ -175,7 +191,10 @@ public class BGMugger extends AbstractBGMonster implements BGDamageIcons {
 
 
     protected void getMove(int num) {
-        setMove((byte)1, AbstractMonster.Intent.ATTACK_DEFEND, ((DamageInfo)this.damage.get(0)).base);
+        if ("10".equals(this.card))
+            setMove(MUG_NO_BLOCK, AbstractMonster.Intent.ATTACK, ((DamageInfo)this.damage.get(0)).base);
+        else
+            setMove((byte)1, AbstractMonster.Intent.ATTACK_DEFEND, ((DamageInfo)this.damage.get(0)).base);
     }
 }
 

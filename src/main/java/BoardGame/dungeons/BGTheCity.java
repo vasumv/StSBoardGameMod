@@ -78,6 +78,18 @@ public class BGTheCity
         return summonHealerPool.remove(0);
     }
 
+    public static ArrayList<String> summonMuggerPool=new ArrayList<>();
+    public static String getSummonMugger(){
+        if(summonMuggerPool.size()==0){
+            //The base summon sheet has two copies of the 10-HP card (2 / 2 / 4+2 block / escape).
+            //The 12-HP card (2+1 block / 2 / 4+2 block / escape) is treated as an Ascension 7 summon.
+            summonMuggerPool.add("10");
+            summonMuggerPool.add(AbstractDungeon.ascensionLevel >= 7 ? "12" : "10");
+            Collections.shuffle(summonMuggerPool, new java.util.Random(monsterRng.randomLong()));
+        }
+        return summonMuggerPool.remove(0);
+    }
+
     public static ArrayList<String> summonByrdPool=new ArrayList<>();
     public static String getSummonByrd(){
         if(summonByrdPool.size()==0){

@@ -1,0 +1,115 @@
+package BoardGame.multiplayer;
+
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.files.FileHandle;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.megacrit.cardcrawl.core.CardCrawlGame;
+import com.megacrit.cardcrawl.core.Settings;
+import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
+import com.megacrit.cardcrawl.helpers.ModHelper;
+
+/**
+ * Save and continue for multiplayer runs. Every game already autosaves its own
+ * character at each room. This file remembers the party (seed, ascension, players,
+ * rows, your id) so the host can offer "Continue saved run" in the lobby; everyone
+ * then loads their own save and the party carries on from the same room.
+ */
+public class SavedSession {
+    private static FileHandle file() {
+        return Gdx.files.local("preferences/bgmp_session.json");
+    }
+
+    /** Called when a new room starts. */
+    public static void write() {
+        if (!MP.inRun || AbstractDungeon.player == null) return;
+        try {
+            JsonObject o = new JsonObject();
+            o.addProperty("seed", MP.seed);
+            o.addProperty("asc", MP.ascension);
+            o.addProperty("me", MP.myId);
+            o.addProperty("floor", AbstractDungeon.floorNum);
+            o.addProperty("act", AbstractDungeon.actNum);
+            o.add("roster", roster());
+            file().writeString(o.toString(), false);
+        } catch (Throwable t) {
+            MP.logger.error("could not save the multiplayer session", t);
+        }
+    }
+
+    public static JsonArray roster() {
+        JsonArray roster = new JsonArray();
+        for (MP.Player p : MP.players) {
+            JsonObject pj = new JsonObject();
+            pj.addProperty("id", p.id);
+            pj.addProperty("name", p.name);
+            pj.addProperty("char", p.character);
+            pj.addProperty("row", p.row);
+            roster.add(pj);
+        }
+        return roster;
+    }
+
+    public static JsonObject read() {
+        try {
+            FileHandle f = file();
+            if (!f.exists()) return null;
+            JsonObject o = new JsonParser().parse(f.readString()).getAsJsonObject();
+            return CardCrawlGame.characterManager.anySaveFileExists() ? o : null;
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    public static void clear() {
+        try {
+            file().delete();
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /** Host: offer the saved run to everyone in the lobby. */
+    public static void hostContinue() {
+        JsonObject s = read();
+        if (s == null || !MP.isHost()) return;
+        JsonObject o = MP.msg("continue");
+        o.add("save", s);
+        MP.send(o);
+    }
+
+    /** Everyone: load your own save of the same run. */
+    public static void onContinue(JsonObject m) {
+        JsonObject hostSave = m.getAsJsonObject("save");
+        JsonObject mine = read();
+        if (mine == null || mine.get("seed").getAsLong() != hostSave.get("seed").getAsLong()) {
+            Session.toast("You don't have a save of this run; can't continue it");
+            return;
+        }
+        int savedId = mine.get("me").getAsInt();
+        if (!MP.isHost()) MP.claimId(savedId);
+        MP.seed = hostSave.get("seed").getAsLong();
+        MP.ascension = hostSave.get("asc").getAsInt();
+        MP.players.clear();
+        for (JsonElement e : hostSave.getAsJsonArray("roster")) {
+            JsonObject pj = e.getAsJsonObject();
+            MP.Player p = new MP.Player();
+            p.id = pj.get("id").getAsInt();
+            p.name = pj.get("name").getAsString();
+            p.character = pj.get("char").getAsInt();
+            p.row = pj.get("row").getAsInt();
+            MP.players.add(p);
+        }
+        MP.inRun = true;
+        BoardGame.multiplayer.ui.LobbyScreen.open = false;
+        // what the main menu's Continue button does
+        CardCrawlGame.loadingSave = true;
+        CardCrawlGame.chosenCharacter = CardCrawlGame.characterManager.loadChosenCharacter().chosenClass;
+        CardCrawlGame.mainMenuScreen.isFadingOut = true;
+        CardCrawlGame.mainMenuScreen.fadeOutMusic();
+        Settings.isDailyRun = false;
+        Settings.isTrial = false;
+        ModHelper.setModsFalse();
+    }
+}

@@ -62,6 +62,7 @@ public class BGGoldenIdolEvent
             case 0:
                 switch (buttonPressed) {
                     case 0:
+                        BoardGame.multiplayer.combat.SharedEvents.templeEnter();
                         this.imageEventText.updateBodyText(DIALOG_BOULDER);
                         this.relicMetric=AbstractDungeon.returnRandomRelic(AbstractRelic.RelicTier.COMMON);
                         AbstractDungeon.getCurrRoom().spawnRelicAndObtain((Settings.WIDTH / 2), (Settings.HEIGHT / 2),
@@ -92,7 +93,9 @@ public class BGGoldenIdolEvent
                 CardCrawlGame.screenShake.shake(ScreenShake.ShakeIntensity.MED, ScreenShake.ShakeDur.MED, false);
                 this.imageEventText.updateBodyText(DIALOG_CHOSE_FIGHT);
                 CardCrawlGame.sound.play("BLUNT_FAST");
-                AbstractDungeon.player.damage(new DamageInfo(null, this.damage));
+                // multiplayer: 1 more HP per player who went inside before you
+                AbstractDungeon.player.damage(new DamageInfo(null,
+                        this.damage + BoardGame.multiplayer.combat.SharedEvents.templeExtra()));
                 this.screenNum = 2;
                 this.imageEventText.updateDialogOption(0, OPTIONS[1]);
 

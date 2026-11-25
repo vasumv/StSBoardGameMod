@@ -123,6 +123,8 @@ public class Session {
     private static AbstractRoom trackedRoom;
     private static int trackedTurn = -1;
     private static boolean sentDead = false;
+    /** Last Stand was used this Act: the party may not continue to the next Act. */
+    public static boolean lastStandUsed = false;
     private static boolean battleEndHandled = false;
     private static String lastStatus = "";
     private static float statusTimer = 0f;
@@ -494,6 +496,10 @@ public class Session {
             case "key":
                 BoardGame.multiplayer.combat.SharedRewards.onMessage(type, from, m);
                 return;
+            case "neowstart":
+                BoardGame.neow.BGNeowEvent.onPartyStart(from, m);
+                return;
+            case "temple":
             case "fish":
                 BoardGame.multiplayer.combat.SharedEvents.onMessage(type, from, m);
                 return;
@@ -555,6 +561,21 @@ public class Session {
                 return;
             }
             case "dead": {
+                boolean bossFight = m.has("boss") && m.get("boss").getAsBoolean();
+                MP.Player fallen = MP.player(from);
+                if (fallen != null) fallen.dead = true;
+                if (MP.lastStand && bossFight) {
+                    // Last Stand: the others fight on; this party can't go on to the next Act
+                    lastStandUsed = true;
+                    if (fallen != null) fallen.endTurnReady = true;
+                    toast(nameOf(from) + " has fallen. Last Stand: the rest of the party fights on!");
+                    boolean anyAlive = false;
+                    for (MP.Player q : MP.players) anyAlive |= q.connected && !q.dead;
+                    if (anyAlive) {
+                        maybeEndTurn();
+                        return;
+                    }
+                }
                 toast(nameOf(from) + " has died. The party is defeated.");
                 AbstractPlayer p = AbstractDungeon.player;
                 if (p != null && !p.isDead && CardCrawlGame.isInARun() && from != MP.myId) {
@@ -572,7 +593,7 @@ public class Session {
     }
 
     private static boolean allConnectedIn(HashSet<Integer> ids) {
-        for (MP.Player p : MP.players) if (p.connected && !ids.contains(p.id)) return false;
+        for (MP.Player p : MP.players) if (p.connected && !p.dead && !ids.contains(p.id)) return false;
         return true;
     }
 
@@ -590,7 +611,7 @@ public class Session {
 
     private static void maybeEndTurn() {
         if (endTurnPending || !logicalPending.isEmpty() || proposal != null) return;
-        for (MP.Player p : MP.players) if (p.connected && !p.endTurnReady) return;
+        for (MP.Player p : MP.players) if (p.connected && !p.dead && !p.endTurnReady) return;
         endTurnPending = true;
         for (MP.Player p : MP.players) p.endTurnReady = false;
     }
@@ -753,6 +774,7 @@ public class Session {
         }
         sendStatus(dt);
         checkDeath();
+        BoardGame.neow.BGNeowEvent.tryPendingStart();
         updatePendingMove();
         offsetSharedDecks();
         shareObtainedRelics();
@@ -984,7 +1006,7 @@ public class Session {
                 if (inc == null || !inc.remove(p.deltaSeq)) MonsterSync.applyDelta(p.delta, true);
             }
         }
-        for (MP.Player p : MP.players) if (p.connected && !eotReceived.contains(p.id)) return true;
+        for (MP.Player p : MP.players) if (p.connected && !p.dead && !eotReceived.contains(p.id)) return true;
         if (!queue.isEmpty() && queue.peek().isDelta) return true;
         if (eotHostRng != null) RngSync.apply(eotHostRng);
         eotReleased = true;
@@ -1003,6 +1025,7 @@ public class Session {
 
     private static void onRoomChanged() {
         battleEndHandled = false;
+        SavedSession.write();
         BoardGame.multiplayer.combat.DiePhase.reset();
         queue.clear();
         logicalPending.clear();
@@ -1079,7 +1102,10 @@ public class Session {
         if (sentDead || p == null || !CardCrawlGame.isInARun()) return;
         if (p.isDead || p.currentHealth <= 0 && AbstractDungeon.deathScreen != null) {
             sentDead = true;
-            MP.send(MP.msg("dead"));
+            SavedSession.clear();
+            JsonObject d = MP.msg("dead");
+            d.addProperty("boss", AbstractDungeon.getCurrRoom() instanceof com.megacrit.cardcrawl.rooms.MonsterRoomBoss);
+            MP.send(d);
         }
     }
 

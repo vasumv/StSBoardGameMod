@@ -1468,7 +1468,7 @@
           "moves": [
             {
               "effects": [{"name": "<a","color": "GRAY"}],
-              "name": "Turn 1: [] [] [] 2 [BoardGame:HitIcon] 1 [BoardGame:BlockIcon]"
+              "name": "Turn 1: [] [] [] 2 [BoardGame:HitIcon] 1 [BoardGame:BlockIcon] NL (10 HP card: 2 [BoardGame:HitIcon] only)"
             },
             {
               "effects": [{"name": "<b","color": "GRAY"}],

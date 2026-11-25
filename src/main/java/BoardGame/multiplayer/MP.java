@@ -27,6 +27,7 @@ public class MP {
         public String powers = "";
         public boolean endTurnReady;
         public boolean connected = true;
+        public boolean dead = false;
         public int gold;
         public String where = "";
     }
@@ -41,6 +42,17 @@ public class MP {
     public static String myName = System.getProperty("bg.mp.name", "Player");
     public static int myCharacter = Integer.getInteger("bg.mp.char", 0);
     public static String lastError = "";
+    /** Optional rule "Last Stand": in a Boss fight, the others fight on when a player dies. */
+    public static boolean lastStand = false;
+
+    public static void setLastStand(boolean on) {
+        if (!isHost() || inRun) return;
+        JsonObject o = msg("cfg");
+        o.addProperty("asc", ascension);
+        o.addProperty("lastStand", on);
+        Net.send(o);
+    }
+
     /** Ascension level for the run; chosen by the host in the lobby. */
     public static int ascension = 0;
 
@@ -49,6 +61,7 @@ public class MP {
         level = Math.max(0, Math.min(BoardGame.patches.Ascension.CURRENT_MAX_ASCENSION, level));
         JsonObject o = msg("cfg");
         o.addProperty("asc", level);
+        o.addProperty("lastStand", lastStand);
         Net.send(o);
     }
 
@@ -97,6 +110,9 @@ public class MP {
     }
 
     public static boolean join(String address, int port) {
+        joinedAddress = address;
+        joinedPort = port;
+        viaSteam = false;
         try {
             Net.join(address, port);
         } catch (Exception e) {
@@ -107,6 +123,57 @@ public class MP {
         reset();
         active = true;
         return true; // hello is sent when the welcome (with our id) arrives
+    }
+
+    // ---------------- reconnecting ----------------
+
+    /** Last message number seen from the shared stream. */
+    public static long lastSeq = -1;
+    private static String joinedAddress;
+    private static int joinedPort;
+    public static volatile boolean reconnecting = false;
+    private static boolean viaSteam = false;
+
+    private static void startReconnect() {
+        if (reconnecting || isHost()) return;
+        reconnecting = true;
+        Session.toast("Lost the connection to the host. Reconnecting...");
+        if (viaSteam) {
+            BoardGame.multiplayer.net.SteamNet.rejoin();
+            return;
+        }
+        Thread t = new Thread(() -> {
+            for (int i = 0; i < 100 && reconnecting; i++) {
+                try {
+                    Net.rejoin(joinedAddress, joinedPort);
+                    return; // the welcome triggers the resume request
+                } catch (Exception e) {
+                    try {
+                        Thread.sleep(3000);
+                    } catch (InterruptedException ignored) {
+                    }
+                }
+            }
+            com.badlogic.gdx.Gdx.app.postRunnable(() -> {
+                reconnecting = false;
+                Session.toast("Could not reconnect to the host");
+            });
+        }, "bg-mp-reconnect");
+        t.setDaemon(true);
+        t.start();
+    }
+
+    /** Take back our id from a saved run (the host remaps our connection to it). */
+    public static void claimId(int id) {
+        myId = id;
+        sendResume();
+    }
+
+    private static void sendResume() {
+        JsonObject o = msg("resume");
+        o.addProperty("id", myId);
+        o.addProperty("n", lastSeq);
+        Net.send(o);
     }
 
     /** True while a join attempt is in progress (connecting happens off the game thread). */
@@ -148,6 +215,11 @@ public class MP {
 
     /** Joined a Steam lobby: knock so the host opens the connection and welcomes us. */
     public static void onSteamJoined() {
+        viaSteam = true;
+        if (reconnecting && inRun) {
+            Net.send(msg("knock")); // welcome -> resume
+            return;
+        }
         reset();
         active = true;
         String n = BoardGame.multiplayer.net.SteamNet.myName();
@@ -167,6 +239,9 @@ public class MP {
         players.clear();
         lastError = "";
         ascension = 0;
+        lastStand = false;
+        lastSeq = -1;
+        reconnecting = false;
         Session.reset();
     }
 
@@ -191,6 +266,7 @@ public class MP {
         JsonObject o = msg("start");
         o.addProperty("seed", seed);
         o.addProperty("asc", ascension);
+        o.addProperty("lastStand", lastStand);
         JsonArray roster = new JsonArray();
         int row = 0;
         for (Player p : players) {
@@ -238,6 +314,11 @@ public class MP {
     private static void handle(JsonObject m) {
         String t = m.get("t").getAsString();
         int from = m.has("from") ? m.get("from").getAsInt() : -1;
+        if (m.has("n")) {
+            long n = m.get("n").getAsLong();
+            if (n <= lastSeq) return; // already seen (replay overlap)
+            lastSeq = n;
+        }
         if (!t.equals("status")) {
             String txt = m.toString();
             logger.info("[mp] " + (txt.length() > 400 ? txt.substring(0, 400) + "..." : txt));
@@ -246,9 +327,23 @@ public class MP {
             case "knock":
                 return;
             case "welcome":
+                if (reconnecting && inRun) {
+                    reconnecting = false;
+                    sendResume(); // keep our old id; the host replays what we missed
+                    Session.toast("Reconnected");
+                    return;
+                }
                 myId = m.get("id").getAsInt();
                 sendHello();
                 return;
+            case "back": {
+                Player p = player(from);
+                if (p != null) {
+                    p.connected = true;
+                    if (from != myId) Session.toast(p.name + " reconnected");
+                }
+                return;
+            }
             case "hello": {
                 if (inRun) return; // no joining mid-run yet
                 Player p = player(from);
@@ -263,6 +358,7 @@ public class MP {
                     sendRoster();
                     JsonObject c = msg("cfg");
                     c.addProperty("asc", ascension);
+                    c.addProperty("lastStand", lastStand);
                     Net.send(c);
                 }
                 return;
@@ -272,8 +368,12 @@ public class MP {
                 readRoster(m.getAsJsonArray("roster"));
                 return;
             }
+            case "continue":
+                SavedSession.onContinue(m);
+                return;
             case "cfg":
                 ascension = m.get("asc").getAsInt();
+                if (m.has("lastStand")) lastStand = m.get("lastStand").getAsBoolean();
                 return;
             case "char": {
                 Player p = player(from);
@@ -281,6 +381,10 @@ public class MP {
                 return;
             }
             case "left": {
+                if (m.get("who").getAsInt() == 0 && !isHost() && inRun) {
+                    startReconnect();
+                    return;
+                }
                 Player p = player(m.get("who").getAsInt());
                 if (p != null) {
                     p.connected = false;
@@ -293,6 +397,7 @@ public class MP {
                 readRoster(m.getAsJsonArray("roster"));
                 seed = m.get("seed").getAsLong();
                 ascension = m.has("asc") ? m.get("asc").getAsInt() : 0;
+                lastStand = m.has("lastStand") && m.get("lastStand").getAsBoolean();
                 inRun = true;
                 logger.info("starting multiplayer run, seed " + seed + ", " + players.size() + " players, I am "
                         + myId + " row " + myRow());

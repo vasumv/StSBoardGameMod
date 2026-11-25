@@ -190,6 +190,18 @@ public class LobbyScreen {
         } else if (sb != null) {
             text(sb, MP.ascension == 0 ? "Off" : "Level " + MP.ascension, x, y + 40, Settings.CREAM_COLOR);
         }
+        // optional rules
+        if (MP.isHost()) {
+            if (button(sb, clicked, x + 420, y + 30, 420, 56, "Last Stand (optional rule): " + (MP.lastStand ? "On" : "Off"),
+                    MP.lastStand)) MP.setLastStand(!MP.lastStand);
+        } else if (sb != null) {
+            text(sb, "Last Stand: " + (MP.lastStand ? "On" : "Off"), x + 420, y + 40, Settings.CREAM_COLOR);
+        }
+        com.google.gson.JsonObject saved = MP.isHost() ? BoardGame.multiplayer.SavedSession.read() : null;
+        if (saved != null && button(sb, clicked, PX + 220, PY + PH - 80, 300, 56,
+                "Continue saved run (floor " + saved.get("floor").getAsInt() + ")", false)) {
+            BoardGame.multiplayer.SavedSession.hostContinue();
+        }
         if (MP.isHost() && button(sb, clicked, PX + PW - 420, PY + PH - 80, 200, 56, "Start run", false)) {
             open = false;
             MP.startRun(System.nanoTime());
