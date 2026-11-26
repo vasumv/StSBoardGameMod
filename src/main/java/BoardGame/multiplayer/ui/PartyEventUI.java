@@ -62,12 +62,14 @@ public class PartyEventUI {
                 neowLocked = false;
             }
             return;
-        } else if (ev instanceof BGDeadAdventurer && AbstractDungeon.floorNum != 2) {
+        } else if ((ev instanceof BGDeadAdventurer && AbstractDungeon.floorNum != 2)
+                || ev instanceof BoardGame.events.BGColosseum) {
             partyChoice = true;
-            banner = MP.isHost() ? "Party decision: you choose for everyone (one roll for the party)"
+            banner = MP.isHost() ? "Party decision: you choose for everyone"
                     : "Party decision: " + hostName() + " chooses for the party";
             if (!MP.isHost()) { // every screen of it is the host's to click; the buttons follow along
                 for (LargeDialogOptionButton b : RoomEventDialog.optionList) b.isDisabled = true;
+                for (LargeDialogOptionButton b : ev.imageEventText.optionList) b.isDisabled = true;
                 neowLocked = true;
             }
             return;

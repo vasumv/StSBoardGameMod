@@ -60,6 +60,8 @@ public class DebugChannel {
         switch (a[0]) {
             case "intents":
                 return BoardGame.multiplayer.combat.IntentDetails.dumpAll();
+            case "deck": // test: the master deck
+                return "deck=" + cards(AbstractDungeon.player.masterDeck);
             case "state":
                 return state();
             case "idle":

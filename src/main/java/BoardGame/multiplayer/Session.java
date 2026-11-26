@@ -659,6 +659,9 @@ public class Session {
             case "fish":
                 BoardGame.multiplayer.combat.SharedEvents.onMessage(type, from, m);
                 return;
+            case "colo":
+                BoardGame.events.BGColosseum.onPartyMessage(from, m);
+                return;
             case "noteoffer":
             case "notereply":
                 BoardGame.multiplayer.combat.NoteExchange.onMessage(type, from, m);

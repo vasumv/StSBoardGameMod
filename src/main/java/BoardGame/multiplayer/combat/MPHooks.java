@@ -433,7 +433,9 @@ public class MPHooks {
         AbstractRoom r = AbstractDungeon.currMapNode == null ? null : AbstractDungeon.getCurrRoom();
         if (!(r instanceof com.megacrit.cardcrawl.rooms.EventRoom) || r.event == null) return false;
         String n = r.event.getClass().getSimpleName();
-        return n.contains("Colosseum"); // Dead Adventurer is a party decision (host decides): shared fight
+        // Colosseum and Dead Adventurer are party decisions (the host decides): shared fights.
+        // Mind Bloom's boss is built directly (not through these hooks), so it is fought alone.
+        return false;
     }
 
     private static Method findMethod(Class<?> c, String name, Class<?>... args) throws NoSuchMethodException {

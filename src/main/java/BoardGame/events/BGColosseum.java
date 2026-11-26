@@ -32,7 +32,46 @@ public class BGColosseum extends Colosseum {    //game is hardcoded to check for
         super();
     }
 
+    // ---- multiplayer: "One choice for the party". The host clicks, every game follows, and the
+    // party fights the chosen Encounter or Elite together.
+    public static boolean partyDriven = false;
+    private static int toastFloor = -1;
+
+    private static boolean multi() {
+        return BoardGame.multiplayer.MP.inRun && BoardGame.multiplayer.MP.playerCount() > 1;
+    }
+
+    /** A non-host game follows the host's choice. */
+    public static void onPartyMessage(int from, com.google.gson.JsonObject m) {
+        if (BoardGame.multiplayer.MP.isHost() || m.get("floor").getAsInt() != AbstractDungeon.floorNum) return;
+        if (!(AbstractDungeon.getCurrRoom().event instanceof BGColosseum)) return;
+        BGColosseum ev = (BGColosseum) AbstractDungeon.getCurrRoom().event;
+        if (!ev.screen.name().equals(m.get("s").getAsString())) return; // already past it
+        partyDriven = true;
+        try {
+            ev.buttonEffect(m.get("v").getAsInt());
+        } finally {
+            partyDriven = false;
+        }
+    }
+
     protected void buttonEffect(int buttonPressed) {
+        if (multi() && this.screen != CurScreen.LEAVE) {
+            if (!BoardGame.multiplayer.MP.isHost() && !partyDriven) {
+                if (toastFloor != AbstractDungeon.floorNum) {
+                    toastFloor = AbstractDungeon.floorNum;
+                    BoardGame.multiplayer.Session.toast("The host chooses for the party");
+                }
+                return;
+            }
+            if (BoardGame.multiplayer.MP.isHost()) {
+                com.google.gson.JsonObject o = BoardGame.multiplayer.MP.msg("colo");
+                o.addProperty("s", this.screen.name());
+                o.addProperty("v", buttonPressed);
+                o.addProperty("floor", AbstractDungeon.floorNum);
+                BoardGame.multiplayer.MP.send(o);
+            }
+        }
         switch (this.screen) {
             case INTRO:
                 switch (buttonPressed) {

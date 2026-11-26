@@ -111,11 +111,15 @@ public class PartyPanel {
     // ---------------- frame ----------------
 
     /** Called every frame (after the game's own update). */
+    private static Object openedIn;
+
     public static void update() {
         if (!available()) {
             open = false;
             return;
         }
+        if (open && openedIn != AbstractDungeon.getCurrRoom()) open = false; // a new room closes it
+        if (!open) openedIn = AbstractDungeon.getCurrRoom();
         if (!MPOverlay.peekClick()) return;
         for (Btn b : new ArrayList<>(btns)) {
             if (b.enabled && hovered(b)) {
