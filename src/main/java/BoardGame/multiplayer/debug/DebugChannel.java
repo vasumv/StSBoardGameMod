@@ -60,6 +60,16 @@ public class DebugChannel {
         switch (a[0]) {
             case "intents":
                 return BoardGame.multiplayer.combat.IntentDetails.dumpAll();
+            case "rule": { // test (host, in the lobby): "rule laststand on", "rule chooserelic on", "rule sequential off"
+                boolean on = a.length > 2 && a[2].equals("on");
+                switch (a[1]) {
+                    case "laststand": BoardGame.multiplayer.MP.setLastStand(on); break;
+                    case "chooserelic": BoardGame.multiplayer.MP.setChooseRelic(on); break;
+                    case "sequential": BoardGame.multiplayer.MP.setSequential(on); break;
+                    default: return "unknown rule";
+                }
+                return "rule " + a[1] + " " + on;
+            }
             case "deck": // test: the master deck
                 return "deck=" + cards(AbstractDungeon.player.masterDeck);
             case "state":

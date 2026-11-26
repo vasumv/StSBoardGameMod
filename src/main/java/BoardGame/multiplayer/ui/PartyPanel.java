@@ -199,6 +199,7 @@ public class PartyPanel {
             any = true;
             final int slot = i;
             btn(sb, x + 16, cy, CARD_W - 32, 40, po.name, can, () -> Session.givePotion(slot, id));
+            if (sb != null) potionIcon(sb, po, x + 40, cy + 20);
             cy += 46;
         }
         if (!any) {
@@ -252,6 +253,22 @@ public class PartyPanel {
             }
         }
         return false;
+    }
+
+    /** Draw a potion's own picture at a spot (its usual place is the top bar). */
+    private static void potionIcon(SpriteBatch sb, AbstractPotion po, float x, float y) {
+        float ox = po.posX, oy = po.posY, os = po.scale;
+        try {
+            po.posX = sx(x);
+            po.posY = sy(y);
+            po.scale = Settings.scale * 0.7f;
+            po.render(sb);
+        } catch (Throwable ignored) {
+        } finally {
+            po.posX = ox;
+            po.posY = oy;
+            po.scale = os;
+        }
     }
 
     /** While the panel is open, the room underneath ignores clicks. */
