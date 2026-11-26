@@ -30,7 +30,7 @@ public class BGHallwayEncounter extends AbstractEvent {
         super.update();
         if(!isDone){
             isDone=true;
-            if(AbstractDungeon.floorNum==2 && CardCrawlGame.dungeon instanceof BGExordium){
+            if(BoardGame.dungeons.AbstractBGDungeon.isFirstQuestionRoom()){
                 //make sure ssserpenthead happens only ONCE
                 if(AbstractDungeon.player.hasRelic("BGSsserpentHead")){
                     AbstractDungeon.player.loseGold(BGSsserpentHead.GOLD_AMT);

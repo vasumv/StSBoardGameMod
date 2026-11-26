@@ -62,7 +62,7 @@ public class PartyEventUI {
                 neowLocked = false;
             }
             return;
-        } else if ((ev instanceof BGDeadAdventurer && AbstractDungeon.floorNum != 2)
+        } else if ((ev instanceof BGDeadAdventurer && !BoardGame.dungeons.AbstractBGDungeon.isFirstQuestionRoom())
                 || ev instanceof BoardGame.events.BGColosseum) {
             partyChoice = true;
             banner = MP.isHost() ? "Party decision: you choose for everyone"

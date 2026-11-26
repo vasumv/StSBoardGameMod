@@ -467,6 +467,25 @@ public abstract class AbstractBGDungeon extends AbstractDungeon {
 
     }
 
+    /**
+     * "If this is the first ? room": true in Act 1 when no earlier room on the party's path was a
+     * ? room (the path is saved and the same for every player).
+     */
+    public static boolean isFirstQuestionRoom() {
+        if (!(CardCrawlGame.dungeon instanceof BoardGame.dungeons.BGExordium)) return false;
+        try {
+            int n = Math.min(AbstractDungeon.pathX.size(), AbstractDungeon.pathY.size());
+            for (int i = 0; i < n - 1; i++) { // the last entry is the current room
+                com.megacrit.cardcrawl.map.MapRoomNode node =
+                        AbstractDungeon.map.get(AbstractDungeon.pathY.get(i)).get(AbstractDungeon.pathX.get(i));
+                if (node.room instanceof com.megacrit.cardcrawl.rooms.EventRoom) return false;
+            }
+            return true;
+        } catch (Throwable t) {
+            return AbstractDungeon.floorNum == 2;
+        }
+    }
+
     public static void removeCardFromRewardDeck(AbstractCard card){
         //TODO: check if card came from a different color deck too!
         removeOneCardFromOneDeck(card.cardID, AbstractBGDungeon.rewardDeck);

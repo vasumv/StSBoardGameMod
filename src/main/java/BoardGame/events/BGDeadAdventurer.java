@@ -82,7 +82,7 @@ public class BGDeadAdventurer
         this.adventurerImg = ImageMaster.loadImage("images/npcs/nopants.png");
         this.body = DESCRIPTIONS[2];
         this.roomEventText.clear();
-        if(AbstractDungeon.floorNum==2 && CardCrawlGame.dungeon instanceof BGExordium){
+        if(BoardGame.dungeons.AbstractBGDungeon.isFirstQuestionRoom()){
             this.body += DESCRIPTIONS[3];
             this.roomEventText.addDialogOption(OPTIONS[5]);
         }else {
@@ -108,7 +108,7 @@ public class BGDeadAdventurer
     }
 //TODO: if die relics are used here, they shouldn't be available for the elite fight
     protected void buttonEffect(int buttonPressed) {
-        if(AbstractDungeon.floorNum==2 && CardCrawlGame.dungeon instanceof BGExordium){
+        if(BoardGame.dungeons.AbstractBGDungeon.isFirstQuestionRoom()){
             //make sure ssserpenthead happens only ONCE
             if(AbstractDungeon.player.hasRelic("BGSsserpentHead")){
                 AbstractDungeon.player.loseGold(BGSsserpentHead.GOLD_AMT);
