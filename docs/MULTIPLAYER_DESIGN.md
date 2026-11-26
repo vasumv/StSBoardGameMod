@@ -50,9 +50,8 @@ reference implementation: `reference/enemy_audit.md`, `reference/enemy_mp_data.j
   game has one physical deck per character).
 - The host is the hub: if the host disconnects, use Continue saved run (the host keeps
   everyone's latest save).
-- Gold pooling: gold received from a teammate unlocks pay options only in Cleric, Beggar and
-  Woman in Blue (rebuilt on their first screen). Designer, We Meet Again and Joust roll their
-  options, so give the gold before entering.
+- Gold pooling: gold from a teammate (Party panel) unlocks pay options in Cleric, Beggar, Woman
+  in Blue, We Meet Again (first screen), Joust's bet screen and Designer's main screen.
 - Event audit leftovers (docs/reference/event_audit.md): the "first ? room" discard is
   approximated as floor 2; Act III events have no reference to check against; Face Trader's
   Exchange is commented out.

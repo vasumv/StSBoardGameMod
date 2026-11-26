@@ -228,7 +228,12 @@ public class PartyPanel {
                 ((BoardGame.events.BGTheJoust) ev).goldChanged();
                 return;
             }
-            if (!n.equals("BGCleric") && !n.equals("BGBeggar") && !n.equals("BGWomanInBlue")) return;
+            if (ev instanceof BoardGame.events.BGDesigner) {
+                ((BoardGame.events.BGDesigner) ev).goldChanged();
+                return;
+            }
+            if (!n.equals("BGCleric") && !n.equals("BGBeggar") && !n.equals("BGWomanInBlue")
+                    && !n.equals("BGWeMeetAgain")) return;
             if (!atIntro(ev)) return;
             com.megacrit.cardcrawl.events.AbstractEvent fresh = ev.getClass().getConstructor().newInstance();
             r.event = fresh;

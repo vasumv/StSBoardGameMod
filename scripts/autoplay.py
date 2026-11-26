@@ -42,6 +42,11 @@ def state(p):
     return cards, int(en.group(1)) if en else 0, hp.group(0) if hp else "?", mons
 
 
+def turn(p):
+    m = re.search(r"turn=(\d+)", q(p, "state"))
+    return int(m.group(1)) if m else -1
+
+
 def my_row(p):
     s = q(p, "mp status")
     me = re.search(r"me=(\d+)", s)
@@ -84,13 +89,16 @@ def fight():
             return "won"
         play_turn("p1")
         play_turn("p2")
+        t0 = turn("p1")
         q("p1", "end")
         q("p2", "end")
-        for _ in range(30):
+        # End Turn toggles "ready": never send it again until the next turn has really started
+        for _ in range(60):
             time.sleep(1)
             if phase("p1") != "COMBAT":
                 return "won"
-            if "idle=true" in q("p1", "idle") and "idle=true" in q("p2", "idle"):
+            if turn("p1") > t0 and turn("p2") > t0 and "idle=true" in q("p1", "idle") \
+                    and "idle=true" in q("p2", "idle"):
                 break
     # stuck: finish it so the run goes on
     _, _, _, mons = state("p1")

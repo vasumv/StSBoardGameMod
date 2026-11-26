@@ -150,6 +150,17 @@ public class BGDesigner
 
 
 
+    /** Multiplayer: a teammate's gold can unlock the paid services on the main screen. */
+    public void goldChanged() {
+        if (this.curScreen != CurrentScreen.MAIN || this.imageEventText.optionList.size() < 3) return;
+        int g = AbstractDungeon.player.gold;
+        boolean upg = AbstractDungeon.player.masterDeck.hasUpgradableCards();
+        this.imageEventText.optionList.get(0).isDisabled = g < this.adjustCost || !upg;
+        this.imageEventText.optionList.get(1).isDisabled = g < this.cleanUpCost
+                || CardGroup.getGroupWithoutBottledCards(AbstractDungeon.player.masterDeck).size() == 0;
+        this.imageEventText.optionList.get(2).isDisabled = g < this.fullServiceCost || !upg;
+    }
+
     protected void buttonEffect(int buttonPressed) {
         switch (this.curScreen) {
             case INTRO:
