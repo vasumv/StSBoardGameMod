@@ -142,7 +142,8 @@ public class LobbyScreen {
             }
             y += 100;
             if (sb != null) {
-                text(sb, "Join a game: type the host's address (e.g. 192.168.1.20:" + port() + ")", x, y, Settings.GOLD_COLOR);
+                text(sb, "Join by code: type the host's Steam lobby code (e.g. 4KX9QF), or an address (192.168.1.20:"
+                        + port() + ")", x, y, Settings.GOLD_COLOR);
                 rect(sb, x, y + 30, 560, 56, fieldFocused ? new Color(0.1f, 0.1f, 0.14f, 1f) : FIELD);
                 boolean showCursor = fieldFocused && (cursorBlink % 1f) < 0.5f;
                 FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont, address + (showCursor ? "_" : ""),
@@ -166,8 +167,10 @@ public class LobbyScreen {
         // ---- connected ----
         if (sb != null) {
             if (MP.isHost() && BoardGame.multiplayer.net.Net.usingSteam()) {
-                text(sb, "Hosting a Steam lobby. Friends click Join Friends in their Multiplayer screen, or invite them.", x, y,
+                String code = BoardGame.multiplayer.net.SteamNet.lobbyCode();
+                text(sb, "Hosting a Steam lobby. Friends click Join Friends, type the lobby code, or accept an invite.", x, y,
                         Settings.CREAM_COLOR);
+                if (code != null) text(sb, "Lobby code:  " + code, x, y + 30, Settings.GOLD_COLOR);
             } else if (MP.isHost()) {
                 text(sb, "You are hosting. Friends join with one of these addresses:", x, y, Settings.CREAM_COLOR);
                 text(sb, String.join("    ", localAddresses()), x, y + 28, Settings.GOLD_COLOR);
@@ -178,6 +181,14 @@ public class LobbyScreen {
         if (MP.isHost() && BoardGame.multiplayer.net.Net.usingSteam()
                 && button(sb, clicked, PX + PW - 300, y - 6, 260, 50, "Invite Steam friends", false))
             BoardGame.multiplayer.net.SteamNet.invite();
+        if (MP.isHost() && BoardGame.multiplayer.net.Net.usingSteam() && BoardGame.multiplayer.net.SteamNet.lobbyCode() != null
+                && button(sb, clicked, PX + PW - 300, y + 50, 260, 50, "Copy lobby code", false)) {
+            try {
+                Gdx.app.getClipboard().setContents(BoardGame.multiplayer.net.SteamNet.lobbyCode());
+                Session.toast("Lobby code copied");
+            } catch (Throwable ignored) {
+            }
+        }
         y += 80;
         if (sb != null) text(sb, "Players", x, y, Settings.GOLD_COLOR);
         y += 30;
@@ -232,7 +243,12 @@ public class LobbyScreen {
     private static void join() {
         String t = address.trim();
         if (t.isEmpty()) {
-            MP.lastError = "Type the host's address first";
+            MP.lastError = "Type the host's lobby code or address first";
+            return;
+        }
+        if (BoardGame.multiplayer.net.SteamNet.isLobbyCode(t)) {
+            MP.myName = profileName();
+            BoardGame.multiplayer.net.SteamNet.joinCode(t);
             return;
         }
         int p = port();

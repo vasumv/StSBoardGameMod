@@ -126,6 +126,43 @@ public class EventDie {
         }
     }
 
+    /** What each number does in this event: {lowest, highest, text}. */
+    private static ArrayList<Object[]> outcomes() {
+        ArrayList<Object[]> o = new ArrayList<>();
+        AbstractEvent ev = AbstractDungeon.getCurrRoom().event;
+        String n = ev.getClass().getSimpleName();
+        switch (n) {
+            case "BGLab": {
+                MP.Player bottom = multi() ? MP.playerInRow(0) : null;
+                String who = bottom == null || bottom.id == MP.myId ? "you" : bottom.name;
+                o.add(new Object[]{1, 3, "One potion each"});
+                o.add(new Object[]{4, 6, multi() ? "One potion each, and " + who + " gets an extra potion"
+                        : "Two potions"});
+                break;
+            }
+            case "BGDeadAdventurer":
+                o.add(new Object[]{1, 2, "Fight an Elite (it drops 2 Gold and a Relic)"});
+                o.add(new Object[]{3, 4, multi() ? "Everyone gains 2 Gold" : "Gain 2 Gold"});
+                o.add(new Object[]{5, 6, multi() ? "Everyone obtains a Relic" : "Obtain a Relic"});
+                break;
+            case "BGTheJoust":
+                o.add(new Object[]{1, 3, "Lose your bet"});
+                o.add(new Object[]{4, 6, "Win 6 Gold"});
+                break;
+            case "BGTheMausoleum":
+            case "BGAccursedBlacksmith":
+                o.add(new Object[]{1, 3, "Keep the Relic, and gain a Curse"});
+                o.add(new Object[]{4, 6, "Keep the Relic, no Curse"});
+                break;
+            case "BGScrapOoze":
+                o.add(new Object[]{1, 2, "Nothing: reach in again (lose HP) or leave"});
+                o.add(new Object[]{3, 4, "Find 2 Gold"});
+                o.add(new Object[]{5, 6, "Find a Relic"});
+                break;
+        }
+        return o;
+    }
+
     private static String eventName() {
         AbstractEvent ev = AbstractDungeon.getCurrRoom().event;
         String n = ev.getClass().getSimpleName().replaceFirst("^BG", "").replaceAll("([a-z])([A-Z])", "$1 $2");
@@ -303,18 +340,18 @@ public class EventDie {
         return Boolean.TRUE.equals(basemod.ReflectionHacks.getPrivateStatic(com.megacrit.cardcrawl.events.GenericEventDialog.class, "show")) ? 200 : 1180;
     }
 
-    private static final float PY = 380, PW = 520;
+    private static final float PY = 380, PW = 600;
 
     private static void layoutButtons() {
         btnRects.clear();
         btnText.clear();
         btnAct.clear();
         if (!party || resolved || anim > 0) return;
-        float y = PY + 150 + notes.size() * 26;
+        float y = PY + 150 + (outcomes().size() + notes.size()) * 26;
         if (choosingBrew) {
             for (int i = 1; i <= 6; i++) {
                 final int v = i;
-                addBtn(px() + 12 + (i - 1) * 84, y, 76, "" + i, () -> {
+                addBtn(px() + 12 + (i - 1) * 96, y, 86, "" + i, () -> {
                     int slot = BGGamblersBrew.doesPlayerHaveGamblersBrew();
                     choosingBrew = false;
                     if (slot < 0) return;
@@ -327,21 +364,21 @@ public class EventDie {
         if (locks.contains(MP.myId)) return;
         float x = px() + 12;
         if (hasAbacus()) {
-            addBtn(x, y, 240, "The Abacus: +1", () -> {
+            addBtn(x, y, 300, "The Abacus: make it " + (value % 6 + 1), () -> {
                 usedAbacus = true;
                 change(value % 6 + 1, "The Abacus");
             });
             y += 46;
         }
         if (hasToolbox()) {
-            addBtn(x, y, 240, "Toolbox: -1", () -> {
+            addBtn(x, y, 300, "Toolbox: make it " + (value == 1 ? 6 : value - 1), () -> {
                 usedToolbox = true;
                 change(value == 1 ? 6 : value - 1, "Toolbox");
             });
             y += 46;
         }
         if (hasChip()) {
-            addBtn(x, y, 240, "Gambling Chip: reroll", () -> {
+            addBtn(x, y, 300, "Gambling Chip: reroll", () -> {
                 usedChip = true;
                 change(new java.util.Random(MP.seed * 31L + key * 7919L + version * 104729L).nextInt(6) + 1,
                         "Gambling Chip");
@@ -349,10 +386,11 @@ public class EventDie {
             y += 46;
         }
         if (hasBrew()) {
-            addBtn(x, y, 240, "Gambler's Brew: choose", () -> choosingBrew = true);
+            addBtn(x, y, 300, "Gambler's Brew: pick a number", () -> choosingBrew = true);
             y += 46;
         }
-        addBtn(px() + PW - 200, PY + 150 + notes.size() * 26, 188, "Keep " + value, EventDie::lock);
+        addBtn(px() + PW - 200, PY + 150 + (outcomes().size() + notes.size()) * 26, 188, "Keep " + value,
+                EventDie::lock);
     }
 
     private static void addBtn(float x, float y, float w, String text, Runnable r) {
@@ -390,7 +428,8 @@ public class EventDie {
             extraRows = Math.max(1, (hasAbacus() ? 1 : 0) + (hasToolbox() ? 1 : 0) + (hasChip() ? 1 : 0)
                     + (hasBrew() ? 1 : 0));
         if (choosingBrew) extraRows = 1;
-        float h = 140 + notes.size() * 26 + (party && !resolved ? 30 : 0) + extraRows * 46 + 10;
+        ArrayList<Object[]> outs = outcomes();
+        float h = 140 + (outs.size() + notes.size()) * 26 + (party && !resolved ? 30 : 0) + extraRows * 46 + 10;
         float x = px() * s, top = Settings.HEIGHT - PY * s;
         box(sb, x, top - h * s, PW * s, h * s, BG);
         float ds = 96 * s;
@@ -405,6 +444,15 @@ public class EventDie {
         FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont, title, x + 128 * s, top - 58 * s,
                 Settings.CREAM_COLOR);
         float y = top - 140 * s;
+        for (Object[] r : outs) {
+            int lo = (Integer) r[0], hi = (Integer) r[1];
+            boolean hit = !rolling && value >= lo && value <= hi;
+            String range = lo == hi ? "" + lo : lo + "-" + hi;
+            FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont, (hit ? "> " : "   ") + range + ":  " + r[2],
+                    x + 16 * s, y, hit ? Settings.GREEN_TEXT_COLOR : Color.GRAY);
+            y -= 26 * s;
+        }
+        if (!outs.isEmpty()) y -= 4 * s;
         if (!rolling) {
             for (String n : notes) {
                 FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont, n, x + 16 * s, y, Settings.CREAM_COLOR);

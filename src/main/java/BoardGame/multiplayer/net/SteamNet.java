@@ -129,6 +129,46 @@ public class SteamNet {
         status = "";
     }
 
+    // ---------------- lobby codes ----------------
+
+    // Steam lobby ids all share their top bits (public universe, chat account, lobby instance), so
+    // the code only needs the rest: a short code like "4KX9QF" that the host can read out.
+    private static final long LOBBY_BITS = 0x0186000000000000L;
+
+    /** The host's lobby as a short code to read out or paste, or null. */
+    public static String lobbyCode() {
+        if (lobby == null) return null;
+        long id = SteamNativeHandle.getNativeHandle(lobby);
+        return Long.toString(id ^ LOBBY_BITS, 36).toUpperCase();
+    }
+
+    /** True if this looks like a lobby code rather than an address. */
+    public static boolean isLobbyCode(String t) {
+        String c = t.trim().replace("-", "").replace(" ", "");
+        return !c.isEmpty() && c.length() <= 13 && c.matches("[A-Za-z0-9]+") && !t.contains(".") && !t.contains(":");
+    }
+
+    /** Join a lobby by its code (no invite or friends list needed). */
+    public static void joinCode(String t) {
+        if (!available()) {
+            MP.lastError = "Steam isn't available. Start the game through Steam.";
+            return;
+        }
+        if (MP.inRun) return;
+        long id;
+        try {
+            id = Long.parseLong(t.trim().replace("-", "").replace(" ", "").toLowerCase(), 36) ^ LOBBY_BITS;
+        } catch (NumberFormatException e) {
+            MP.lastError = "That isn't a lobby code";
+            return;
+        }
+        Net.logger.info("Steam: joining lobby by code " + t + " (" + id + ")");
+        Net.shutdown();
+        MP.lastError = "";
+        status = "Joining lobby " + t.trim().toUpperCase() + "...";
+        matchmaking.joinLobby(SteamID.createFromNativeHandle(id));
+    }
+
     // ---------------- friends' lobbies ----------------
 
     /** A Steam friend who is in Slay the Spire and in a lobby. */
