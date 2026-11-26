@@ -62,8 +62,14 @@ public class BGLoopPower extends AbstractBGPower {
                 for (int i = 0; i < this.amount; i++) {
                     ((AbstractOrb) AbstractDungeon.player.orbs.get(target)).onEndOfTurn();
                 }
+                // show which orb Loop is triggering before its effects resolve
+                if (!(orb instanceof EmptyOrbSlot))
+                    AbstractDungeon.actionManager.addToTop(new BoardGame.multiplayer.ui.OrbHighlight.Show(orb,
+                            "Loop: " + orb.name + (this.amount > 1 ? " (x" + this.amount + ")" : "")));
             };
-            addToTop((AbstractGameAction) new OrbSelectScreenAction(ossAction, "Choose an Orb to Loop.", true));
+            String prompt = "Loop: choose an Orb to trigger" + (this.amount > 1 ? " twice" : "")
+                    + " now. Then every Orb triggers as usual.";
+            addToTop((AbstractGameAction) new OrbSelectScreenAction(ossAction, prompt, true));
         }
     }
 

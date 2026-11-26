@@ -45,12 +45,16 @@ public class OrbHighlight {
     /** Highlights one orb for a moment before its effect resolves. */
     public static class Show extends AbstractGameAction {
         private final AbstractOrb orb;
-        private final int index, count;
+        private final String label;
 
         Show(AbstractOrb orb, int index, int count) {
+            this(orb, orb.name + " (" + index + "/" + count + ")");
+        }
+
+        /** Highlight with a custom label, e.g. "Loop: Frost (x2)". */
+        public Show(AbstractOrb orb, String label) {
             this.orb = orb;
-            this.index = index;
-            this.count = count;
+            this.label = label;
             this.duration = this.startDuration = Settings.FAST_MODE ? 0.25f : 0.5f;
             this.actionType = ActionType.WAIT;
         }
@@ -58,8 +62,7 @@ public class OrbHighlight {
         @Override
         public void update() {
             if (this.duration == this.startDuration)
-                AbstractDungeon.topLevelEffects.add(new Ring(orb, orb.name + " (" + index + "/" + count + ")",
-                        this.startDuration + 0.25f));
+                AbstractDungeon.topLevelEffects.add(new Ring(orb, label, this.startDuration + 0.25f));
             tickDuration();
         }
     }
