@@ -105,6 +105,13 @@ public class BGTheJoust
         }
     }
 
+    /** Multiplayer: a teammate's gold can unlock the gold bet on the betting screen. */
+    public void goldChanged() {
+        if (this.screen == CUR_SCREEN.EXPLANATION && AbstractDungeon.player.gold >= 2
+                && !this.imageEventText.optionList.isEmpty())
+            this.imageEventText.updateDialogOption(0, OPTIONS[1], false);
+    }
+
     protected void buttonEffect(int buttonPressed) {
         String tmp;
         switch (this.screen) {

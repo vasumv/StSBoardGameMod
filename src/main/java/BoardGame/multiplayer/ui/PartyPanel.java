@@ -223,6 +223,10 @@ public class PartyPanel {
             if (!(r instanceof com.megacrit.cardcrawl.rooms.EventRoom) || r.event == null) return;
             com.megacrit.cardcrawl.events.AbstractEvent ev = r.event;
             String n = ev.getClass().getSimpleName();
+            if (ev instanceof BoardGame.events.BGTheJoust) {
+                ((BoardGame.events.BGTheJoust) ev).goldChanged();
+                return;
+            }
             if (!n.equals("BGCleric") && !n.equals("BGBeggar") && !n.equals("BGWomanInBlue")) return;
             if (!atIntro(ev)) return;
             com.megacrit.cardcrawl.events.AbstractEvent fresh = ev.getClass().getConstructor().newInstance();
