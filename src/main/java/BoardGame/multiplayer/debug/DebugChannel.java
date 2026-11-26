@@ -229,7 +229,7 @@ public class DebugChannel {
                 return "next encounters " + AbstractDungeon.monsterList.subList(0, Math.min(4, AbstractDungeon.monsterList.size()));
             }
             case "give": { // test: put a card in hand, e.g. "give BoardGame:BGPredator"
-                AbstractCard c = com.megacrit.cardcrawl.helpers.CardLibrary.getCard(a[1]);
+                AbstractCard c = com.megacrit.cardcrawl.helpers.CardLibrary.getCard(a[1].replace('_', ' '));
                 if (c == null) return "no card " + a[1];
                 c = c.makeCopy();
                 if (a.length > 2) c.upgrade();
@@ -242,6 +242,27 @@ public class DebugChannel {
                 if (r == null) return "no relic " + a[1];
                 r.makeCopy().instantObtain();
                 return "relic " + a[1];
+            }
+            case "power": { // test: apply a power to yourself, e.g. "power BGWeakened 1"
+                try {
+                    Class<?> pc = Class.forName(a[1].contains(".") ? a[1] : "BoardGame.powers." + a[1]);
+                    AbstractPower pw = null;
+                    for (java.lang.reflect.Constructor<?> k : pc.getConstructors()) {
+                        Class<?>[] ts = k.getParameterTypes();
+                        if (ts.length < 2 || ts[1] != int.class) continue;
+                        Object[] args = new Object[ts.length];
+                        args[0] = AbstractDungeon.player;
+                        args[1] = Integer.parseInt(a[2]);
+                        for (int i = 2; i < ts.length; i++) args[i] = ts[i] == boolean.class ? (Object) true : null;
+                        pw = (AbstractPower) k.newInstance(args);
+                        break;
+                    }
+                    AbstractDungeon.actionManager.addToBottom(new com.megacrit.cardcrawl.actions.common.ApplyPowerAction(
+                            AbstractDungeon.player, AbstractDungeon.player, pw, Integer.parseInt(a[2])));
+                    return "power " + pw.ID;
+                } catch (Throwable t) {
+                    return "power failed " + t;
+                }
             }
             case "potion": {
                 com.megacrit.cardcrawl.potions.AbstractPotion pt = com.megacrit.cardcrawl.helpers.PotionHelper.getPotion(a[1]);
@@ -257,6 +278,20 @@ public class DebugChannel {
                     return "orb " + a[1];
                 } catch (Throwable t) {
                     return "orb failed " + t;
+                }
+            }
+            case "event": { // test: in an event room, replace the event, e.g. "event BGLab" (run in every game)
+                try {
+                    com.megacrit.cardcrawl.events.AbstractEvent ev = (com.megacrit.cardcrawl.events.AbstractEvent)
+                            Class.forName("BoardGame.events." + a[1]).getConstructor().newInstance();
+                    com.megacrit.cardcrawl.events.AbstractEvent old = AbstractDungeon.getCurrRoom().event;
+                    if (old != null) old.imageEventText.clear();
+                    com.megacrit.cardcrawl.events.GenericEventDialog.hide();
+                    AbstractDungeon.getCurrRoom().event = ev;
+                    ev.onEnterRoom();
+                    return "event " + ev.getClass().getSimpleName();
+                } catch (Throwable t) {
+                    return "event failed " + t;
                 }
             }
             case "setroom": { // test: make map node x,y a given room type, e.g. "setroom 3 0 shop"

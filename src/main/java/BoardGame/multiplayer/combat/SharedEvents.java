@@ -177,6 +177,6 @@ public class SharedEvents {
             }
         } catch (Throwable ignored) {
         }
-        Session.toast(Session.nameOf(from) + " took Big Fish option " + (opt + 1));
+        Session.toast(Session.nameOf(from) + " took " + (opt >= 0 && opt < 4 ? new String[]{"the Banana", "the Donut", "the Box", "Restraint"}[opt] : "Big Fish option " + (opt + 1)));
     }
 }

@@ -73,6 +73,23 @@ public class OtherPlayers {
         MP.send(o);
     }
 
+    /** Strength for a player (Spot Weakness: "Strength to any player"). */
+    public static void giveStrength(int playerId, int amount, String source) {
+        if (playerId == MP.myId) {
+            AbstractDungeon.actionManager.addToBottom(new com.megacrit.cardcrawl.actions.common.ApplyPowerAction(
+                    AbstractDungeon.player, AbstractDungeon.player,
+                    new com.megacrit.cardcrawl.powers.StrengthPower(AbstractDungeon.player, amount), amount));
+            return;
+        }
+        JsonObject o = MP.msg("give");
+        o.addProperty("to", playerId);
+        o.addProperty("kind", "power");
+        o.addProperty("power", "com.megacrit.cardcrawl.powers.StrengthPower");
+        o.addProperty("amount", amount);
+        o.addProperty("card", source);
+        MP.send(o);
+    }
+
     /** Remove Weak and Vulnerable from a teammate (or everyone with to = -2). */
     public static void cleanse(int playerId, String source) {
         JsonObject o = MP.msg("give");

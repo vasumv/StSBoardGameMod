@@ -66,6 +66,11 @@ public class PartyEventUI {
             partyChoice = true;
             banner = MP.isHost() ? "Party decision: you choose for everyone (one roll for the party)"
                     : "Party decision: " + hostName() + " chooses for the party";
+            if (!MP.isHost()) { // every screen of it is the host's to click; the buttons follow along
+                for (LargeDialogOptionButton b : RoomEventDialog.optionList) b.isDisabled = true;
+                neowLocked = true;
+            }
+            return;
         } else if (ev instanceof BGGoldenIdolEvent) {
             updateTemple((BGGoldenIdolEvent) ev);
         } else if (ev instanceof BoardGame.events.BGLab) {
@@ -91,12 +96,13 @@ public class PartyEventUI {
         }
         int extra = BoardGame.multiplayer.combat.SharedEvents.templeExtra();
         banner = extra == 0 ? "Ancient Temple: nobody has gone inside yet"
-                : "Ancient Temple: " + extra + " player(s) went in before you: +" + extra + " HP to go inside";
+                : "Ancient Temple: " + (extra == 1 ? "1 player has" : extra + " players have")
+                        + " gone in before you, so the trap does " + extra + " more Damage";
         LargeDialogOptionButton b = ev.imageEventText.optionList.get(0);
         if (templeBase == null) templeBase = b.msg;
         if (extra != templeShown) {
             templeShown = extra;
-            ev.imageEventText.updateDialogOption(0, extra == 0 ? templeBase : templeBase + " #r(+" + extra + " #rHP)");
+            ev.imageEventText.updateDialogOption(0, extra == 0 ? templeBase : templeBase + " #r(+" + extra + " #rmore)");
         }
     }
 

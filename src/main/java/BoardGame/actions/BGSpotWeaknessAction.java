@@ -28,7 +28,11 @@ public class BGSpotWeaknessAction extends AbstractGameAction {
 
 
     public void update() {
-        if (TheDie.monsterRoll <= this.maxDieNumber) {
+        if (TheDie.monsterRoll <= this.maxDieNumber && BoardGame.multiplayer.combat.OtherPlayers.multi()) {
+            final int amt = this.damageIncrease;
+            BoardGame.multiplayer.combat.OtherPlayers.askRecipient("Spot Weakness: who gets " + amt + " Strength?",
+                    id -> BoardGame.multiplayer.combat.OtherPlayers.giveStrength(id, amt, "Spot Weakness"));
+        } else if (TheDie.monsterRoll <= this.maxDieNumber) {
             addToBot((AbstractGameAction)new ApplyPowerAction((AbstractCreature)AbstractDungeon.player, (AbstractCreature)AbstractDungeon.player, (AbstractPower)new StrengthPower((AbstractCreature)AbstractDungeon.player, this.damageIncrease), this.damageIncrease));
 
 

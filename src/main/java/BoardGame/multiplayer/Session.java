@@ -369,7 +369,11 @@ public class Session {
             if (Boolean.TRUE.equals(asked.get(a))) return false;
             asked.put(a, Boolean.TRUE);
             final com.megacrit.cardcrawl.actions.AbstractGameAction act = a;
-            String what = card.name + (eachSeparately ? ": who gets this Block?" : ": who gets this?");
+            String what = card.name + (eachSeparately ? ": who gets this Block?"
+                    : kind.equals("block") ? ": who gets the Block?"
+                    : kind.equals("energy") ? ": who gets the Energy?"
+                    : kind.equals("draw") ? ": who draws?"
+                    : kind.equals("cleanse") ? ": remove Weak and Vulnerable from whom?" : ": who gets this?");
             BoardGame.multiplayer.combat.OtherPlayers.askRecipient(what, id -> {
                 if (!eachSeparately) chosenFor.put(card, id); // later effects of the same card follow
                 if (id == MP.myId) {
@@ -468,7 +472,7 @@ public class Session {
                 }
                 break;
         }
-        toast(nameOf(from) + "'s " + m.get("card").getAsString() + ": +" + amount + " " + kind);
+        toast(nameOf(from) + "'s " + m.get("card").getAsString() + ": +" + amount + " " + (kind.equals("power") ? "Strength" : kind));
     }
 
     // ---------- out of combat: potions, gold, rows ----------

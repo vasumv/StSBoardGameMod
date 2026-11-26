@@ -77,7 +77,16 @@ public class MPHooks {
     @SpirePatch2(clz = MonsterStartTurnAction.class, method = "update")
     public static class EnemyTurnBarrier {
         @SpirePrefixPatch
-        public static SpireReturn<Void> prefix() {
+        public static SpireReturn<Void> prefix(MonsterStartTurnAction __instance) {
+            // a turn held at the barrier while the fight ended (a teammate killed the last enemy)
+            // must not run in the next room
+            com.megacrit.cardcrawl.rooms.AbstractRoom room = AbstractDungeon.currMapNode == null ? null
+                    : AbstractDungeon.getCurrRoom();
+            if (room == null || room.monsters == null || room.isBattleOver
+                    || room.monsters.areMonstersBasicallyDead()) {
+                __instance.isDone = true;
+                return SpireReturn.Return();
+            }
             if (MP.inRun && Session.holdBeforeEnemyTurn()) return SpireReturn.Return();
             return SpireReturn.Continue();
         }
