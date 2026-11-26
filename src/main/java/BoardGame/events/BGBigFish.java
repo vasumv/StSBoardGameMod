@@ -76,6 +76,7 @@ public class BGBigFish
                     default:
                         this.imageEventText.updateBodyText(BOX_RESULT + BOX_BAD);
                         AbstractCard randomcurse = AbstractDungeon.getCard(AbstractCard.CardRarity.CURSE);
+                        BoardGame.dungeons.AbstractBGDungeon.removeCardFromRewardDeck(randomcurse); // shared curse deck
                         r = AbstractDungeon.returnRandomScreenlessRelic(
                                 AbstractDungeon.returnRandomRelicTier());
                         AbstractEvent.logMetricObtainCardAndRelic("Big Fish", "Box", (AbstractCard)randomcurse, r);

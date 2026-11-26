@@ -380,7 +380,7 @@ public class BGGremlinWheelGame
             case 3:
                 curse = AbstractDungeon.getCard(AbstractCard.CardRarity.CURSE);
                 logMetricObtainCard("Wheel of Change", "Cursed", (AbstractCard)curse);
-                AbstractDungeon.effectList.add(new ShowCardAndObtainEffect((AbstractCard)AbstractDungeon.getCard(AbstractCard.CardRarity.CURSE), Settings.WIDTH / 2.0F, Settings.HEIGHT / 2.0F));
+                AbstractDungeon.effectList.add(new ShowCardAndObtainEffect(((AbstractCard)curse).makeCopy(), Settings.WIDTH / 2.0F, Settings.HEIGHT / 2.0F));
                 AbstractBGDungeon.removeCardFromRewardDeck(curse);
 
                 this.hasFocus = false;

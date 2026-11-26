@@ -42,23 +42,34 @@ reference implementation: `reference/enemy_audit.md`, `reference/enemy_mp_data.j
 
 ## Known gaps
 
-- Not yet run in game: Steam lobbies with real accounts beyond one session, Last Stand,
-  Choose Your Relic, keys and Act 4, most party events (Lab, Big Fish, Temple, Dead
-  Adventurer) and boss relic picks.
+- Not yet run in game: Steam lobby codes with real accounts, Last Stand, Choose Your
+  Relic, keys and Act 4, Temple-style events beyond Act 1, Mind Bloom's solo boss fight.
 - Sequential Turns is experimental: everyone's start-of-turn draw still happens at the
   start of the round.
 - If two players pick the same character they each get a full reward deck (the board
   game has one physical deck per character).
 - The host is the hub: if the host disconnects, use Continue saved run (the host keeps
   everyone's latest save).
+- Gold pooling: gold received from a teammate unlocks pay options only in Cleric, Beggar and
+  Woman in Blue (rebuilt on their first screen). Designer, We Meet Again and Joust roll their
+  options, so give the gold before entering.
+- Event audit leftovers (docs/reference/event_audit.md): the "first ? room" discard is
+  approximated as floor 2; Act III events have no reference to check against; Face Trader's
+  Exchange is commented out.
 
-## Tested in two game copies (2026-11-25)
+## Tested in two game copies
 
-Full Acts 1-3 walk in sync (incl. Gremlin Gang, Gremlin Leader, Slime Boss, Champ,
+2026-11-25: full Acts 1-3 walk in sync (incl. Gremlin Gang, Gremlin Leader, Slime Boss, Champ,
 Donu/Deca); Neow wait for everyone; shared colorless deck and shop purchases; die
 auto-keep and Abacus change; Predator and Dodge and Roll recipients; teammate hand and
 deck views; orb end-of-turn order and highlight; Gremlin Leader revive; Continue with a
 player's local saves deleted (restored from the host's copies); reconnect.
+
+2026-11-26: Loop; Core Surge and Spot Weakness recipients; boss relic pick (same 3 relics,
+taken one disappears for the other); Lab, Big Fish, Ancient Temple; party die in Lab (Abacus)
+and Dead Adventurer (Gambling Chip, Gambler's Brew, host picks the relic's owner); Mausoleum
+die panel; Party panel (gold, potions) and gold unlocking Cleric options; A Note for Yourself
+Exchange; Colosseum as a shared party fight; boss-chest crash fix.
 
 ## What the code investigation found
 
