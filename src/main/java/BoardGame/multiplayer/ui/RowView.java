@@ -95,14 +95,24 @@ public class RowView {
     private static float[] slotFor(AbstractMonster m) {
         int idx = panelIndexForRow(MonsterSync.row(m));
         float[] r = panelRect(idx);
+        // the living enemies of that row, left to right as the row's player sees them
         ArrayList<AbstractMonster> same = new ArrayList<>();
         for (AbstractMonster x : AbstractDungeon.getCurrRoom().monsters.monsters)
-            if (MonsterSync.row(x) == MonsterSync.row(m)) same.add(x);
+            if (MonsterSync.row(x) == MonsterSync.row(m) && (!x.isDead || x == m)) same.add(x);
+        same.sort((a, b) -> Float.compare(homeX(a), homeX(b)));
         int k = same.indexOf(m), n = Math.max(1, same.size());
         float left = r[0] + 125f * s(), right = r[0] + r[2] - 10f * s();
         float step = (right - left) / n;
         return new float[]{left + step * (k + 0.5f), footY(r), step};
     }
+
+    /** An enemy's own x on its row's screen (the panel moves it only while drawing it small). */
+    private static float homeX(AbstractMonster m) {
+        return m == drawing ? drawingHomeX : m.drawX;
+    }
+
+    private static AbstractMonster drawing;
+    private static float drawingHomeX;
 
     // ---------------- enemy hitboxes follow the panel ----------------
 
@@ -135,6 +145,7 @@ public class RowView {
             if (rendering || !inPanel(__instance)) return SpireReturn.Continue();
             // empty slots (the Gremlin Leader's placeholders) have nothing to draw
             if (__instance.maxHealth <= 0 && __instance.isDeadOrEscaped()) return SpireReturn.Return();
+            if (__instance.isDead || __instance.escaped) return SpireReturn.Return(); // gone: no slot, no body
             float[] slot = slotFor(__instance);
             renderSmall(__instance, sb, slot[0], slot[1], () -> __instance.render(sb));
             return SpireReturn.Return();

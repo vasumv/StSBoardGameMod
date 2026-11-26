@@ -12,17 +12,18 @@ import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.monsters.AbstractMonster;
 
 public class BGSpawnTwoGremlinsAction extends AbstractGameAction {
-    private String[] gremlins=new String[2];
-    public static final float[] POSX = new float[] { -160.0F, -10.0F, 200.0F};
-    public static final float[] POSY = new float[] { -4.0F, 6.0F, 0.0F };
+    // the card says "Summon 3 random Gremlins" (the leader stands at -220)
+    private String[] gremlins=new String[3];
+    public static final float[] POSX = new float[] { -160.0F, -40.0F, 120.0F, 280.0F};
+    public static final float[] POSY = new float[] { -4.0F, 6.0F, 0.0F, 8.0F };
     public BGSpawnTwoGremlinsAction() {
 
     }
 
 
     public void update() {
-        this.gremlins= BGExordium.pickTwoGremlins();
-        for (int i=0;i<=1;i++) {
+        this.gremlins= BGExordium.pickGremlins(3);
+        for (int i=0;i<this.gremlins.length;i++) {
             AbstractMonster gremlin;
             if(this.gremlins[i].equals("BGGremlinAngry")){
                 gremlin=new BGGremlinAngry(POSX[i+1], POSY[i+1],false);

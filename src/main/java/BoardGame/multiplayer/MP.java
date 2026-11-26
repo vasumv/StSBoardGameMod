@@ -160,6 +160,8 @@ public class MP {
     public static volatile boolean reconnecting = false;
     /** Act 4 (keys, burning elites) on for the party: the host's setting, so every map matches. */
     public static boolean finalAct = false;
+    /** Test override for the host's Act 4 unlock (debug "rule finalact on"). */
+    public static Boolean forceFinalAct = null;
     private static boolean viaSteam = false;
 
     private static void startReconnect() {
@@ -307,7 +309,7 @@ public class MP {
         inRun = false;
         com.megacrit.cardcrawl.core.Settings.setFinalActAvailability(); // the host's own unlock
         inRun = wasInRun;
-        finalAct = com.megacrit.cardcrawl.core.Settings.isFinalActAvailable;
+        finalAct = forceFinalAct != null ? forceFinalAct : com.megacrit.cardcrawl.core.Settings.isFinalActAvailable;
         o.addProperty("finalAct", finalAct);
         JsonArray roster = new JsonArray();
         int row = 0;

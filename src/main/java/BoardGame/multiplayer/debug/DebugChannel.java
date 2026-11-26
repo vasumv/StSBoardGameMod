@@ -66,6 +66,7 @@ public class DebugChannel {
                     case "laststand": BoardGame.multiplayer.MP.setLastStand(on); break;
                     case "chooserelic": BoardGame.multiplayer.MP.setChooseRelic(on); break;
                     case "sequential": BoardGame.multiplayer.MP.setSequential(on); break;
+                    case "finalact": BoardGame.multiplayer.MP.forceFinalAct = on; break;
                     default: return "unknown rule";
                 }
                 return "rule " + a[1] + " " + on;
@@ -74,6 +75,14 @@ public class DebugChannel {
                 AbstractDungeon.actionManager.addToBottom(new com.megacrit.cardcrawl.actions.common.LoseHPAction(
                         AbstractDungeon.player, AbstractDungeon.player, Integer.parseInt(a[1])));
                 return "hurt " + a[1];
+            case "keys": // test: which Act 4 keys this game has
+                return "ruby=" + com.megacrit.cardcrawl.core.Settings.hasRubyKey + " emerald="
+                        + com.megacrit.cardcrawl.core.Settings.hasEmeraldKey + " sapphire="
+                        + com.megacrit.cardcrawl.core.Settings.hasSapphireKey + " finalAct="
+                        + com.megacrit.cardcrawl.core.Settings.isFinalActAvailable;
+            case "burnrng": // test: make this game's miscRng drift from the others', e.g. "burnrng 5"
+                for (int i = 0; i < Integer.parseInt(a[1]); i++) AbstractDungeon.miscRng.random(99);
+                return "miscRng " + AbstractDungeon.miscRng.counter;
             case "deck": // test: the master deck
                 return "deck=" + cards(AbstractDungeon.player.masterDeck);
             case "state":
@@ -320,6 +329,7 @@ public class DebugChannel {
                     case "treasure": n.room = new com.megacrit.cardcrawl.rooms.TreasureRoom(); break;
                     case "elite": n.room = new com.megacrit.cardcrawl.rooms.MonsterRoomElite(); break;
                     case "boss": n.room = new com.megacrit.cardcrawl.rooms.MonsterRoomBoss(); break;
+                    case "burning": n.room = new com.megacrit.cardcrawl.rooms.MonsterRoomElite(); n.hasEmeraldKey = true; break;
                     default: n.room = new com.megacrit.cardcrawl.rooms.MonsterRoom();
                 }
                 return "node " + a[1] + "," + a[2] + " is now " + n.room.getClass().getSimpleName();

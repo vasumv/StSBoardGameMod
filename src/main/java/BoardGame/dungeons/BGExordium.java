@@ -9,6 +9,7 @@ import com.megacrit.cardcrawl.characters.AbstractPlayer;
 import com.megacrit.cardcrawl.core.CardCrawlGame;
 import com.megacrit.cardcrawl.core.Settings;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
+import BoardGame.multiplayer.MP;
 import com.megacrit.cardcrawl.helpers.ImageMaster;
 import com.megacrit.cardcrawl.helpers.SaveHelper;
 import com.megacrit.cardcrawl.helpers.controller.CInputActionSet;
@@ -124,6 +125,11 @@ public class BGExordium
 
 
     public static String[] pickTwoGremlins() {
+        return pickGremlins(2);
+    }
+
+    /** "Summon 3 random Gremlins": draw from the 8 gremlin summon cards (2 each of 4 kinds). */
+    public static String[] pickGremlins(int n) {
         ArrayList<String> gremlinPool = new ArrayList<>();
         gremlinPool.add("BGGremlinAngry");
         gremlinPool.add("BGGremlinAngry");
@@ -133,21 +139,30 @@ public class BGExordium
         gremlinPool.add("BGGremlinFat");
         gremlinPool.add("BGGremlinWizard");
         gremlinPool.add("BGGremlinWizard");
-
-        String[] retVal = new String[2];
-
-
-        int index = AbstractDungeon.miscRng.random(gremlinPool.size() - 1);
-        String key = gremlinPool.get(index);
-        gremlinPool.remove(index);
-        retVal[0] = key;
-
-        index = AbstractDungeon.miscRng.random(gremlinPool.size() - 1);
-        key = gremlinPool.get(index);
-        gremlinPool.remove(index);
-        retVal[1] = key;
-
+        String[] retVal = new String[n];
+        java.util.Random party = partySummonRandom();
+        for (int i = 0; i < n; i++) {
+            int index = party != null ? party.nextInt(gremlinPool.size())
+                    : AbstractDungeon.miscRng.random(gremlinPool.size() - 1);
+            retVal[i] = gremlinPool.remove(index);
+        }
         return retVal;
+    }
+
+    private static int summonRoomKey = -1, summonCalls = 0;
+
+    /**
+     * Multiplayer: every game must summon the same gremlins, but miscRng drifts between games
+     * (events, rewards). Draw from the run seed and the room instead.
+     */
+    private static java.util.Random partySummonRandom() {
+        if (!MP.inRun || MP.playerCount() < 2) return null;
+        int room = AbstractDungeon.actNum * 1000 + AbstractDungeon.floorNum;
+        if (room != summonRoomKey) {
+            summonRoomKey = room;
+            summonCalls = 0;
+        }
+        return new java.util.Random(MP.seed * 1000003L + room * 7919L + (summonCalls++) * 104729L);
     }
 
 
