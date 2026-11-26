@@ -75,6 +75,11 @@ public class DebugChannel {
                 AbstractDungeon.actionManager.addToBottom(new com.megacrit.cardcrawl.actions.common.LoseHPAction(
                         AbstractDungeon.player, AbstractDungeon.player, Integer.parseInt(a[1])));
                 return "hurt " + a[1];
+            case "givekeys": // test: all three Act 4 keys
+                com.megacrit.cardcrawl.core.Settings.hasRubyKey = true;
+                com.megacrit.cardcrawl.core.Settings.hasEmeraldKey = true;
+                com.megacrit.cardcrawl.core.Settings.hasSapphireKey = true;
+                return "keys given";
             case "keys": // test: which Act 4 keys this game has
                 return "ruby=" + com.megacrit.cardcrawl.core.Settings.hasRubyKey + " emerald="
                         + com.megacrit.cardcrawl.core.Settings.hasEmeraldKey + " sapphire="
@@ -329,6 +334,7 @@ public class DebugChannel {
                     case "treasure": n.room = new com.megacrit.cardcrawl.rooms.TreasureRoom(); break;
                     case "elite": n.room = new com.megacrit.cardcrawl.rooms.MonsterRoomElite(); break;
                     case "boss": n.room = new com.megacrit.cardcrawl.rooms.MonsterRoomBoss(); break;
+                    case "bosschest": n.room = new com.megacrit.cardcrawl.rooms.TreasureRoomBoss(); break;
                     case "burning": n.room = new com.megacrit.cardcrawl.rooms.MonsterRoomElite(); n.hasEmeraldKey = true; break;
                     default: n.room = new com.megacrit.cardcrawl.rooms.MonsterRoom();
                 }

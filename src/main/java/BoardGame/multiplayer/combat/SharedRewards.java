@@ -77,7 +77,16 @@ public class SharedRewards {
         @SpirePostfixPatch
         public static void postfix(ObtainKeyEffect __instance, ObtainKeyEffect.KeyColor ___keyColor) {
             ObtainKeyEffect.KeyColor color = ___keyColor;
-            if (!multi() || granting || color == ObtainKeyEffect.KeyColor.GREEN) return;
+            if (!multi() || granting) return;
+            if (color == ObtainKeyEffect.KeyColor.GREEN) {
+                // the Emerald Key (burning elite) is the party's: whoever picks it up, everyone has it
+                JsonObject o = MP.msg("key");
+                o.addProperty("color", color.name());
+                o.addProperty("floor", AbstractDungeon.floorNum);
+                o.addProperty("now", true);
+                MP.send(o);
+                return;
+            }
             // hold the key until the whole party has done the same
             Held.held.set(__instance, true);
             JsonObject o = MP.msg("key");
@@ -104,6 +113,23 @@ public class SharedRewards {
 
     public static void onMessage(String type, int from, JsonObject m) {
         String color = m.get("color").getAsString();
+        if (m.has("now") && m.get("now").getAsBoolean()) {
+            if (from == MP.myId || com.megacrit.cardcrawl.core.Settings.hasEmeraldKey) return;
+            granting = true;
+            try {
+                AbstractDungeon.topLevelEffects.add(new ObtainKeyEffect(ObtainKeyEffect.KeyColor.valueOf(color)));
+            } finally {
+                granting = false;
+            }
+            // its reward is gone from this game's screen too
+            if (AbstractDungeon.combatRewardScreen != null && AbstractDungeon.combatRewardScreen.rewards != null) {
+                AbstractDungeon.combatRewardScreen.rewards.removeIf(r ->
+                        r.type == com.megacrit.cardcrawl.rewards.RewardItem.RewardType.EMERALD_KEY);
+                AbstractDungeon.combatRewardScreen.positionRewards();
+            }
+            Session.toast(Session.nameOf(from) + " took the emerald key for the party");
+            return;
+        }
         String k = color + "@" + m.get("floor").getAsInt();
         HashSet<Integer> s = keyVotes.computeIfAbsent(k, x -> new HashSet<>());
         s.add(from);
