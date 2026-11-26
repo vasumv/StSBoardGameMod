@@ -659,6 +659,10 @@ public class Session {
             case "fish":
                 BoardGame.multiplayer.combat.SharedEvents.onMessage(type, from, m);
                 return;
+            case "edie":
+            case "elock":
+                BoardGame.multiplayer.ui.EventDie.onMessage(type, from, m);
+                return;
             case "shopstock":
             case "shoprelease":
             case "shopcard":

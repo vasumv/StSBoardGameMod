@@ -133,6 +133,7 @@ public class MPOverlay implements PostRenderSubscriber {
         RelicPicker.update();
         ChoicePrompt.update();
         PartyEventUI.update();
+        EventDie.update();
         BoardGame.multiplayer.combat.DiePhase.autoKeep();
         BoardGame.multiplayer.combat.IntentDetails.update();
         if (BoardGame.multiplayer.combat.DiePhase.rollAnim > 0)
@@ -235,6 +236,7 @@ public class MPOverlay implements PostRenderSubscriber {
         RelicPicker.render(sb);
         ChoicePrompt.render(sb);
         PartyEventUI.render(sb);
+        EventDie.render(sb);
         renderToasts(sb);
     }
 

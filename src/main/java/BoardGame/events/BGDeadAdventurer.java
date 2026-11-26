@@ -144,16 +144,23 @@ public class BGDeadAdventurer
                     if(pendingReward<=0) {
                         roomEventText.clear();
                         pendingReward = AbstractDungeon.miscRng.random(1, 6);
-                        if (pendingReward == 1 || pendingReward == 2) {
-                            this.roomEventText.updateBodyText(FIGHT_MSG);
-                            roomEventText.addDialogOption(OPTIONS[2]);
-                        } else if (pendingReward == 3 || pendingReward == 4) {
-                            this.roomEventText.updateBodyText(DESCRIPTIONS[7] + DESCRIPTIONS[10]);
-                            roomEventText.addDialogOption(OPTIONS[1]);
-                        } else if (pendingReward == 5 || pendingReward == 6) {
-                            this.roomEventText.updateBodyText(DESCRIPTIONS[9] + DESCRIPTIONS[10]);
-                            roomEventText.addDialogOption(OPTIONS[1]);
+                        if (BoardGame.multiplayer.ui.EventDie.multi()) {
+                            // one die for the party: anyone may change it, then it resolves everywhere
+                            this.roomEventText.updateBodyText("The party searches the body...");
+                            BoardGame.multiplayer.ui.EventDie.startParty(
+                                    "Search: 1-2 fight an Elite, 3-4 gain 2 Gold, 5-6 a Relic", pendingReward, v -> {
+                                        pendingReward = v;
+                                        describeRoll();
+                                        applyingResult = true;
+                                        try {
+                                            takeReward(false);
+                                        } finally {
+                                            applyingResult = false;
+                                        }
+                                    });
+                            return;
                         }
+                        describeRoll();
                         setupButtons();
                     }else{
                         //if reward isn't 0, then we've already rolled and we've decided not to use any die items
@@ -208,6 +215,19 @@ public class BGDeadAdventurer
                 return;
         }
         logger.info("WHY YOU CALLED?");
+    }
+
+    private void describeRoll() {
+        if (pendingReward == 1 || pendingReward == 2) {
+            this.roomEventText.updateBodyText(FIGHT_MSG);
+            roomEventText.addDialogOption(OPTIONS[2]);
+        } else if (pendingReward == 3 || pendingReward == 4) {
+            this.roomEventText.updateBodyText(DESCRIPTIONS[7] + DESCRIPTIONS[10]);
+            roomEventText.addDialogOption(OPTIONS[1]);
+        } else if (pendingReward == 5 || pendingReward == 6) {
+            this.roomEventText.updateBodyText(DESCRIPTIONS[9] + DESCRIPTIONS[10]);
+            roomEventText.addDialogOption(OPTIONS[1]);
+        }
     }
 
     protected void setupButtons(){
@@ -341,10 +361,8 @@ public class BGDeadAdventurer
     private static boolean applyingResult = false;
 
     public void takeReward(boolean skipContinueButton){
-        if (BoardGame.multiplayer.MP.inRun && BoardGame.multiplayer.MP.playerCount() > 1) {
-            if (BoardGame.multiplayer.MP.isHost()) partySend("result", pendingReward);
-            else if (!applyingResult) return; // only the host's result counts
-        }
+        // multiplayer: only the party die's final number counts, applied in every game at once
+        if (BoardGame.multiplayer.MP.inRun && BoardGame.multiplayer.MP.playerCount() > 1 && !applyingResult) return;
         if(pendingReward==1 || pendingReward==2){
             spawnEliteEncounter();
             screen= CUR_SCREEN.FAIL;

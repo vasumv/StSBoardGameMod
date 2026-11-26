@@ -50,9 +50,17 @@ public class BGLab
 
                 (AbstractDungeon.getCurrRoom()).rewards.clear();
                 (AbstractDungeon.getCurrRoom()).rewards.add(new RewardItem(PotionHelper.getRandomPotion()));
-                int random = AbstractDungeon.miscRng.random(1, 6);
+                boolean partyDie = BoardGame.multiplayer.ui.EventDie.multi();
+                if (partyDie && !BoardGame.multiplayer.ui.EventDie.decided()) {
+                    (AbstractDungeon.getCurrRoom()).rewards.clear();
+                    return; // the party die is still being decided
+                }
+                // multiplayer: the party already rolled and changed the die together
+                int random = partyDie ? BoardGame.multiplayer.ui.EventDie.value() : AbstractDungeon.miscRng.random(1, 6);
                 boolean playerWins=false;
-                if(random>=4) {
+                if (partyDie) {
+                    playerWins = random >= 4;
+                } else if(random>=4) {
                     playerWins = true;
                 }else if(random==3 && AbstractDungeon.player.hasRelic("BGTheAbacus")){
                     AbstractDungeon.player.getRelic("BGTheAbacus").flash();
@@ -61,7 +69,7 @@ public class BGLab
                     AbstractDungeon.player.getRelic("BGToolbox").flash();
                     playerWins=true;
                 }
-                if(!playerWins){
+                if(!playerWins && !partyDie){
                     //TODO: if player wagers a die relic, does it still (incorrectly) take effect here?
                     AbstractRelic r=AbstractDungeon.player.getRelic("BGGambling Chip");
                     if(r!=null){
@@ -81,7 +89,7 @@ public class BGLab
                 if(playerWins && BoardGame.multiplayer.combat.SharedEvents.labExtraPotionIsMine()) {
                     (AbstractDungeon.getCurrRoom()).rewards.add(new RewardItem(PotionHelper.getRandomPotion()));
                 }else{
-                    if(BGGamblersBrew.doesPlayerHaveGamblersBrew()>-1) {
+                    if(!partyDie && BGGamblersBrew.doesPlayerHaveGamblersBrew()>-1) {
                         this.screen = CUR_SCREEN.POTION;
                         this.imageEventText.clearAllDialogs();
                         this.imageEventText.setDialogOption(OPTIONS[1]);

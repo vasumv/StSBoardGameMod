@@ -50,7 +50,8 @@ public class SharedEvents {
             public void edit(MethodCall m) throws CannotCompileException {
                 if (m.getMethodName().equals("random") && m.getClassName().equals("com.megacrit.cardcrawl.random.Random")
                         && m.getSignature().equals("(II)I")) {
-                    m.replace("{ $_ = BoardGame.multiplayer.combat.SharedEvents.partyRoll($0, $1, $2); }");
+                    m.replace("{ $_ = BoardGame.multiplayer.combat.SharedEvents.partyRoll($0, $1, $2);"
+                            + " BoardGame.multiplayer.ui.EventDie.rolled($_, $1, $2); }");
                 }
             }
         };
