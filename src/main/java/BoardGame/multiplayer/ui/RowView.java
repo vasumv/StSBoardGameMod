@@ -133,6 +133,8 @@ public class RowView {
         @SpirePrefixPatch
         public static SpireReturn<Void> prefix(AbstractMonster __instance, SpriteBatch sb) {
             if (rendering || !inPanel(__instance)) return SpireReturn.Continue();
+            // empty slots (the Gremlin Leader's placeholders) have nothing to draw
+            if (__instance.maxHealth <= 0 && __instance.isDeadOrEscaped()) return SpireReturn.Return();
             float[] slot = slotFor(__instance);
             renderSmall(__instance, sb, slot[0], slot[1], () -> __instance.render(sb));
             return SpireReturn.Return();

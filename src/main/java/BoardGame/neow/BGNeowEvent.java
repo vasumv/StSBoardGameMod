@@ -316,7 +316,8 @@ public class BGNeowEvent
 
     /** Every frame: tell the party once this game has finished its blessing. */
     public static void checkReady() {
-        if (sentReady || !BoardGame.multiplayer.MP.inRun || AbstractDungeon.getCurrRoom() == null
+        if (sentReady || !BoardGame.multiplayer.MP.inRun || AbstractDungeon.currMapNode == null
+                || AbstractDungeon.getCurrRoom() == null
                 || !(AbstractDungeon.getCurrRoom().event instanceof BGNeowEvent)) return;
         if (((BGNeowEvent) AbstractDungeon.getCurrRoom().event).screenNum != 99) return;
         sentReady = true;

@@ -291,7 +291,7 @@ public class MPOverlay implements PostRenderSubscriber {
                 lines.add("  " + p.name + ": " + (v == null ? "-" : roomName(v[0], v[1])));
             }
         }
-        if (combat && AbstractDungeon.isScreenUp) {
+        if (combat && fullScreenUp()) {
             // a full screen (deck, map, card choice) is open: keep the combat overlay out of its way
         } else if (combat) {
             RowView.render(sb);
@@ -306,6 +306,19 @@ public class MPOverlay implements PostRenderSubscriber {
             for (Button b : partyButtons) b.render(sb);
         }
         if (Session.proposal != null) renderProposal(sb);
+    }
+
+    /** Screens that cover the fight (not target or orb pickers, which need the fight visible). */
+    private static boolean fullScreenUp() {
+        if (!AbstractDungeon.isScreenUp) return false;
+        switch (AbstractDungeon.screen) {
+            case MASTER_DECK_VIEW: case GAME_DECK_VIEW: case DISCARD_VIEW: case EXHAUST_VIEW: case MAP:
+            case SETTINGS: case INPUT_SETTINGS: case CARD_REWARD: case GRID: case BOSS_REWARD: case COMBAT_REWARD:
+            case DEATH: case VICTORY: case FTUE: case SHOP:
+                return true;
+            default:
+                return false;
+        }
     }
 
     private static final java.util.Random animRng = new java.util.Random();

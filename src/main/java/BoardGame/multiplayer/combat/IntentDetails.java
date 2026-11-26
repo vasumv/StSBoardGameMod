@@ -176,6 +176,9 @@ public class IntentDetails {
                 AbstractCard c = ReflectionHacks.getPrivate(a, MakeTempCardInHandAction.class, "c");
                 return "Add " + countOf(a.amount) + "#y" + c.name + " to your hand";
             }
+            String cn = a.getClass().getSimpleName();
+            if (cn.contains("GremlinLeader")) return "Revive its dead Gremlins";
+            if (!(a instanceof SpawnMonsterAction) && (cn.contains("Spawn") || cn.contains("Summon"))) return "Summon enemies";
             if (a instanceof SpawnMonsterAction) {
                 AbstractMonster s = ReflectionHacks.getPrivate(a, SpawnMonsterAction.class, "m");
                 return "Summon #y" + s.name.replace(" ", " #y");

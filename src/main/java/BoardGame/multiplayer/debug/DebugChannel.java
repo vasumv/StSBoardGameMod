@@ -259,6 +259,10 @@ public class DebugChannel {
                     return "orb failed " + t;
                 }
             }
+            case "maxhp": // test: survive long fights
+                AbstractDungeon.player.increaseMaxHp(Integer.parseInt(a[1]), false);
+                AbstractDungeon.player.heal(999);
+                return "hp " + AbstractDungeon.player.currentHealth;
             case "energy":
                 AbstractDungeon.player.gainEnergy(Integer.parseInt(a[1]));
                 return "energy";
