@@ -44,7 +44,8 @@
       "You spot a loose brick within a pillar that catches your eye.",
       "You find a folded note and a #ycard inside. It reads, NL \"The Heart awaits.\" NL NL This is your handwriting.",
       "Choose a Card.",
-      "What is going on?"
+      "What is going on?",
+      "You fold your card into the note and tuck it back behind the brick for your companion. NL Their answer will find you."
     ],
     "OPTIONS": [
       "[Continue]",
@@ -52,7 +53,8 @@
       "[Take] #yChoose #ya #gGreen #yCard #yto #yadd #yto #yyour #ydeck.",
       "[Take] #yChoose #ya #bBlue #yCard #yto #yadd #yto #yyour #ydeck.",
       "[Take] #yChoose #ya #pPurple #yCard #yto #yadd #yto #yyour #ydeck.",
-      "[Leave]"
+      "[Leave]",
+      "[Exchange] #yGive #ya #yplayer #ya #ycard #yfrom #yyour #ydeck. #yThey #ygive #yyou #yone #yof #ytheirs."
     ]
   },
   "BoardGame:BGBack to Basics": {

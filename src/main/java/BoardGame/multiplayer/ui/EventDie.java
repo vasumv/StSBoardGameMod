@@ -154,6 +154,14 @@ public class EventDie {
                 o.add(new Object[]{1, 3, "Keep the Relic, and gain a Curse"});
                 o.add(new Object[]{4, 6, "Keep the Relic, no Curse"});
                 break;
+            case "BGGremlinWheelGame":
+                o.add(new Object[]{1, 1, "Heal to full HP"});
+                o.add(new Object[]{2, 2, "Gain a Curse"});
+                o.add(new Object[]{3, 3, "Remove a card"});
+                o.add(new Object[]{4, 4, "Obtain a Relic"});
+                o.add(new Object[]{5, 5, "Gain 4 Gold"});
+                o.add(new Object[]{6, 6, "Lose 2 HP"});
+                break;
             case "BGScrapOoze":
                 o.add(new Object[]{1, 2, "Nothing: reach in again (lose HP) or leave"});
                 o.add(new Object[]{3, 4, "Find 2 Gold"});

@@ -5,6 +5,7 @@ import BoardGame.characters.BGIronclad;
 import BoardGame.characters.BGSilent;
 import BoardGame.characters.BGWatcher;
 import BoardGame.dungeons.AbstractBGDungeon;
+import BoardGame.multiplayer.combat.NoteExchange;
 import BoardGame.relics.BGPrismaticShard;
 import com.megacrit.cardcrawl.cards.AbstractCard;
 import com.megacrit.cardcrawl.core.CardCrawlGame;
@@ -64,9 +65,16 @@ public class BGANoteForYourself
                 this.imageEventText.setDialogOption(OPTIONS[i]);
                 i+=1;if(i==whoAmI)i+=1;
                 this.imageEventText.setDialogOption(OPTIONS[i]);
+                // [Exchange]: multiplayer only
+                if (NoteExchange.available()) this.imageEventText.setDialogOption(OPTIONS[6]);
 
                 break;
             case CHOOSE:
+                if (NoteExchange.busy()) return;
+                if (buttonPressed == 3) {
+                    NoteExchange.begin(this::exchangeSent, () -> {});
+                    return;
+                }
                 this.screen = CUR_SCREEN.COMPLETE;
                 (AbstractDungeon.getCurrRoom()).phase = AbstractRoom.RoomPhase.COMPLETE;
                 int whichDeck=buttonPressed+1;          //1-indexed
@@ -87,6 +95,16 @@ public class BGANoteForYourself
                 openMap();
                 break;
         }
+    }
+
+    /** The exchange offer went out; the teammate answers in their own time. */
+    private void exchangeSent() {
+        if (AbstractDungeon.getCurrRoom() == null || AbstractDungeon.getCurrRoom().event != this) return;
+        this.imageEventText.updateBodyText(DESCRIPTIONS[4]);
+        this.imageEventText.updateDialogOption(0, OPTIONS[5]);
+        this.imageEventText.clearRemainingOptions();
+        this.screen = CUR_SCREEN.COMPLETE;
+        (AbstractDungeon.getCurrRoom()).phase = AbstractRoom.RoomPhase.COMPLETE;
     }
 
     private void reward(int whichDeckIndex) {

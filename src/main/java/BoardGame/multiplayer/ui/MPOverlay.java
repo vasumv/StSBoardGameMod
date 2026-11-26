@@ -29,6 +29,11 @@ public class MPOverlay implements PostRenderSubscriber {
     private static boolean clicked = false;
 
     /** A fresh left click this frame that nothing else has used (for other overlay panels). */
+    /** Is there an unused click this frame (without using it)? */
+    public static boolean peekClick() {
+        return clicked;
+    }
+
     public static boolean takeClick() {
         if (!clicked) return false;
         clicked = false;
@@ -141,6 +146,7 @@ public class MPOverlay implements PostRenderSubscriber {
         boolean down = Gdx.input.isButtonPressed(Input.Buttons.LEFT);
         clicked = down && !wasDown;
         wasDown = down;
+        PartyPanel.update();
         if (onMainMenu()) LobbyScreen.typing();
         if (!clicked) return;
         if (onMainMenu()) {
@@ -166,15 +172,6 @@ public class MPOverlay implements PostRenderSubscriber {
                 && !acceptRollShown() && keepBtn.clicked()) {
             BoardGame.multiplayer.combat.DiePhase.confirm();
             return;
-        }
-        if (!AbstractDungeon.isScreenUp || AbstractDungeon.screen == AbstractDungeon.CurrentScreen.MAP) {
-            buildPartyButtons();
-            for (int i = 0; i < partyButtons.size(); i++) {
-                if (partyButtons.get(i).clicked()) {
-                    partyActs.get(i).run();
-                    return;
-                }
-            }
         }
         if (Session.proposal != null && Session.proposal.proposer != MP.myId
                 && !Session.proposal.yes.contains(MP.myId)) {
@@ -303,10 +300,7 @@ public class MPOverlay implements PostRenderSubscriber {
         } else {
             textBlock(sb, 1180, 110, 720, lines, Settings.CREAM_COLOR);
         }
-        if (!AbstractDungeon.isScreenUp || AbstractDungeon.screen == AbstractDungeon.CurrentScreen.MAP) {
-            buildPartyButtons();
-            for (Button b : partyButtons) b.render(sb);
-        }
+        PartyPanel.render(sb); // gold, potions and rows: one "Party" button out of combat
         if (Session.proposal != null) renderProposal(sb);
     }
 

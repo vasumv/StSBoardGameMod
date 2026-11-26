@@ -32,7 +32,9 @@ import org.apache.logging.log4j.Logger;
 
 
 
-//TODO LATER: the options on the event card aren't in the same order as the options on the wheel, so TheAbacus/Toolbox kinda change to the wrong options
+//The wheel graphic (and DESCRIPTIONS/OPTIONS) go 0 gold / 1 relic / 2 heal / 3 curse / 4 remove / 5 lose HP,
+//but the event card's die faces are 1 heal / 2 curse / 3 remove / 4 relic / 5 gold / 6 lose HP.
+//We roll the die face; `result` is the wheel slice it lands on. Abacus/Toolbox move along the die faces.
 
 
 public class BGGremlinWheelGame
@@ -49,7 +51,9 @@ public class BGGremlinWheelGame
 
 
     private CUR_SCREEN screen = CUR_SCREEN.INTRO;
-    private int result;
+    private int result;   // wheel slice 0-5
+    private int face;     // die face 1-6
+    private static final int[] FACE_TO_SLICE = {-1, 2, 3, 4, 1, 0, 5};
     private float resultAngle;
     private float tmpAngle;
     private float bounceTimer = 1.0F, animTimer = 3.0F; private boolean startSpin = false; private boolean finishSpin = false; private boolean doneSpinning = false; private boolean bounceIn = true;
@@ -93,6 +97,26 @@ public class BGGremlinWheelGame
         this.hasFocus = true;
 
         this.buttonHb.move(500.0F * Settings.scale, -500.0F * Settings.scale);
+    }
+
+    private void rollFace() {
+        this.face = AbstractDungeon.miscRng.random(1, 6);
+        this.result = FACE_TO_SLICE[this.face];
+        this.resultAngle = this.result * 60.0F + MathUtils.random(-10.0F, 10.0F);
+    }
+
+    private void setFace(int f) {
+        this.face = f;
+        this.result = FACE_TO_SLICE[f];
+        BoardGame.multiplayer.ui.EventDie.changed(f);
+    }
+
+    private static int abacusFace(int f) {
+        return f % 6 + 1;
+    }
+
+    private static int toolboxFace(int f) {
+        return f == 1 ? 6 : f - 1;
     }
 
     private void setGold() {
@@ -207,12 +231,12 @@ public class BGGremlinWheelGame
         takePrizeIndex=i;i+=1;
 
         if(AbstractDungeon.player.hasRelic("BGTheAbacus")) {
-            int r2=result+1;if(r2>5)r2=0;
+            int r2=FACE_TO_SLICE[abacusFace(face)];
             this.imageEventText.setDialogOption("[The Abacus] "+OPTIONS[r2+10]);
             theAbacusIndex=i;i+=1;
         }
         if(AbstractDungeon.player.hasRelic("BGToolbox")) {
-            int r2=result-1;if(r2<0)r2=5;
+            int r2=FACE_TO_SLICE[toolboxFace(face)];
             this.imageEventText.setDialogOption("[Toolbox] "+OPTIONS[r2+10]);
             toolboxIndex=i;i+=1;
         }
@@ -236,8 +260,8 @@ public class BGGremlinWheelGame
             case INTRO:
                 if (buttonPressed == 0) {
                     GenericEventDialog.hide();
-                    this.result = AbstractDungeon.miscRng.random(0, 5);
-                    this.resultAngle = this.result * 60.0F + MathUtils.random(-10.0F, 10.0F);
+                    rollFace();
+                    BoardGame.multiplayer.ui.EventDie.rolled(this.face, 1, 6);
                     this.wheelAngle = 0.0F;
                     this.startSpin = true;
                     this.bounceTimer = 2.0F;
@@ -254,9 +278,10 @@ public class BGGremlinWheelGame
                             if (buttonPressed == gamblingChipIndex) {
                                 alreadyUsedGamblingChip = true;
                                 r.flash();
+                                BoardGame.multiplayer.ui.EventDie.relicUsed("BGGambling Chip");
                                 GenericEventDialog.hide();
-                                this.result = AbstractDungeon.miscRng.random(0, 5);
-                                this.resultAngle = this.result * 60.0F + MathUtils.random(-10.0F, 10.0F);
+                                rollFace();
+                                BoardGame.multiplayer.ui.EventDie.rolled(this.face, 1, 6);
                                 this.wheelAngle = 0.0F;
                                 this.startSpin = true;
                                 this.bounceTimer = 2.0F;
@@ -276,7 +301,8 @@ public class BGGremlinWheelGame
                     if (r != null) {
                         if (buttonPressed == theAbacusIndex) {
                             r.flash();
-                            result+=1;if(result>5)result=0;
+                            BoardGame.multiplayer.ui.EventDie.relicUsed("BGTheAbacus");
+                            setFace(abacusFace(face));
                         }
                     }
                 }
@@ -285,7 +311,8 @@ public class BGGremlinWheelGame
                     if (r != null) {
                         if (buttonPressed == toolboxIndex) {
                             r.flash();
-                            result-=1;if(result<0)result=5;
+                            BoardGame.multiplayer.ui.EventDie.relicUsed("BGToolbox");
+                            setFace(toolboxFace(face));
                         }
                     }
                 }
@@ -295,12 +322,9 @@ public class BGGremlinWheelGame
                     if (buttonPressed == potionIndex) {
                         AbstractDungeon.topPanel.destroyPotion(slot);
                         this.imageEventText.clearAllDialogs();
-                        this.imageEventText.setDialogOption(OPTIONS[10]);
-                        this.imageEventText.setDialogOption(OPTIONS[11]);
-                        this.imageEventText.setDialogOption(OPTIONS[12]);
-                        this.imageEventText.setDialogOption(OPTIONS[13]);
-                        this.imageEventText.setDialogOption(OPTIONS[14]);
-                        this.imageEventText.setDialogOption(OPTIONS[15]);
+                        for (int f = 1; f <= 6; f++) {  // in die-face order
+                            this.imageEventText.setDialogOption(OPTIONS[FACE_TO_SLICE[f] + 10]);
+                        }
                         this.screen = CUR_SCREEN.POTION;
                         return;
                     }
@@ -315,7 +339,7 @@ public class BGGremlinWheelGame
                 openMap();
                 return;
             case POTION:
-                result=buttonPressed;
+                setFace(buttonPressed + 1);
                 applyResult();
                 this.imageEventText.clearAllDialogs();
                 this.imageEventText.setDialogOption(OPTIONS[8]);

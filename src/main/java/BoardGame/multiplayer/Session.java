@@ -659,6 +659,10 @@ public class Session {
             case "fish":
                 BoardGame.multiplayer.combat.SharedEvents.onMessage(type, from, m);
                 return;
+            case "noteoffer":
+            case "notereply":
+                BoardGame.multiplayer.combat.NoteExchange.onMessage(type, from, m);
+                return;
             case "edie":
             case "elock":
                 BoardGame.multiplayer.ui.EventDie.onMessage(type, from, m);
@@ -692,7 +696,8 @@ public class Session {
             case "gold": {
                 if (m.get("to").getAsInt() != MP.myId) return;
                 AbstractDungeon.player.gainGold(m.get("amount").getAsInt());
-                toast(nameOf(from) + " paid you " + m.get("amount").getAsInt() + " gold");
+                toast(nameOf(from) + " gave you " + m.get("amount").getAsInt() + " gold");
+                BoardGame.multiplayer.ui.PartyPanel.goldChanged();
                 return;
             }
             case "note":
