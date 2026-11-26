@@ -32,6 +32,7 @@ public class RunStart {
      */
     public static void resetModStatics() {
         BoardGame.neow.BGNeowEvent.resetParty();
+        BoardGame.dungeons.AbstractBGDungeon.initializedCardPools = false; // fresh reward decks every run
         Class<?>[] dungeons = {BoardGame.dungeons.BGExordium.class, BoardGame.dungeons.BGTheCity.class,
                 BoardGame.dungeons.BGTheBeyond.class, BoardGame.dungeons.BGTheEnding.class};
         for (Class<?> c : dungeons) {

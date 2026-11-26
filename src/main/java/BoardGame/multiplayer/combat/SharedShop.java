@@ -70,11 +70,30 @@ public class SharedShop {
                 }
                 o.add("relics", rs);
                 o.add("potions", ps);
+                // colorless cards come from one shared deck too: everyone sees the host's
+                JsonArray cs = new JsonArray();
+                for (int list = 0; list < 2; list++) {
+                    ArrayList<com.megacrit.cardcrawl.cards.AbstractCard> l = list == 0 ? __instance.coloredCards
+                            : __instance.colorlessCards;
+                    for (int i = 0; i < l.size(); i++) {
+                        com.megacrit.cardcrawl.cards.AbstractCard c = l.get(i);
+                        if (!sharedCard(c)) continue;
+                        JsonObject j = new JsonObject();
+                        j.addProperty("list", list);
+                        j.addProperty("i", i);
+                        j.addProperty("id", c.cardID);
+                        j.addProperty("up", c.timesUpgraded);
+                        j.addProperty("price", c.price);
+                        cs.add(j);
+                    }
+                }
+                o.add("colorless", cs);
                 MP.send(o);
             } else if (pendingStock != null && pendingStock.get("key").getAsLong() == key()) {
                 apply(__instance, pendingStock);
                 pendingStock = null;
             }
+            removeBoughtColorless(__instance);
         }
     }
 
@@ -87,6 +106,16 @@ public class SharedShop {
                     && m.get("key").getAsLong() == key() && shopInitKey == key();
             if (open) apply(s, m);
             else pendingStock = m;
+        } else if (type.equals("shopcard")) {
+            if (from == MP.myId || m.get("key").getAsLong() != key()) return;
+            if (boughtKey != key()) {
+                boughtColorless.clear();
+                boughtKey = key();
+            }
+            boughtColorless.add(m.get("id").getAsString());
+            ShopScreen s = AbstractDungeon.shopScreen;
+            if (s != null && shopInitKey == key()) removeBoughtColorless(s);
+            Session.toast(Session.nameOf(from) + " bought " + m.get("name").getAsString());
         } else if (type.equals("shopbuy")) {
             if (m.get("key").getAsLong() != key()) return;
             onClaim(from, m.get("kind").getAsString(), m.get("id").getAsString(), m.get("slot").getAsInt());
@@ -103,9 +132,67 @@ public class SharedShop {
         }
     }
 
+    private static final ArrayList<String> boughtColorless = new ArrayList<>();
+    private static long boughtKey = -1;
+
+    /** Take colorless cards a teammate bought out of this shop. */
+    private static void removeBoughtColorless(ShopScreen s) {
+        if (boughtKey != key()) return;
+        ArrayList<String> left = new ArrayList<>(boughtColorless);
+        for (ArrayList<com.megacrit.cardcrawl.cards.AbstractCard> l : java.util.Arrays.asList(s.coloredCards, s.colorlessCards)) {
+            java.util.Iterator<com.megacrit.cardcrawl.cards.AbstractCard> it = l.iterator();
+            while (it.hasNext()) {
+                com.megacrit.cardcrawl.cards.AbstractCard c = it.next();
+                if (sharedCard(c) && left.remove(c.cardID)) it.remove();
+            }
+        }
+    }
+
+    /** Colorless cards come from the party's one colorless deck. */
+    private static boolean sharedCard(com.megacrit.cardcrawl.cards.AbstractCard c) {
+        return c != null && c.color == BoardGame.characters.BGColorless.Enums.CARD_COLOR;
+    }
+
+    @SpirePatch2(clz = ShopScreen.class, method = "purchaseCard")
+    public static class ShareColorlessBuy {
+        @SpirePrefixPatch
+        public static void prefix(ShopScreen __instance, com.megacrit.cardcrawl.cards.AbstractCard hoveredCard) {
+            if (!multi() || !sharedCard(hoveredCard)) return;
+            if (AbstractDungeon.player.gold < hoveredCard.price) return;
+            JsonObject o = MP.msg("shopcard");
+            o.addProperty("key", key());
+            o.addProperty("id", hoveredCard.cardID);
+            o.addProperty("name", hoveredCard.name);
+            MP.send(o);
+        }
+    }
+
     private static void apply(ShopScreen s, JsonObject m) {
         applying = true;
         try {
+            if (m.has("colorless")) {
+                JsonArray hc = m.getAsJsonArray("colorless");
+                for (int k = 0; k < hc.size(); k++) {
+                    JsonObject j = hc.get(k).getAsJsonObject();
+                    ArrayList<com.megacrit.cardcrawl.cards.AbstractCard> cs = j.get("list").getAsInt() == 0
+                            ? s.coloredCards : s.colorlessCards;
+                    int i = j.get("i").getAsInt();
+                    if (i >= cs.size() || !sharedCard(cs.get(i))) continue;
+                    com.megacrit.cardcrawl.cards.AbstractCard base =
+                            com.megacrit.cardcrawl.helpers.CardLibrary.getCard(j.get("id").getAsString());
+                    if (base == null) continue;
+                    com.megacrit.cardcrawl.cards.AbstractCard c = base.makeCopy(), old = cs.get(i);
+                    for (int u = 0; u < j.get("up").getAsInt() && c.canUpgrade(); u++) c.upgrade();
+                    c.price = j.get("price").getAsInt();
+                    c.current_x = old.current_x;
+                    c.current_y = old.current_y;
+                    c.target_x = old.target_x;
+                    c.target_y = old.target_y;
+                    c.drawScale = old.drawScale;
+                    c.targetDrawScale = old.targetDrawScale;
+                    cs.set(i, c);
+                }
+            }
             ArrayList<StoreRelic> rs = relics(s);
             JsonArray hr = m.getAsJsonArray("relics");
             for (int i = 0; i < Math.min(rs.size(), hr.size()); i++) {

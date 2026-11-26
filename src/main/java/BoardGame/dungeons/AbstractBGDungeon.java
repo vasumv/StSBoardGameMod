@@ -297,6 +297,7 @@ public abstract class AbstractBGDungeon extends AbstractDungeon {
             card = colorlessRewardDeck.getTopCard();
             colorlessRewardDeck.removeTopCard();
             colorlessRewardDeck.addToBottom(card.makeCopy());
+            BoardGame.multiplayer.combat.SharedDecks.drew(colorlessRewardDeck, card);
         }
         return card;
     }
@@ -306,6 +307,7 @@ public abstract class AbstractBGDungeon extends AbstractDungeon {
             card = cursesRewardDeck.getTopCard();
             cursesRewardDeck.removeTopCard();
             cursesRewardDeck.addToBottom(card);
+            BoardGame.multiplayer.combat.SharedDecks.drew(cursesRewardDeck, card);
         }
         return card;
     }
@@ -460,6 +462,7 @@ public abstract class AbstractBGDungeon extends AbstractDungeon {
 
         if(deck.removeCard(cardname)){
            logger.info("Successfully removed "+cardname+" from a reward deck");
+           BoardGame.multiplayer.combat.SharedDecks.took(deck, cardname);
         }
 
     }

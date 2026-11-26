@@ -37,6 +37,8 @@ public class SavedSession {
             o.addProperty("chooseRelic", MP.chooseRelic);
             o.addProperty("sequential", MP.sequential);
             o.addProperty("finalAct", MP.finalAct);
+            if (com.megacrit.cardcrawl.core.CardCrawlGame.dungeon instanceof BoardGame.dungeons.AbstractBGDungeon)
+                o.add("decks", BoardGame.multiplayer.combat.SharedDecks.save());
             o.addProperty("lastStandUsed", Session.lastStandUsed);
             file().writeString(o.toString(), false);
         } catch (Throwable t) {
@@ -166,6 +168,12 @@ public class SavedSession {
             return;
         }
         RunStart.resetModStatics();
+        // reward decks: mine from my own save (host's copy if it sent one), shared ones from the host's
+        JsonObject myRecord = fromHost != null ? fromHost : mine;
+        BoardGame.multiplayer.combat.SharedDecks.pendingOwn =
+                myRecord != null && myRecord.has("decks") ? myRecord.getAsJsonObject("decks") : null;
+        BoardGame.multiplayer.combat.SharedDecks.pendingShared =
+                hostSave.has("decks") ? hostSave.getAsJsonObject("decks") : null;
         // my id in the saved party: by name (join order may differ this time), else my own record
         int savedId = mine != null && matches(mine, hostSave) ? mine.get("me").getAsInt() : MP.myId;
         for (JsonElement e : hostSave.getAsJsonArray("roster")) {

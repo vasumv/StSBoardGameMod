@@ -48,6 +48,13 @@ public class BGMerchant {
 
 
                 AbstractCard c;
+                // multiplayer: only the host's merchant draws from the shared colorless deck;
+                // the others show the host's stock (SharedShop) and put their draws back
+                boolean mpClient = BoardGame.multiplayer.MP.inRun && BoardGame.multiplayer.MP.playerCount() > 1
+                        && !BoardGame.multiplayer.MP.isHost();
+                java.util.ArrayList<AbstractCard> colorlessBefore = mpClient
+                        ? BoardGame.multiplayer.combat.SharedDecks.snapshot() : null;
+                if (mpClient) BoardGame.multiplayer.combat.SharedDecks.quiet++;
 
                 c = AbstractDungeon.getCard(AbstractCard.CardRarity.COMMON);
                 ___cards1[0].add(c);
@@ -66,6 +73,10 @@ public class BGMerchant {
 
                 c = AbstractDungeon.getColorlessCardFromPool(AbstractCard.CardRarity.COMMON);
                 ___cards2[0].add(c);
+                if (mpClient) {
+                    BoardGame.multiplayer.combat.SharedDecks.quiet--;
+                    BoardGame.multiplayer.combat.SharedDecks.restore(colorlessBefore);
+                }
 
                 if(CardCrawlGame.dungeon instanceof AbstractBGDungeon) {
                     if (AbstractDungeon.id.equals("TheEnding")) {

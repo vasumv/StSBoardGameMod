@@ -622,6 +622,10 @@ public class Session {
             case "neowstart":
                 BoardGame.neow.BGNeowEvent.onPartyStart(from, m);
                 return;
+            case "sdraw":
+            case "stake":
+                BoardGame.multiplayer.combat.SharedDecks.onMessage(type, from, m);
+                return;
             case "neowready":
                 BoardGame.neow.BGNeowEvent.neowReady.add(from);
                 return;

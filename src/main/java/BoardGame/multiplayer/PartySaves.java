@@ -41,6 +41,8 @@ public class PartySaves {
                 o.addProperty("floor", AbstractDungeon.floorNum);
                 o.addProperty("act", AbstractDungeon.actNum);
                 o.addProperty("data", data);
+                if (com.megacrit.cardcrawl.core.CardCrawlGame.dungeon instanceof BoardGame.dungeons.AbstractBGDungeon)
+                    o.add("decks", BoardGame.multiplayer.combat.SharedDecks.save());
                 if (MP.isHost()) store(o);
                 else Net.send(o); // the host keeps it; it is not shared with the others
             } catch (Throwable t) {
