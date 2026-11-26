@@ -95,7 +95,7 @@ public class EventDie {
             title = eventName();
         }
         value = v + offset;
-        anim = 0.9f;
+        anim = wheel() ? 0f : 0.9f; // the Wheel of Change's own spin is the animation
     }
 
     /** An event changed its roll (Abacus, Toolbox, Gambler's Brew...). */
@@ -344,11 +344,21 @@ public class EventDie {
 
     // panel geometry, 1080p units from the top-left
     private static float px() {
+        if (wheel()) return 1404; // right of the wheel
         // image events: over the picture; room events (Dead Adventurer): the empty right side
         return Boolean.TRUE.equals(basemod.ReflectionHacks.getPrivateStatic(com.megacrit.cardcrawl.events.GenericEventDialog.class, "show")) ? 200 : 1180;
     }
 
-    private static final float PY = 380, PW = 600;
+    private static final float PY = 380;
+
+    private static boolean wheel() {
+        return AbstractDungeon.getCurrRoom().event instanceof BoardGame.events.BGGremlinWheelGame;
+    }
+
+    /** Panel width: narrower beside the Wheel of Change, which fills the middle of the screen. */
+    private static float pw() {
+        return wheel() ? 500 : 600;
+    }
 
     private static void layoutButtons() {
         btnRects.clear();
@@ -397,7 +407,7 @@ public class EventDie {
             addBtn(x, y, 300, "Gambler's Brew: pick a number", () -> choosingBrew = true);
             y += 46;
         }
-        addBtn(px() + PW - 200, buttonsTop(), 188, "Keep " + value, EventDie::lock);
+        addBtn(px() + pw() - 200, buttonsTop(), 188, "Keep " + value, EventDie::lock);
     }
 
     /** Where the buttons start: under the outcome table, the notes and the waiting line (1080p, from top). */
@@ -425,8 +435,19 @@ public class EventDie {
     private static int face = 1;
     private static float faceTick = 0;
 
+    /** The Wheel of Change shows its result when its spin stops; until then the die stays hidden. */
+    private static boolean wheelStillSpinning() {
+        if (!wheel()) return false;
+        try {
+            return !Boolean.TRUE.equals(basemod.ReflectionHacks.getPrivate(AbstractDungeon.getCurrRoom().event,
+                    BoardGame.events.BGGremlinWheelGame.class, "doneSpinning"));
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     public static void render(SpriteBatch sb) {
-        if (!current() || value <= 0 || AbstractDungeon.isScreenUp) return;
+        if (!current() || value <= 0 || AbstractDungeon.isScreenUp || wheelStillSpinning()) return;
         float s = Settings.scale;
         boolean rolling = anim > 0;
         if (rolling) {
@@ -445,7 +466,7 @@ public class EventDie {
         float h = 140 + (outs.size() + notes.size()) * 26 + (outs.isEmpty() ? 0 : 4)
                 + (party && !resolved ? 36 : 0) + extraRows * 46 + 10;
         float x = px() * s, top = Settings.HEIGHT - PY * s;
-        box(sb, x, top - h * s, PW * s, h * s, BG);
+        box(sb, x, top - h * s, pw() * s, h * s, BG);
         float ds = 96 * s;
         float dx = x + 16 * s, dy = top - 16 * s - ds;
         box(sb, dx, dy, ds, ds, rolling ? Color.LIGHT_GRAY : Color.WHITE);
