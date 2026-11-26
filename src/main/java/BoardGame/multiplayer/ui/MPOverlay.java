@@ -233,10 +233,10 @@ public class MPOverlay implements PostRenderSubscriber {
     private static void render(SpriteBatch sb) {
         if (onMainMenu()) LobbyScreen.frame(sb, false);
         else if (MP.inRun && CardCrawlGame.isInARun() && AbstractDungeon.player != null) renderRun(sb);
+        EventDie.render(sb); // under any prompt it leads to
         RelicPicker.render(sb);
         ChoicePrompt.render(sb);
         PartyEventUI.render(sb);
-        EventDie.render(sb);
         renderToasts(sb);
     }
 
@@ -354,6 +354,13 @@ public class MPOverlay implements PostRenderSubscriber {
             }
             extra.add(who.toString());
             extraColor.add(Settings.CREAM_COLOR);
+            // what this number would do, so a change can be weighed before keeping it
+            for (MP.Player p : MP.players) {
+                String list = BoardGame.multiplayer.combat.DiePhase.preview.get(p.id);
+                if (list == null || list.isEmpty()) continue;
+                extra.add("On " + v + ", " + (p.id == MP.myId ? "you" : p.name) + ": " + list);
+                extraColor.add(Settings.GREEN_TEXT_COLOR);
+            }
         } else {
             if (!BoardGame.multiplayer.combat.DiePhase.lastChange.isEmpty()) {
                 extra.add(BoardGame.multiplayer.combat.DiePhase.lastChange);
@@ -366,6 +373,25 @@ public class MPOverlay implements PostRenderSubscriber {
                 extraColor.add(Settings.GREEN_TEXT_COLOR);
             }
         }
+        // wrap long lines (relic lists) instead of cutting them off
+        ArrayList<String> wrapped = new ArrayList<>();
+        ArrayList<Color> wrappedColor = new ArrayList<>();
+        for (int i = 0; i < extra.size(); i++) {
+            String rest = extra.get(i);
+            boolean first = true;
+            while (rest.length() > 46) {
+                int cut = rest.lastIndexOf(' ', 46);
+                if (cut < 20) cut = 46;
+                wrapped.add((first ? "" : "   ") + rest.substring(0, cut).trim());
+                wrappedColor.add(extraColor.get(i));
+                rest = rest.substring(cut).trim();
+                first = false;
+            }
+            wrapped.add((first ? "" : "   ") + rest);
+            wrappedColor.add(extraColor.get(i));
+        }
+        extra = wrapped;
+        extraColor = wrappedColor;
         boolean showKeep = deciding && !BoardGame.multiplayer.combat.DiePhase.iConfirmed() && !acceptRollShown();
         float lh = 22f;
         float h1080 = 56 + extra.size() * lh + (showKeep ? 44 : 0);
@@ -383,7 +409,7 @@ public class MPOverlay implements PostRenderSubscriber {
         float y = top - 56 * Settings.scale;
         for (int i = 0; i < extra.size(); i++) {
             String l = extra.get(i);
-            if (l.length() > 46) l = l.substring(0, 45) + "...";
+            if (l.length() > 50) l = l.substring(0, 49) + "...";
             FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont, l, x + 8 * Settings.scale, y,
                     extraColor.get(i));
             y -= lh * Settings.scale;

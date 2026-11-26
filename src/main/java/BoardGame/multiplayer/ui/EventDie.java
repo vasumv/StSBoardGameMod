@@ -143,7 +143,7 @@ public class EventDie {
             case "BGDeadAdventurer":
                 o.add(new Object[]{1, 2, "Fight an Elite (it drops 2 Gold and a Relic)"});
                 o.add(new Object[]{3, 4, multi() ? "Everyone gains 2 Gold" : "Gain 2 Gold"});
-                o.add(new Object[]{5, 6, multi() ? "Everyone obtains a Relic" : "Obtain a Relic"});
+                o.add(new Object[]{5, 6, multi() ? "One player obtains a Relic (the host picks who)" : "Obtain a Relic"});
                 break;
             case "BGTheJoust":
                 o.add(new Object[]{1, 3, "Lose your bet"});
@@ -347,7 +347,7 @@ public class EventDie {
         btnText.clear();
         btnAct.clear();
         if (!party || resolved || anim > 0) return;
-        float y = PY + 150 + (outcomes().size() + notes.size()) * 26;
+        float y = buttonsTop();
         if (choosingBrew) {
             for (int i = 1; i <= 6; i++) {
                 final int v = i;
@@ -389,8 +389,13 @@ public class EventDie {
             addBtn(x, y, 300, "Gambler's Brew: pick a number", () -> choosingBrew = true);
             y += 46;
         }
-        addBtn(px() + PW - 200, PY + 150 + (outcomes().size() + notes.size()) * 26, 188, "Keep " + value,
-                EventDie::lock);
+        addBtn(px() + PW - 200, buttonsTop(), 188, "Keep " + value, EventDie::lock);
+    }
+
+    /** Where the buttons start: under the outcome table, the notes and the waiting line (1080p, from top). */
+    private static float buttonsTop() {
+        int outs = outcomes().size();
+        return PY + 140 + (outs + notes.size()) * 26 + (outs > 0 ? 4 : 0) + 30 + 6;
     }
 
     private static void addBtn(float x, float y, float w, String text, Runnable r) {
@@ -429,14 +434,14 @@ public class EventDie {
                     + (hasBrew() ? 1 : 0));
         if (choosingBrew) extraRows = 1;
         ArrayList<Object[]> outs = outcomes();
-        float h = 140 + (outs.size() + notes.size()) * 26 + (party && !resolved ? 30 : 0) + extraRows * 46 + 10;
+        float h = 140 + (outs.size() + notes.size()) * 26 + (outs.isEmpty() ? 0 : 4)
+                + (party && !resolved ? 36 : 0) + extraRows * 46 + 10;
         float x = px() * s, top = Settings.HEIGHT - PY * s;
         box(sb, x, top - h * s, PW * s, h * s, BG);
         float ds = 96 * s;
         float dx = x + 16 * s, dy = top - 16 * s - ds;
         box(sb, dx, dy, ds, ds, rolling ? Color.LIGHT_GRAY : Color.WHITE);
-        FontHelper.renderFontCentered(sb, FontHelper.bannerNameFont, String.valueOf(rolling ? face : value),
-                dx + ds / 2f, dy + ds / 2f, Color.BLACK);
+        pips(sb, dx, dy, ds, rolling ? face : value);
         String head = party ? (resolved ? "Party die: " + value : rolling ? "Rolling the party die..."
                 : "Party die: " + value + " - keep it or change it") : rolling ? "Rolling..." : "Rolled " + value;
         FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipHeaderFont, head, x + 128 * s, top - 22 * s,
@@ -470,6 +475,32 @@ public class EventDie {
             FontHelper.renderFontCentered(sb, FontHelper.tipBodyFont, btnText.get(i), r[0] + r[2] / 2f,
                     r[1] + r[3] / 2f, Settings.GOLD_COLOR);
         }
+    }
+
+    /** A die face: pips read at a glance (no font ambiguity between 1 and I). */
+    private static void pips(SpriteBatch sb, float x, float y, float size, int n) {
+        float p = size * 0.17f, a = size * 0.25f, b = size * 0.5f, c = size * 0.75f;
+        float[][] at;
+        switch (n) {
+            case 1: at = new float[][]{{b, b}}; break;
+            case 2: at = new float[][]{{a, c}, {c, a}}; break;
+            case 3: at = new float[][]{{a, c}, {b, b}, {c, a}}; break;
+            case 4: at = new float[][]{{a, a}, {a, c}, {c, a}, {c, c}}; break;
+            case 5: at = new float[][]{{a, a}, {a, c}, {b, b}, {c, a}, {c, c}}; break;
+            default: at = new float[][]{{a, a}, {a, b}, {a, c}, {c, a}, {c, b}, {c, c}}; break;
+        }
+        for (float[] q : at) box(sb, x + q[0] - p / 2f, y + q[1] - p / 2f, p, p, Color.BLACK);
+    }
+
+    /** Test helper: forget this room's die (the debug "event" command swaps events in place). */
+    public static void reset() {
+        key = -1;
+        party = false;
+        resolved = false;
+        onResolve = null;
+        early.clear();
+        value = 0;
+        notes.clear();
     }
 
     private static void box(SpriteBatch sb, float x, float y, float w, float h, Color c) {

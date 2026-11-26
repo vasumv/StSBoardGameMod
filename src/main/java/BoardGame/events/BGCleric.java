@@ -107,6 +107,9 @@ private boolean pickCard;
                         return;
                     case 1:
                         buttonchoice=1;
+                        if (AbstractDungeon.player.masterDeck.getUpgradableCards().size() > 0) {
+                            AbstractDungeon.player.loseGold(2);
+                        }
                         AbstractDungeon.gridSelectScreen.open(AbstractDungeon.player.masterDeck
                                 .getUpgradableCards(), 1, OPTIONS[8], true, false, false, false);
                         this.pickCard = true;

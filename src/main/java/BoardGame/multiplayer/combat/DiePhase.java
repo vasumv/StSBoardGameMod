@@ -30,6 +30,8 @@ public class DiePhase {
     public static String lastChange = "";
     /** Die relics that triggered this round, per player. */
     public static final HashMap<Integer, String> triggered = new HashMap<>();
+    /** While deciding: what each player's die relics would do on the current number. */
+    public static final HashMap<Integer, String> preview = new HashMap<>();
     private static boolean firstRollPending = false;
     private static boolean applyingRemote = false;
     private static boolean releasing = false;
@@ -110,6 +112,8 @@ public class DiePhase {
                 Integer v = pendingValue.remove(roundKey); // someone changed it before our roll arrived
                 if (v != null) applyValue(v);
                 triggered.clear();
+                preview.clear();
+                sendPreview();
                 // nothing to decide without a die-changing relic or potion: keep it right away
                 if (!BoardGame.ui.LockInRollButton.playerHasAnyDieChangingAbilities()) confirm();
                 maybeRelease();
@@ -179,6 +183,8 @@ public class DiePhase {
                 // someone else's change is the new starting point for your own Abacus/Toolbox, and must
                 // not count as you having used one of yours
                 if (from != MP.myId) TheDie.initialRoll = v;
+                preview.clear();
+                sendPreview();
                 if (!BoardGame.ui.LockInRollButton.playerHasAnyDieChangingAbilities()) confirm();
                 rollAnim = 0.6f;
                 lastChange = Session.nameOf(from) + " changed the die to " + v;
@@ -186,6 +192,9 @@ public class DiePhase {
             } else if (key > roundKey) {
                 pendingValue.put(key, v);
             }
+        } else if (type.equals("diepre")) {
+            if (key != roundKey || decided || m.get("v").getAsInt() != TheDie.monsterRoll) return;
+            preview.put(from, m.get("list").getAsString());
         } else if (type.equals("dietrig")) {
             if (key != roundKey) return;
             String list = m.get("list").getAsString();
@@ -212,17 +221,37 @@ public class DiePhase {
                 releasing = false;
             }
         }
+        JsonObject o = MP.msg("dietrig");
+        o.addProperty("key", roundKey);
+        o.addProperty("list", mySummary());
+        MP.send(o);
+    }
+
+    /** What my die relics do on the die's current number, e.g. "Oddly Smooth Stone (2 Block)". */
+    private static String mySummary() {
         StringBuilder mine = new StringBuilder();
         for (AbstractRelic rel : AbstractDungeon.player.relics) {
             if (!(rel instanceof BoardGame.relics.DieControlledRelic) || rel instanceof BGTheDieRelic) continue;
-            String q = ((BoardGame.relics.DieControlledRelic) rel).getQuickSummary();
+            String q;
+            try {
+                q = ((BoardGame.relics.DieControlledRelic) rel).getQuickSummary();
+            } catch (Throwable t) {
+                continue;
+            }
             if (q == null || q.isEmpty()) continue;
             if (mine.length() > 0) mine.append(", ");
             mine.append(rel.name).append(" (").append(q.replaceAll("#[a-z]", "")).append(")");
         }
-        JsonObject o = MP.msg("dietrig");
+        return mine.toString();
+    }
+
+    /** Tell everyone what my die relics would do on the number now showing. */
+    private static void sendPreview() {
+        if (AbstractDungeon.player == null) return;
+        JsonObject o = MP.msg("diepre");
         o.addProperty("key", roundKey);
-        o.addProperty("list", mine.toString());
+        o.addProperty("v", TheDie.monsterRoll);
+        o.addProperty("list", mySummary());
         MP.send(o);
     }
 

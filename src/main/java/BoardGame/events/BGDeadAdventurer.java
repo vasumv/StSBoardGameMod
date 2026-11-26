@@ -148,7 +148,7 @@ public class BGDeadAdventurer
                             // one die for the party: anyone may change it, then it resolves everywhere
                             this.roomEventText.updateBodyText("The party searches the body...");
                             BoardGame.multiplayer.ui.EventDie.startParty(
-                                    "Search: 1-2 fight an Elite, 3-4 gain 2 Gold, 5-6 a Relic", pendingReward, v -> {
+                                    "Dead Adventurer: one search for the party", pendingReward, v -> {
                                         pendingReward = v;
                                         describeRoll();
                                         applyingResult = true;
@@ -223,6 +223,9 @@ public class BGDeadAdventurer
             roomEventText.addDialogOption(OPTIONS[2]);
         } else if (pendingReward == 3 || pendingReward == 4) {
             this.roomEventText.updateBodyText(DESCRIPTIONS[7] + DESCRIPTIONS[10]);
+            roomEventText.addDialogOption(OPTIONS[1]);
+        } else if ((pendingReward == 5 || pendingReward == 6) && BoardGame.multiplayer.ui.EventDie.multi()) {
+            this.roomEventText.updateBodyText("The party finds a #yrelic among his belongings. The host chooses who takes it.");
             roomEventText.addDialogOption(OPTIONS[1]);
         } else if (pendingReward == 5 || pendingReward == 6) {
             this.roomEventText.updateBodyText(DESCRIPTIONS[9] + DESCRIPTIONS[10]);
@@ -331,7 +334,19 @@ public class BGDeadAdventurer
 
     /** A non-host game follows the host's decision. */
     public static void onPartyMessage(int from, com.google.gson.JsonObject m) {
-        if (BoardGame.multiplayer.MP.isHost() || m.get("floor").getAsInt() != AbstractDungeon.floorNum) return;
+        if (m.get("floor").getAsInt() != AbstractDungeon.floorNum) return;
+        if ("relicto".equals(m.get("a").getAsString())) { // every game, the host's too
+            if (m.get("v").getAsInt() == BoardGame.multiplayer.MP.myId) {
+                AbstractRelic r = AbstractDungeon.returnRandomScreenlessRelic(AbstractDungeon.returnRandomRelicTier());
+                AbstractDungeon.getCurrRoom().spawnRelicAndObtain(Settings.WIDTH / 2.0F, Settings.HEIGHT / 2.0F, r);
+                AbstractEvent.logMetricGainGoldAndRelic("Dead Adventurer", "Gained Relic", r, 0);
+            } else {
+                BoardGame.multiplayer.Session.toast(BoardGame.multiplayer.Session.nameOf(m.get("v").getAsInt())
+                        + " gets the Dead Adventurer's Relic");
+            }
+            return;
+        }
+        if (BoardGame.multiplayer.MP.isHost()) return;
         if (!(AbstractDungeon.getCurrRoom().event instanceof BGDeadAdventurer)) return;
         BGDeadAdventurer ev = (BGDeadAdventurer) AbstractDungeon.getCurrRoom().event;
         partyDriven = true;
@@ -372,6 +387,21 @@ public class BGDeadAdventurer
             AbstractEvent.logMetricGainGold("Dead Adventurer", "Gained Gold", this.goldRewardMetric);
             screen=CUR_SCREEN.SUCCESS;
             if(skipContinueButton) openMap();
+        }else if((pendingReward==5 || pendingReward==6) && BoardGame.multiplayer.MP.inRun
+                && BoardGame.multiplayer.MP.playerCount() > 1){
+            // board game: ONE player gains the Relic; the host (who decides for the party) picks who
+            screen=CUR_SCREEN.SUCCESS;
+            if (BoardGame.multiplayer.MP.isHost()) {
+                java.util.ArrayList<String> labels = new java.util.ArrayList<>();
+                java.util.ArrayList<Integer> ids = new java.util.ArrayList<>();
+                for (BoardGame.multiplayer.MP.Player p : BoardGame.multiplayer.MP.players) {
+                    if (!p.connected || p.dead) continue;
+                    labels.add(p.id == BoardGame.multiplayer.MP.myId ? "You" : p.name);
+                    ids.add(p.id);
+                }
+                BoardGame.multiplayer.ui.ChoicePrompt.ask("Dead Adventurer: who gets the Relic?", labels,
+                        i -> partySend("relicto", ids.get(i)));
+            }
         }else if(pendingReward==5 || pendingReward==6){
             AbstractRelic r = AbstractDungeon.returnRandomScreenlessRelic(
                     AbstractDungeon.returnRandomRelicTier());

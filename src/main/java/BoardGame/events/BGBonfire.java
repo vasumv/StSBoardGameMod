@@ -122,7 +122,7 @@ public class BGBonfire
                     //CardCrawlGame.sound.play("ATTACK_POISON");
                     CardCrawlGame.sound.play("BLUNT_FAST");
                     CardCrawlGame.screenShake.shake(ScreenShake.ShakeIntensity.MED, ScreenShake.ShakeDur.MED, false);
-                    AbstractDungeon.player.damage(new DamageInfo(null,1, DamageInfo.DamageType.HP_LOSS));
+                    AbstractDungeon.player.damage(new DamageInfo(null,2, DamageInfo.DamageType.HP_LOSS));
                 }
                 this.imageEventText.updateBodyText(DESCRIPTIONS[8]);
                 this.imageEventText.updateDialogOption(0, OPTIONS[1]);

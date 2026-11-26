@@ -62,7 +62,7 @@ public class BGDrugDealer
                         this.imageEventText.clearRemainingOptions();
                         break;
                     case 1: {
-                        int damageAmount = (int) (2);
+                        int damageAmount = (int) (3);
                         CardCrawlGame.sound.play("ATTACK_POISON");
                         AbstractDungeon.player.damage(new DamageInfo(null, damageAmount, DamageInfo.DamageType.HP_LOSS));
                         }

@@ -126,7 +126,7 @@
       "[Leave]",
       "[Offer] Receive a reward based on the offer.",
       "Select a Card to Offer.",
-      "[Prize?] #rLose #r1 #rHP."
+      "[Prize?] #rLose #r2 #rHP."
     ]
   },
   "BoardGame:BGColosseum": {
@@ -241,7 +241,7 @@
     ],
     "OPTIONS": [
       "[Drink Vial] #gUpgrade #ga #gcard. #rLose #r1 #rHP.",
-      "[Become Test Subject] #gTransform #g2 #gcards. #rLose #r2 #rHP.",
+      "[Become Test Subject] #gTransform #g2 #gcards. #rLose #r3 #rHP.",
       "-",
       "[Leave]",
       "[Locked] Requires: 2 or more cards in deck.",
@@ -565,7 +565,7 @@
       "[Leave]",
       "[Bet ",
       "]",
-      "[Locked] Requires: 4 Gold.",
+      "[Locked] Requires: 2 Gold.",
       "[Locked] Requires: Undiscarded normal Relic.",
       "[Locked] Requires: Potion.",
       "[Gambler's Brew] Gain 6 Gold anyway."
@@ -678,7 +678,7 @@
     ],
     "OPTIONS": [
       "[Pray] #gUpgrade #ga #gcard.",
-      "[Sacrifice] #gUpgrade #g2 #grandom #gcards. #rLose #r2 #rHP.",
+      "[Sacrifice] #gUpgrade #g2 #grandom #gcards. #rLose #r3 #rHP.",
       "Select a Card to Upgrade.",
       "[Locked] Requires: Upgradeable Cards",
       "[Leave]"

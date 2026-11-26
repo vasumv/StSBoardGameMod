@@ -238,7 +238,7 @@ public class DebugChannel {
                 return "gave " + c.cardID;
             }
             case "relic": { // test: obtain a relic, e.g. "relic BGOrichalcum"
-                com.megacrit.cardcrawl.relics.AbstractRelic r = com.megacrit.cardcrawl.helpers.RelicLibrary.getRelic(a[1]);
+                com.megacrit.cardcrawl.relics.AbstractRelic r = com.megacrit.cardcrawl.helpers.RelicLibrary.getRelic(a[1].replace('_', ' '));
                 if (r == null) return "no relic " + a[1];
                 r.makeCopy().instantObtain();
                 return "relic " + a[1];
@@ -265,7 +265,7 @@ public class DebugChannel {
                 }
             }
             case "potion": {
-                com.megacrit.cardcrawl.potions.AbstractPotion pt = com.megacrit.cardcrawl.helpers.PotionHelper.getPotion(a[1]);
+                com.megacrit.cardcrawl.potions.AbstractPotion pt = com.megacrit.cardcrawl.helpers.PotionHelper.getPotion(a[1].replace('_', ' '));
                 if (pt == null) return "no potion " + a[1];
                 AbstractDungeon.player.obtainPotion(pt);
                 return "potion " + a[1];
@@ -287,6 +287,7 @@ public class DebugChannel {
                     com.megacrit.cardcrawl.events.AbstractEvent old = AbstractDungeon.getCurrRoom().event;
                     if (old != null) old.imageEventText.clear();
                     com.megacrit.cardcrawl.events.GenericEventDialog.hide();
+                    BoardGame.multiplayer.ui.EventDie.reset();
                     AbstractDungeon.getCurrRoom().event = ev;
                     ev.onEnterRoom();
                     return "event " + ev.getClass().getSimpleName();

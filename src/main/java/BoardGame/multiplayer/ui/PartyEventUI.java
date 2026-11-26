@@ -77,8 +77,7 @@ public class PartyEventUI {
             MP.Player bottom = MP.playerInRow(0);
             Object labScreen = ReflectionHacks.getPrivate(ev, BoardGame.events.BGLab.class, "screen");
             if ("INTRO".equals(String.valueOf(labScreen)) && !EventDie.partyStarted())
-                EventDie.startParty("Lab: on 4-6, " + (bottom == null ? "one player" : bottom.id == MP.myId ? "you"
-                                : bottom.name) + " also gets an extra potion",
+                EventDie.startParty("Lab: one roll for the party",
                         BoardGame.multiplayer.combat.SharedEvents.partyRoll(AbstractDungeon.miscRng, 1, 6), v -> {});
             banner = "Lab: one die roll for the party; on 4-6 the extra potion goes to "
                     + (bottom == null ? "one player" : bottom.id == MP.myId ? "you" : bottom.name);

@@ -671,6 +671,7 @@ public class Session {
                 return;
             case "die":
             case "dietrig":
+            case "diepre":
             case "lock":
                 BoardGame.multiplayer.combat.DiePhase.onMessage(type, from, m);
                 return;

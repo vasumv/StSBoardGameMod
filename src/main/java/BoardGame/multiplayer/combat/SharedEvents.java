@@ -85,7 +85,7 @@ public class SharedEvents {
         @SpirePrefixPatch
         public static SpireReturn<Void> prefix(BGBigFish __instance, int buttonPressed) {
             Object screen = basemod.ReflectionHacks.getPrivate(__instance, BGBigFish.class, "screen");
-            if (fishDriven || !multi() || !"INTRO".equals(String.valueOf(screen)) || buttonPressed > 2)
+            if (fishDriven || !multi() || !"INTRO".equals(String.valueOf(screen)) || buttonPressed > 3) // all four options are exclusive
                 return SpireReturn.Continue();
             resetFish();
             Integer who = fishClaims.get(buttonPressed);

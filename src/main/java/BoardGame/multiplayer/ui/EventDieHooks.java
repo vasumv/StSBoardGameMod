@@ -42,7 +42,7 @@ public class EventDieHooks {
         }
     }
 
-    @SpirePatch2(clz = BoardGame.events.BGTheMausoleum.class, method = "buttonEffect")
+    @SpirePatch2(clz = BoardGame.events.BGTheMausoleum.class, method = "getReward", paramtypez = {boolean.class, boolean.class})
     public static class Mausoleum {
         @SpireInstrumentPatch
         public static ExprEditor e() {
@@ -50,7 +50,7 @@ public class EventDieHooks {
         }
     }
 
-    @SpirePatch2(clz = BoardGame.events.BGAccursedBlacksmith.class, method = "buttonEffect")
+    @SpirePatch2(clz = BoardGame.events.BGAccursedBlacksmith.class, method = "getReward", paramtypez = {boolean.class, boolean.class})
     public static class Blacksmith {
         @SpireInstrumentPatch
         public static ExprEditor e() {
