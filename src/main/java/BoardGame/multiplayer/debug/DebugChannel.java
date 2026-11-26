@@ -259,6 +259,45 @@ public class DebugChannel {
                     return "orb failed " + t;
                 }
             }
+            case "setroom": { // test: make map node x,y a given room type, e.g. "setroom 3 0 shop"
+                com.megacrit.cardcrawl.map.MapRoomNode n = AbstractDungeon.map.get(Integer.parseInt(a[2])).get(Integer.parseInt(a[1]));
+                switch (a[3]) {
+                    case "shop": n.room = new com.megacrit.cardcrawl.rooms.ShopRoom(); break;
+                    case "rest": n.room = new com.megacrit.cardcrawl.rooms.RestRoom(); break;
+                    case "event": n.room = new com.megacrit.cardcrawl.rooms.EventRoom(); break;
+                    case "treasure": n.room = new com.megacrit.cardcrawl.rooms.TreasureRoom(); break;
+                    case "elite": n.room = new com.megacrit.cardcrawl.rooms.MonsterRoomElite(); break;
+                    default: n.room = new com.megacrit.cardcrawl.rooms.MonsterRoom();
+                }
+                return "node " + a[1] + "," + a[2] + " is now " + n.room.getClass().getSimpleName();
+            }
+            case "shopdump": {
+                com.megacrit.cardcrawl.shop.ShopScreen sh = AbstractDungeon.shopScreen;
+                if (sh == null) return "no shop";
+                StringBuilder sb = new StringBuilder("colored=");
+                for (AbstractCard c : sh.coloredCards) sb.append(c.cardID).append(' ');
+                sb.append("\ncolorless=");
+                for (AbstractCard c : sh.colorlessCards) sb.append(c.cardID).append(' ');
+                java.util.ArrayList<com.megacrit.cardcrawl.shop.StoreRelic> rs = basemod.ReflectionHacks.getPrivate(sh,
+                        com.megacrit.cardcrawl.shop.ShopScreen.class, "relics");
+                sb.append("\nrelics=");
+                for (com.megacrit.cardcrawl.shop.StoreRelic r : rs) sb.append(r.relic.relicId).append(r.isPurchased ? "(sold) " : " ");
+                return sb.toString();
+            }
+            case "buycard": { // test: buy shop card by list/index, e.g. "buycard colorless 0"
+                com.megacrit.cardcrawl.shop.ShopScreen sh = AbstractDungeon.shopScreen;
+                java.util.ArrayList<AbstractCard> l = a[1].equals("colorless") ? sh.colorlessCards : sh.coloredCards;
+                AbstractCard c = l.get(Integer.parseInt(a[2]));
+                AbstractDungeon.player.gold += c.price;
+                try {
+                    java.lang.reflect.Method m = com.megacrit.cardcrawl.shop.ShopScreen.class.getDeclaredMethod("purchaseCard", AbstractCard.class);
+                    m.setAccessible(true);
+                    m.invoke(sh, c);
+                } catch (Throwable t) {
+                    return "buy failed " + t;
+                }
+                return "bought " + c.cardID;
+            }
             case "maxhp": // test: survive long fights
                 AbstractDungeon.player.increaseMaxHp(Integer.parseInt(a[1]), false);
                 AbstractDungeon.player.heal(999);

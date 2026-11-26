@@ -638,6 +638,7 @@ public class Session {
                 return;
             case "shopstock":
             case "shoprelease":
+            case "shopcard":
             case "shopbuy":
                 BoardGame.multiplayer.combat.SharedShop.onMessage(type, from, m);
                 return;
