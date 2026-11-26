@@ -27,10 +27,15 @@ public class BGSpawnTwoGremlinsForGremlinLeaderAction extends AbstractGameAction
     }
 
 
+    /** The gremlins each Leader currently has, per slot (the old check looked at list positions,
+     *  which hold the encounter's placeholders, so every Rally added two more instead of reviving). */
+    private static final java.util.WeakHashMap<BGGremlinLeader, AbstractMonster[]> slots = new java.util.WeakHashMap<>();
+
     private String getGremlinInSlot(int slot) {
-        ArrayList<AbstractMonster> monsters = AbstractDungeon.getMonsters().monsters;
+        AbstractMonster[] mine = slots.computeIfAbsent(this.leader, k -> new AbstractMonster[2]);
+        AbstractMonster g = mine[slot];
         logger.info("checking gremlin slot "+slot);
-        if (slot>=monsters.size() || monsters.get(slot) == null || (monsters.get(slot)).isDying) {
+        if (g == null || g.isDying || g.isDead || g.escaped || !AbstractDungeon.getMonsters().monsters.contains(g)) {
             logger.info("return "+this.leader.gremlintypes[slot]);
             return this.leader.gremlintypes[slot];
 
@@ -61,8 +66,10 @@ public class BGSpawnTwoGremlinsForGremlinLeaderAction extends AbstractGameAction
             }
             logger.info("Gremlin type: "+type);
             logger.info("Gremlin: "+gremlin);
-            if (gremlin != null)
+            if (gremlin != null) {
+                slots.computeIfAbsent(this.leader, k -> new AbstractMonster[2])[i] = gremlin;
                 AbstractDungeon.actionManager.addToTop((AbstractGameAction) new SpawnMonsterAction(gremlin, false));
+            }
 
         }
         AbstractDungeon.actionManager.addToBottom((AbstractGameAction) new ApplyAngerToGremlinsAction());

@@ -335,65 +335,52 @@ public class Session {
     /** For "to any player" cards aimed at a teammate: send the effect over instead of applying it here. */
     public static boolean redirectToTeammate(com.megacrit.cardcrawl.actions.AbstractGameAction a, AbstractCard card) {
         if (!givesToAnyPlayer(card)) return false;
-        int to = giveTargetId();
-        // Cards dragged onto an enemy (Predator: "Any player draws 2") can't be dropped on a
-        // teammate, so ask who gets the effect.
+        String kind = giveKind(a, card);
+        if (kind == null) return false; // only the effect the card's text gives "to any player"
+        if (MP.playerCount() < 2) return false;
         boolean aimedAtEnemy = card.target == AbstractCard.CardTarget.ENEMY
                 || card.target == AbstractCard.CardTarget.ALL_ENEMY
                 || card.target == AbstractCard.CardTarget.SELF_AND_ENEMY;
-        if (aimedAtEnemy && giveTarget < 0 && !MP.players.isEmpty() && MP.playerCount() > 1
-                && !Boolean.TRUE.equals(asked.get(a)) && giveKind(a) != null) {
+        boolean eachSeparately = card.cardID.contains("DodgeAndRoll"); // "each Block can go to any player"
+        boolean copy = card.purgeOnUse; // Doppelganger / Foreign Influence copies can't be dropped on anyone
+        Integer decided = eachSeparately ? null : chosenFor.get(card);
+        int to;
+        if (decided != null) to = decided;
+        else if ((aimedAtEnemy || copy) && giveTarget < 0 || eachSeparately) {
+            if (Boolean.TRUE.equals(asked.get(a))) return false;
             asked.put(a, Boolean.TRUE);
             final com.megacrit.cardcrawl.actions.AbstractGameAction act = a;
-            BoardGame.multiplayer.combat.OtherPlayers.askRecipient(card.name + ": who gets this?", id -> {
+            String what = card.name + (eachSeparately ? ": who gets this Block?" : ": who gets this?");
+            BoardGame.multiplayer.combat.OtherPlayers.askRecipient(what, id -> {
+                if (!eachSeparately) chosenFor.put(card, id); // later effects of the same card follow
                 if (id == MP.myId) {
                     act.isDone = false;
                     BoardGame.multiplayer.combat.MPFields.Action.sourceCard.set(act, null); // plain local effect now
                     AbstractDungeon.actionManager.addToTop(act);
-                } else {
-                    int saved = giveTarget;
-                    giveTarget = id;
-                    redirectToTeammate(act, card);
-                    giveTarget = saved;
-                }
+                } else sendGive(act, card, id);
             });
             return true;
-        }
+        } else to = giveTargetId();
         if (to == MP.myId) return false;
-        AbstractPlayer me = AbstractDungeon.player;
-        String kind = null;
-        int amount = 0;
-        String power = null;
+        return sendGive(a, card, to);
+    }
+
+    private static boolean sendGive(com.megacrit.cardcrawl.actions.AbstractGameAction a, AbstractCard card, int to) {
+        String kind = giveKind(a, card);
+        if (kind == null) return false;
+        int amount = a.amount;
         try {
-            if (a instanceof com.megacrit.cardcrawl.actions.common.GainBlockAction && a.target == me) {
-                kind = "block";
-                amount = a.amount;
-            } else if (a instanceof com.megacrit.cardcrawl.actions.common.GainEnergyAction) {
-                kind = "energy";
+            if (kind.equals("energy"))
                 amount = (Integer) basemod.ReflectionHacks.getPrivate(a,
                         com.megacrit.cardcrawl.actions.common.GainEnergyAction.class, "energyGain");
-            } else if (a instanceof com.megacrit.cardcrawl.actions.common.DrawCardAction && a.target == me) {
-                kind = "draw";
-                amount = a.amount;
-            } else if (a instanceof com.megacrit.cardcrawl.actions.common.RemoveSpecificPowerAction && a.target == me) {
-                kind = "cleanse";
-            } else if (a instanceof com.megacrit.cardcrawl.actions.common.ApplyPowerAction && a.target == me) {
-                AbstractPower p = basemod.ReflectionHacks.getPrivate(a,
-                        com.megacrit.cardcrawl.actions.common.ApplyPowerAction.class, "powerToApply");
-                kind = "power";
-                amount = a.amount;
-                power = p.getClass().getName();
-            }
         } catch (Throwable t) {
             MP.logger.error("could not redirect", t);
             return false;
         }
-        if (kind == null) return false;
         JsonObject o = MP.msg("give");
         o.addProperty("to", to);
         o.addProperty("kind", kind);
         o.addProperty("amount", amount);
-        if (power != null) o.addProperty("power", power);
         o.addProperty("card", card.name);
         MP.send(o);
         return true;
@@ -401,14 +388,25 @@ public class Session {
 
     private static final java.util.WeakHashMap<com.megacrit.cardcrawl.actions.AbstractGameAction, Boolean> asked =
             new java.util.WeakHashMap<>();
+    /** Recipient picked for a card this play, so all its "any player" effects go to the same player. */
+    private static final java.util.WeakHashMap<AbstractCard, Integer> chosenFor = new java.util.WeakHashMap<>();
 
-    /** Which "give" an action would be, or null if it can't go to another player. */
-    private static String giveKind(com.megacrit.cardcrawl.actions.AbstractGameAction a) {
+    /**
+     * Which "give" this action is, or null. Only the kind of effect the card's own text sends
+     * "to any player" is redirected: Swivel's free Attack, Sentinel's exhaust Energy or Feel No
+     * Pain's Block set off by the card stay with the player who played it.
+     */
+    private static String giveKind(com.megacrit.cardcrawl.actions.AbstractGameAction a, AbstractCard card) {
         AbstractPlayer me = AbstractDungeon.player;
-        if (a instanceof com.megacrit.cardcrawl.actions.common.GainBlockAction && a.target == me) return "block";
-        if (a instanceof com.megacrit.cardcrawl.actions.common.GainEnergyAction) return "energy";
-        if (a instanceof com.megacrit.cardcrawl.actions.common.DrawCardAction && a.target == me) return "draw";
-        if (a instanceof com.megacrit.cardcrawl.actions.common.ApplyPowerAction && a.target == me) return "power";
+        String d = card.rawDescription == null ? "" : card.rawDescription.toLowerCase();
+        if (a instanceof com.megacrit.cardcrawl.actions.common.GainBlockAction && a.target == me
+                && (d.contains("blockicon] to any player") || d.contains("can go to any player"))) return "block";
+        if (a instanceof com.megacrit.cardcrawl.actions.common.GainEnergyAction
+                && d.matches("(?s).*\\[[rgbw]\\]( \\[[rgbw]\\])* to any player.*")) return "energy";
+        if (a instanceof com.megacrit.cardcrawl.actions.common.DrawCardAction && a.target == me
+                && d.contains("any player draws")) return "draw";
+        if (a instanceof com.megacrit.cardcrawl.actions.common.RemoveSpecificPowerAction && a.target == me
+                && d.contains("from any player")) return "cleanse";
         return null;
     }
 
@@ -1076,6 +1074,7 @@ public class Session {
         MP.send(o);
         baseline = MonsterSync.capture();
         giveTarget = -1;
+        chosenFor.clear(); // the next play of the same card asks again
         authorizedItem = null;
         resolving = null;
         resolvingStarted = false;

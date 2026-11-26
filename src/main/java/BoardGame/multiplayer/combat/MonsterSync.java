@@ -60,6 +60,14 @@ public class MonsterSync {
 
     public static void resetIds() {
         nextSpawn = 0;
+        summons = 0;
+    }
+
+    /** Summons so far this fight (every game summons the same enemies in the same order). */
+    private static int summons = 0;
+
+    public static int nextSummon() {
+        return summons++;
     }
 
     public static String nextId() {
@@ -164,6 +172,7 @@ public class MonsterSync {
         }
         root.add("monsters", arr);
         root.addProperty("next", nextSpawn);
+        root.addProperty("sc", summons);
         return root;
     }
 
@@ -339,14 +348,37 @@ public class MonsterSync {
         if (g == null || root == null) return;
         assignIds();
         JsonArray arr = root.getAsJsonArray("monsters");
+        java.util.HashSet<String> theirs = new java.util.HashSet<>();
         for (JsonElement e : arr) {
             JsonObject o = e.getAsJsonObject();
+            theirs.add(o.get("id").getAsString());
             AbstractMonster m = byId(o.get("id").getAsString());
+            // the same id must be the same enemy: if not, this game drifted; take theirs
+            if (m != null && !m.getClass().getName().equals(o.get("cls").getAsString())) {
+                MP.logger.info("enemy " + id(m) + " was " + m.getClass().getSimpleName() + " here; replacing");
+                g.monsters.remove(m);
+                m = null;
+            }
             if (m == null) m = spawn(o);
             if (m == null) continue;
+            if (o.has("row") && row(m) != o.get("row").getAsInt()) {
+                MultiCreature.Field.currentRow.set(m, o.get("row").getAsInt());
+                applyLayout(m);
+            }
             applyMonster(m, o, showEffects);
         }
         if (root.has("next")) nextSpawn = Math.max(nextSpawn, root.get("next").getAsInt());
+        // enemies this game has that the sender doesn't, although the sender has seen at least as
+        // many summons, are leftovers of a drift: remove them
+        if (root.has("sc") && root.get("sc").getAsInt() >= summons) {
+            summons = root.get("sc").getAsInt();
+            for (AbstractMonster m : new ArrayList<>(g.monsters)) {
+                if (id(m) != null && !theirs.contains(id(m)) && !m.isDying && !m.isDead) {
+                    MP.logger.info("removing stale enemy " + id(m) + " " + m.getClass().getSimpleName());
+                    g.monsters.remove(m);
+                }
+            }
+        }
         reorder(arr);
         afterApply();
     }
@@ -496,6 +528,7 @@ public class MonsterSync {
         Random[] rngs = {AbstractDungeon.aiRng, AbstractDungeon.monsterHpRng, AbstractDungeon.monsterRng,
                 AbstractDungeon.miscRng};
         long[][] saved = RngSync.save(rngs);
+        java.util.Map<java.lang.reflect.Field, ArrayList<Object>> pools = savePools();
         try {
             Class<?> c = Class.forName(cls, true, MonsterSync.class.getClassLoader());
             AbstractMonster m = null;
@@ -532,6 +565,38 @@ public class MonsterSync {
             return null;
         } finally {
             RngSync.restore(rngs, saved);
+            restorePools(pools);
+        }
+    }
+
+    /** Copies of the dungeons' static summon pools (constructors draw from them). */
+    @SuppressWarnings("unchecked")
+    private static java.util.Map<java.lang.reflect.Field, ArrayList<Object>> savePools() {
+        java.util.Map<java.lang.reflect.Field, ArrayList<Object>> out = new java.util.HashMap<>();
+        Class<?>[] ds = {BoardGame.dungeons.BGExordium.class, BoardGame.dungeons.BGTheCity.class,
+                BoardGame.dungeons.BGTheBeyond.class, BoardGame.dungeons.BGTheEnding.class};
+        for (Class<?> c : ds) for (java.lang.reflect.Field f : c.getDeclaredFields()) {
+            if (!java.lang.reflect.Modifier.isStatic(f.getModifiers()) || !java.util.List.class.isAssignableFrom(f.getType())
+                    || !f.getName().toLowerCase().contains("pool")) continue;
+            try {
+                f.setAccessible(true);
+                Object v = f.get(null);
+                if (v != null) out.put(f, new ArrayList<>((java.util.List<Object>) v));
+            } catch (Throwable ignored) {
+            }
+        }
+        return out;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void restorePools(java.util.Map<java.lang.reflect.Field, ArrayList<Object>> pools) {
+        for (java.util.Map.Entry<java.lang.reflect.Field, ArrayList<Object>> e : pools.entrySet()) {
+            try {
+                java.util.List<Object> l = (java.util.List<Object>) e.getKey().get(null);
+                l.clear();
+                l.addAll(e.getValue());
+            } catch (Throwable ignored) {
+            }
         }
     }
 

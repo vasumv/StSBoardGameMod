@@ -141,6 +141,22 @@ public class MPHooks {
         }
     }
 
+    /** Actions an enemy queues before the fight (Mad Gremlin's two gremlins) come from that enemy. */
+    @SpirePatch2(clz = com.megacrit.cardcrawl.monsters.MonsterGroup.class, method = "usePreBattleAction")
+    public static class PreBattleSource {
+        @SpireInstrumentPatch
+        public static ExprEditor edit() {
+            return new ExprEditor() {
+                @Override
+                public void edit(MethodCall m) throws CannotCompileException {
+                    if (m.getMethodName().equals("usePreBattleAction"))
+                        m.replace("{ BoardGame.multiplayer.combat.MPHooks.actingMonster = $0; $_ = $proceed($$);"
+                                + " BoardGame.multiplayer.combat.MPHooks.actingMonster = null; }");
+                }
+            };
+        }
+    }
+
     @SpirePatch2(clz = com.megacrit.cardcrawl.characters.AbstractPlayer.class, method = "useCard")
     public static class TrackCardUse {
         @SpirePrefixPatch
@@ -458,11 +474,15 @@ public class MPHooks {
             if (!multi() || ___used || ___m == null || !MonsterSync.active()) return;
             AbstractMonster src = MPFields.Action.sourceMonster.get(__instance);
             int n = MP.playerCount();
+            int k = MonsterSync.nextSummon(); // counts summons this fight: identical in every game
             int row;
+            // a normal enemy summons into its own row; elites/bosses spread summons over the rows in turn
             if (src == null || src.type == AbstractMonster.EnemyType.BOSS || src.type == AbstractMonster.EnemyType.ELITE)
-                row = AbstractDungeon.getCurrRoom().monsters.monsters.size() % n; // same in every game
+                row = k % n;
             else row = MonsterSync.row(src);
             MultiCreature.Field.currentRow.set(___m, row);
+            // the id is fixed now, the same in every game (not later, whenever a game next captures)
+            MPFields.Monster.id.set(___m, "s" + k);
         }
     }
 
