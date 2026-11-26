@@ -67,6 +67,7 @@ public class DebugChannel {
                     case "chooserelic": BoardGame.multiplayer.MP.setChooseRelic(on); break;
                     case "sequential": BoardGame.multiplayer.MP.setSequential(on); break;
                     case "finalact": BoardGame.multiplayer.MP.forceFinalAct = on; break;
+                    case "asc": BoardGame.multiplayer.MP.setAscension(Integer.parseInt(a[2])); return "ascension " + a[2];
                     default: return "unknown rule";
                 }
                 return "rule " + a[1] + " " + on;

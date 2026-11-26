@@ -65,6 +65,11 @@ public class BGSpireShield extends AbstractBGMonster implements BGDamageIcons {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        if (BoardGame.multiplayer.MP.inRun && BoardGame.multiplayer.MP.playerCount() > 1) {
+            // every player faces these enemies (not just the Shield's row): give it to this game's player directly
+            if (!AbstractDungeon.player.hasPower(BGSurroundedPower.POWER_ID))
+                AbstractDungeon.player.addPower(new BGSurroundedPower(AbstractDungeon.player));
+        } else
         AbstractDungeon.actionManager.addToBottom(new ApplyPowerAction( AbstractDungeon.player,  this,
                 new BGSurroundedPower( AbstractDungeon.player)));
         AbstractDungeon.actionManager.addToBottom(new ApplyPowerAction( this,  this,

@@ -18,8 +18,12 @@ def q(p, cmd, wait=0.2):
 
 
 def phase(p):
-    m = re.search(r"phase=([A-Z]+)", q(p, "mp map"))
-    return m.group(1) if m else "?"
+    for _ in range(5):  # a slow answer must not look like "the fight is over"
+        m = re.search(r"phase=([A-Z]+)", q(p, "mp map"))
+        if m:
+            return m.group(1)
+        time.sleep(1)
+    return "COMBAT"
 
 
 def nxt():
@@ -110,8 +114,13 @@ def fight():
 
 
 floors = int(sys.argv[1]) if len(sys.argv) > 1 else 16
+act4 = len(sys.argv) > 2 and sys.argv[2] == "act4"
+last_kind = ""
 for f in range(floors):
     n = nxt()
+    if not n and "MonsterRoomBoss" in last_kind and act4:
+        print("run over (Act 4 boss)", flush=True)
+        break
     if not n:
         for p in ("p1", "p2"):
             q(p, "proceed")
@@ -124,6 +133,7 @@ for f in range(floors):
             print("floor %d: no next room" % f, flush=True)
             break
     xy, kind = n.split("=")
+    last_kind = kind
     x, y = xy.split(",")
     q("p1", "mp vote %s %s" % (x, y))
     q("p2", "mp vote %s %s" % (x, y))
