@@ -146,6 +146,20 @@ public class DiePhase {
 
     // ---------------- confirming ----------------
 
+    /** Every frame: with nothing that can change the die, there's nothing to decide. */
+    public static void autoKeep() {
+        if (deciding() && !iConfirmed() && AbstractDungeon.player != null
+                && !(autoSentKey == roundKey && autoSentVersion == dieVersion)
+                && !BoardGame.ui.LockInRollButton.playerHasAnyDieChangingAbilities()) {
+            autoSentKey = roundKey; // once per number (the lock takes a moment to come back)
+            autoSentVersion = dieVersion;
+            confirm();
+        }
+    }
+
+    private static long autoSentKey = -1;
+    private static int autoSentVersion = -1, dieVersion = 0;
+
     /** Local player accepts the current number (button, potion, end turn...). */
     public static void confirm() {
         if (!deciding() || iConfirmed()) return;
@@ -159,6 +173,7 @@ public class DiePhase {
         if (type.equals("die")) {
             int v = m.get("v").getAsInt();
             locks.remove(key); // a new number: everyone confirms again
+            dieVersion++;
             if (key == roundKey && !decided) {
                 if (TheDie.monsterRoll != v) applyValue(v);
                 // someone else's change is the new starting point for your own Abacus/Toolbox, and must

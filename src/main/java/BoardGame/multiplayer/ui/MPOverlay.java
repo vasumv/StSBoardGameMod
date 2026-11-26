@@ -126,6 +126,7 @@ public class MPOverlay implements PostRenderSubscriber {
         RelicPicker.update();
         ChoicePrompt.update();
         PartyEventUI.update();
+        BoardGame.multiplayer.combat.DiePhase.autoKeep();
         BoardGame.multiplayer.combat.IntentDetails.update();
         if (BoardGame.multiplayer.combat.DiePhase.rollAnim > 0)
             BoardGame.multiplayer.combat.DiePhase.rollAnim -= Gdx.graphics.getDeltaTime();
