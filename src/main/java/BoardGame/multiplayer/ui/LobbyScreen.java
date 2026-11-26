@@ -207,7 +207,7 @@ public class LobbyScreen {
         if (MP.isHost()) {
             if (button(sb, clicked, x + 420, y + 30, 420, 56, "Last Stand (optional rule): " + (MP.lastStand ? "On" : "Off"),
                     MP.lastStand)) MP.setLastStand(!MP.lastStand);
-            if (button(sb, clicked, x, y + 94, 400, 50, "Sequential Turns: " + (MP.sequential ? "On" : "Off"),
+            if (button(sb, clicked, x, y + 94, 400, 50, "Sequential Turns (experimental): " + (MP.sequential ? "On" : "Off"),
                     MP.sequential)) MP.setSequential(!MP.sequential);
             if (button(sb, clicked, x + 420, y + 94, 420, 50, "Choose Your Relic (optional rule): "
                     + (MP.chooseRelic ? "On" : "Off"), MP.chooseRelic)) MP.setChooseRelic(!MP.chooseRelic);

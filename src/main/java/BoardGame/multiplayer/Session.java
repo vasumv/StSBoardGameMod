@@ -62,11 +62,30 @@ public class Session {
         public final long playId;
         public final String label;
         public final StateSnapshot before;
+        /** Party state the game snapshot doesn't cover: rows (Dash/Leap row switches) and the
+         *  last teammate Attack (Foreign Influence). */
+        final java.util.HashMap<Integer, Integer> rows = new java.util.HashMap<>();
+        final String lastOtherAttack, lastOtherAttackBy;
+        final boolean lastOtherAttackUpgraded;
 
         Step(long playId, String label, StateSnapshot before) {
             this.playId = playId;
             this.label = label;
             this.before = before;
+            for (MP.Player p : MP.players) rows.put(p.id, p.row);
+            lastOtherAttack = BoardGame.multiplayer.combat.OtherPlayers.lastOtherAttack;
+            lastOtherAttackBy = BoardGame.multiplayer.combat.OtherPlayers.lastOtherAttackBy;
+            lastOtherAttackUpgraded = BoardGame.multiplayer.combat.OtherPlayers.lastOtherAttackUpgraded;
+        }
+
+        void restoreParty() {
+            for (MP.Player p : MP.players) {
+                Integer r = rows.get(p.id);
+                if (r != null) p.row = r;
+            }
+            BoardGame.multiplayer.combat.OtherPlayers.lastOtherAttack = lastOtherAttack;
+            BoardGame.multiplayer.combat.OtherPlayers.lastOtherAttackBy = lastOtherAttackBy;
+            BoardGame.multiplayer.combat.OtherPlayers.lastOtherAttackUpgraded = lastOtherAttackUpgraded;
         }
     }
 
@@ -1252,6 +1271,7 @@ public class Session {
             Step s = steps.get(idx);
             while (steps.size() > idx) steps.remove(steps.size() - 1);
             UndoManager.restore(s.before, "Rolled back to before " + s.label);
+            s.restoreParty();
         }
         myInflight.clear();
         includedDeltas.clear();

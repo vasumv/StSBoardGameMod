@@ -162,7 +162,7 @@ public class MPOverlay implements PostRenderSubscriber {
             return;
         }
         if (BoardGame.multiplayer.combat.DiePhase.deciding() && !BoardGame.multiplayer.combat.DiePhase.iConfirmed()
-                && keepBtn.clicked()) {
+                && !acceptRollShown() && keepBtn.clicked()) {
             BoardGame.multiplayer.combat.DiePhase.confirm();
             return;
         }
@@ -364,7 +364,7 @@ public class MPOverlay implements PostRenderSubscriber {
                 extraColor.add(Settings.GREEN_TEXT_COLOR);
             }
         }
-        boolean showKeep = deciding && !BoardGame.multiplayer.combat.DiePhase.iConfirmed();
+        boolean showKeep = deciding && !BoardGame.multiplayer.combat.DiePhase.iConfirmed() && !acceptRollShown();
         float lh = 22f;
         float h1080 = 56 + extra.size() * lh + (showKeep ? 44 : 0);
         dieBottom1080 = DIE_TOP + h1080;
@@ -390,6 +390,16 @@ public class MPOverlay implements PostRenderSubscriber {
             keepBtn.y = DIE_TOP + 56 + extra.size() * lh + 2;
             keepBtn.text = "Keep " + v;
             keepBtn.render(sb);
+        }
+    }
+
+    /** The board game's own Accept Roll button (players with Abacus etc.) does the same thing. */
+    private static boolean acceptRollShown() {
+        try {
+            return BoardGame.ui.OverlayMenuPatches.OverlayMenuExtraInterface.lockinrollbutton
+                    .get(AbstractDungeon.overlayMenu).visible;
+        } catch (Throwable t) {
+            return false;
         }
     }
 
