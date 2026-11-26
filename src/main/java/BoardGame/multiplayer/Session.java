@@ -1290,7 +1290,7 @@ public class Session {
             if (x.name == null || x.name.isEmpty()) continue;
             pw.append(x.name).append(x.amount != 0 && x.amount != -1 ? " " + x.amount : "").append(", ");
         }
-        String where = AbstractDungeon.getCurrRoom() == null ? "" : AbstractDungeon.getCurrRoom().getClass().getSimpleName();
+        String where = AbstractDungeon.currMapNode == null || AbstractDungeon.getCurrRoom() == null ? "" : AbstractDungeon.getCurrRoom().getClass().getSimpleName();
         String s = p.currentHealth + "/" + p.maxHealth + "/" + p.currentBlock + "/" + EnergyPanel.totalCount + "/"
                 + p.hand.size() + "/" + pw + "/" + p.gold + "/" + where + "/"
                 + BoardGame.multiplayer.ui.TeammateDecks.encode(p) + "/"

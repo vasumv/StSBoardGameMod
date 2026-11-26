@@ -42,17 +42,23 @@ reference implementation: `reference/enemy_audit.md`, `reference/enemy_mp_data.j
 
 ## Known gaps
 
-- Not yet run in game: Steam lobbies (needs two Steam accounts), the optional rules
-  (Last Stand, Choose Your Relic, Sequential Turns), cross-player cards/potions/relics,
-  the party events, shared merchant purchases, boss relic claims, keys and Act 4.
-  The automated walk skips rooms and kills enemies directly, so card-by-card combat
-  in Acts 2-3 has only been exercised through the shared-state checks.
-- Steam: accepting an invite while the game is closed may not join automatically
-  (ModTheSpire may not pass +connect_lobby); start the game first, then accept.
-- Sequential Turns is approximate: everyone's start-of-turn draw still happens at the
+- Not yet run in game: Steam lobbies with real accounts beyond one session, Last Stand,
+  Choose Your Relic, keys and Act 4, most party events (Lab, Big Fish, Temple, Dead
+  Adventurer) and boss relic picks.
+- Sequential Turns is experimental: everyone's start-of-turn draw still happens at the
   start of the round.
-- The host is the hub: if the host disconnects, the run cannot continue; use Continue
-  saved run.
+- If two players pick the same character they each get a full reward deck (the board
+  game has one physical deck per character).
+- The host is the hub: if the host disconnects, use Continue saved run (the host keeps
+  everyone's latest save).
+
+## Tested in two game copies (2026-11-25)
+
+Full Acts 1-3 walk in sync (incl. Gremlin Gang, Gremlin Leader, Slime Boss, Champ,
+Donu/Deca); Neow wait for everyone; shared colorless deck and shop purchases; die
+auto-keep and Abacus change; Predator and Dodge and Roll recipients; teammate hand and
+deck views; orb end-of-turn order and highlight; Gremlin Leader revive; Continue with a
+player's local saves deleted (restored from the host's copies); reconnect.
 
 ## What the code investigation found
 
