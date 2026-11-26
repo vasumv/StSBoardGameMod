@@ -240,7 +240,9 @@ public class DiePhase {
             }
             if (q == null || q.isEmpty()) continue;
             if (mine.length() > 0) mine.append(", ");
-            mine.append(rel.name).append(" (").append(q.replaceAll("#[a-z]", "")).append(")");
+            q = q.replaceAll("#[a-z]", "").replaceAll("\\[[A-Z]\\]", "Energy")
+                    .replaceAll("\\[BoardGame:([A-Za-z]+?)(Icon)?\\]", "$1");
+            mine.append(rel.name).append(" (").append(q).append(")");
         }
         return mine.toString();
     }

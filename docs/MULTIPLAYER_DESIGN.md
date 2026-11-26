@@ -42,8 +42,7 @@ reference implementation: `reference/enemy_audit.md`, `reference/enemy_mp_data.j
 
 ## Known gaps
 
-- Not yet run in game: Steam lobby codes with real accounts, Last Stand, Choose Your
-  Relic, keys and Act 4, Temple-style events beyond Act 1, Mind Bloom's solo boss fight.
+- Not yet run in game: Steam lobby codes with real accounts, keys and Act 4.
 - Sequential Turns is experimental: everyone's start-of-turn draw still happens at the
   start of the round.
 - If two players pick the same character they each get a full reward deck (the board
@@ -68,7 +67,10 @@ player's local saves deleted (restored from the host's copies); reconnect.
 taken one disappears for the other); Lab, Big Fish, Ancient Temple; party die in Lab (Abacus)
 and Dead Adventurer (Gambling Chip, Gambler's Brew, host picks the relic's owner); Mausoleum
 die panel; Party panel (gold, potions) and gold unlocking Cleric options; A Note for Yourself
-Exchange; Colosseum as a shared party fight; boss-chest crash fix.
+Exchange; Colosseum as a shared party fight; boss-chest crash fix; party defeat when a player
+dies (was broken) and Last Stand in a boss fight (survivor wins, run ends); Choose Your Relic in
+a treasure room; Wheel of Change die faces with The Abacus; combat die relic previews; Mind
+Bloom's solo boss fight. Recorded an autoplayed Act 1 (scripts/record_act.sh).
 
 ## What the code investigation found
 
