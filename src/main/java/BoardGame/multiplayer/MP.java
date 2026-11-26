@@ -156,6 +156,8 @@ public class MP {
     private static String joinedAddress;
     private static int joinedPort;
     public static volatile boolean reconnecting = false;
+    /** Act 4 (keys, burning elites) on for the party: the host's setting, so every map matches. */
+    public static boolean finalAct = false;
     private static boolean viaSteam = false;
 
     private static void startReconnect() {
@@ -299,6 +301,12 @@ public class MP {
         o.addProperty("lastStand", lastStand);
         o.addProperty("chooseRelic", chooseRelic);
         o.addProperty("sequential", sequential);
+        boolean wasInRun = inRun;
+        inRun = false;
+        com.megacrit.cardcrawl.core.Settings.setFinalActAvailability(); // the host's own unlock
+        inRun = wasInRun;
+        finalAct = com.megacrit.cardcrawl.core.Settings.isFinalActAvailable;
+        o.addProperty("finalAct", finalAct);
         JsonArray roster = new JsonArray();
         int row = 0;
         for (Player p : players) {
@@ -386,7 +394,7 @@ public class MP {
             if (n <= lastSeq) return; // already seen (replay overlap)
             lastSeq = n;
         }
-        if (!t.equals("status")) {
+        if (!t.equals("status") && !t.equals("partysave") && !t.equals("yoursave")) {
             String txt = m.toString();
             logger.info("[mp] " + (txt.length() > 400 ? txt.substring(0, 400) + "..." : txt));
         }
@@ -435,6 +443,12 @@ public class MP {
                 readRoster(m.getAsJsonArray("roster"));
                 return;
             }
+            case "partysave":
+                PartySaves.store(m);
+                return;
+            case "yoursave":
+                PartySaves.receive(m);
+                return;
             case "continueask":
             case "continueok":
             case "continueno":
@@ -473,6 +487,7 @@ public class MP {
                 lastStand = m.has("lastStand") && m.get("lastStand").getAsBoolean();
                 chooseRelic = m.has("chooseRelic") && m.get("chooseRelic").getAsBoolean();
                 sequential = m.has("sequential") && m.get("sequential").getAsBoolean();
+                finalAct = m.has("finalAct") && m.get("finalAct").getAsBoolean();
                 if (com.megacrit.cardcrawl.core.CardCrawlGame.mode != com.megacrit.cardcrawl.core.CardCrawlGame.GameMode.CHAR_SELECT
                         || com.megacrit.cardcrawl.core.CardCrawlGame.isInARun()) {
                     lastError = "The host started the run while you were not at the main menu";

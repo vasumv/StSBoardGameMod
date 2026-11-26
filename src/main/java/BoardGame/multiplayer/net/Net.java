@@ -225,6 +225,11 @@ public class Net {
                 return;
             }
             if (t.equals("ping")) return;
+            if (t.equals("partysave")) { // for the host only: not shared, not kept in the history
+                o.addProperty("from", p.id);
+                inbox.add(o);
+                return;
+            }
             if (t.equals("knock")) {
                 welcome(p); // Steam: answer with the connection id; the player then says hello or resume
                 return;
@@ -289,6 +294,18 @@ public class Net {
             }
             for (Peer p : peers) p.write(line);
             inbox.add(o);
+        }
+    }
+
+    /** Host: a message for one player only (not part of the shared stream). */
+    public static void sendDirect(int playerId, JsonObject o) {
+        if (!host) return;
+        if (playerId == 0) {
+            inbox.add(o);
+            return;
+        }
+        synchronized (stampLock) {
+            for (Peer p : peers) if (p.id == playerId) p.write(o.toString());
         }
     }
 

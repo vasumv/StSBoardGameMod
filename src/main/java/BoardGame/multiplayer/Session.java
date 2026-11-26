@@ -334,8 +334,32 @@ public class Session {
 
     /** For "to any player" cards aimed at a teammate: send the effect over instead of applying it here. */
     public static boolean redirectToTeammate(com.megacrit.cardcrawl.actions.AbstractGameAction a, AbstractCard card) {
+        if (!givesToAnyPlayer(card)) return false;
         int to = giveTargetId();
-        if (to == MP.myId || !givesToAnyPlayer(card)) return false;
+        // Cards dragged onto an enemy (Predator: "Any player draws 2") can't be dropped on a
+        // teammate, so ask who gets the effect.
+        boolean aimedAtEnemy = card.target == AbstractCard.CardTarget.ENEMY
+                || card.target == AbstractCard.CardTarget.ALL_ENEMY
+                || card.target == AbstractCard.CardTarget.SELF_AND_ENEMY;
+        if (aimedAtEnemy && giveTarget < 0 && !MP.players.isEmpty() && MP.playerCount() > 1
+                && !Boolean.TRUE.equals(asked.get(a)) && giveKind(a) != null) {
+            asked.put(a, Boolean.TRUE);
+            final com.megacrit.cardcrawl.actions.AbstractGameAction act = a;
+            BoardGame.multiplayer.combat.OtherPlayers.askRecipient(card.name + ": who gets this?", id -> {
+                if (id == MP.myId) {
+                    act.isDone = false;
+                    BoardGame.multiplayer.combat.MPFields.Action.sourceCard.set(act, null); // plain local effect now
+                    AbstractDungeon.actionManager.addToTop(act);
+                } else {
+                    int saved = giveTarget;
+                    giveTarget = id;
+                    redirectToTeammate(act, card);
+                    giveTarget = saved;
+                }
+            });
+            return true;
+        }
+        if (to == MP.myId) return false;
         AbstractPlayer me = AbstractDungeon.player;
         String kind = null;
         int amount = 0;
@@ -373,6 +397,19 @@ public class Session {
         o.addProperty("card", card.name);
         MP.send(o);
         return true;
+    }
+
+    private static final java.util.WeakHashMap<com.megacrit.cardcrawl.actions.AbstractGameAction, Boolean> asked =
+            new java.util.WeakHashMap<>();
+
+    /** Which "give" an action would be, or null if it can't go to another player. */
+    private static String giveKind(com.megacrit.cardcrawl.actions.AbstractGameAction a) {
+        AbstractPlayer me = AbstractDungeon.player;
+        if (a instanceof com.megacrit.cardcrawl.actions.common.GainBlockAction && a.target == me) return "block";
+        if (a instanceof com.megacrit.cardcrawl.actions.common.GainEnergyAction) return "energy";
+        if (a instanceof com.megacrit.cardcrawl.actions.common.DrawCardAction && a.target == me) return "draw";
+        if (a instanceof com.megacrit.cardcrawl.actions.common.ApplyPowerAction && a.target == me) return "power";
+        return null;
     }
 
     private static void receiveGive(int from, JsonObject m) {
@@ -584,6 +621,9 @@ public class Session {
                 return;
             case "neowstart":
                 BoardGame.neow.BGNeowEvent.onPartyStart(from, m);
+                return;
+            case "neowready":
+                BoardGame.neow.BGNeowEvent.neowReady.add(from);
                 return;
             case "relicreveal":
             case "relicpick":

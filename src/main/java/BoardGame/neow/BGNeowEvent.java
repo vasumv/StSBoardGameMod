@@ -302,6 +302,37 @@ public class BGNeowEvent
     public static boolean partyDriven = false;
     private static boolean toldWaiting = false;
     private static int pendingStart = -1;
+    /** Players who finished their Neow blessing (reached the "where to start" choice). */
+    public static final java.util.HashSet<Integer> neowReady = new java.util.HashSet<>();
+    private static boolean sentReady = false;
+
+    public static void resetParty() {
+        neowReady.clear();
+        sentReady = false;
+        toldWaiting = false;
+        pendingStart = -1;
+        partyDriven = false;
+    }
+
+    /** Every frame: tell the party once this game has finished its blessing. */
+    public static void checkReady() {
+        if (sentReady || !BoardGame.multiplayer.MP.inRun || AbstractDungeon.getCurrRoom() == null
+                || !(AbstractDungeon.getCurrRoom().event instanceof BGNeowEvent)) return;
+        if (((BGNeowEvent) AbstractDungeon.getCurrRoom().event).screenNum != 99) return;
+        sentReady = true;
+        BoardGame.multiplayer.MP.send(BoardGame.multiplayer.MP.msg("neowready"));
+    }
+
+    /** Names of connected players still choosing their blessing. */
+    public static String waitingFor() {
+        StringBuilder sb = new StringBuilder();
+        for (BoardGame.multiplayer.MP.Player p : BoardGame.multiplayer.MP.players) {
+            if (!p.connected || p.dead || neowReady.contains(p.id)) continue;
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(p.id == BoardGame.multiplayer.MP.myId ? "you" : p.name);
+        }
+        return sb.toString();
+    }
 
     public static void onPartyStart(int from, com.google.gson.JsonObject m) {
         if (BoardGame.multiplayer.MP.isHost()) return;
@@ -430,6 +461,10 @@ public class BGNeowEvent
                             toldWaiting = true;
                             BoardGame.multiplayer.Session.toast("The host chooses where the party starts");
                         }
+                        return;
+                    }
+                    if (BoardGame.multiplayer.MP.isHost() && !waitingFor().isEmpty()) {
+                        BoardGame.multiplayer.Session.toast("Wait: " + waitingFor() + " still choosing a Neow blessing");
                         return;
                     }
                     if (BoardGame.multiplayer.MP.isHost()) {

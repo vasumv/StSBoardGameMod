@@ -38,6 +38,7 @@ public class PartyEventUI {
 
     public static void update() {
         banner = null;
+        BGNeowEvent.checkReady();
         if (!multi()) return;
         AbstractEvent ev = AbstractDungeon.getCurrRoom().event;
         if (ev == null) return;
@@ -45,8 +46,13 @@ public class PartyEventUI {
         if (ev instanceof BGNeowEvent) {
             Integer screen = ReflectionHacks.getPrivate(ev, BGNeowEvent.class, "screenNum");
             partyChoice = screen != null && screen == 99;
-            if (partyChoice) banner = MP.isHost() ? "Party decision: you choose where the party starts"
+            String waiting = BGNeowEvent.waitingFor();
+            if (partyChoice) banner = MP.isHost()
+                    ? (waiting.isEmpty() ? "Party decision: you choose where the party starts"
+                    : "Waiting for " + waiting + " to finish choosing a Neow blessing")
                     : "Party decision: " + hostName() + " chooses where the party starts";
+            if (partyChoice && MP.isHost() && !waiting.isEmpty())
+                for (LargeDialogOptionButton b : RoomEventDialog.optionList) b.isDisabled = true;
         } else if (ev instanceof BGDeadAdventurer && AbstractDungeon.floorNum != 2) {
             partyChoice = true;
             banner = MP.isHost() ? "Party decision: you choose for everyone (one roll for the party)"

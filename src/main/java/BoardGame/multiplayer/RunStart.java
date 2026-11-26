@@ -31,6 +31,7 @@ public class RunStart {
      * same state, whatever they played before, or maps and enemies differ between games.
      */
     public static void resetModStatics() {
+        BoardGame.neow.BGNeowEvent.resetParty();
         Class<?>[] dungeons = {BoardGame.dungeons.BGExordium.class, BoardGame.dungeons.BGTheCity.class,
                 BoardGame.dungeons.BGTheBeyond.class, BoardGame.dungeons.BGTheEnding.class};
         for (Class<?> c : dungeons) {
@@ -65,6 +66,7 @@ public class RunStart {
         }
         Settings.seed = MP.seed;
         Settings.seedSet = true;
+        Settings.isFinalActAvailable = MP.finalAct; // per-computer unlock otherwise: maps would differ
         Settings.specialSeed = null;
         Settings.isTrial = false;
         Settings.isDailyRun = false;
@@ -106,6 +108,15 @@ public class RunStart {
                     "hb");
             hb.clicked = true;
             selectStage = 2;
+        }
+    }
+
+    /** Each computer decides Act 4 from its own unlocks; in a party everyone uses the host's. */
+    @com.evacipated.cardcrawl.modthespire.lib.SpirePatch2(clz = Settings.class, method = "setFinalActAvailability")
+    public static class PartyFinalAct {
+        @com.evacipated.cardcrawl.modthespire.lib.SpirePostfixPatch
+        public static void postfix() {
+            if (MP.inRun) Settings.isFinalActAvailable = MP.finalAct;
         }
     }
 }

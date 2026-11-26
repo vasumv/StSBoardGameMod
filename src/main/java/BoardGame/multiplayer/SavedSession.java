@@ -36,6 +36,7 @@ public class SavedSession {
             o.addProperty("lastStand", MP.lastStand);
             o.addProperty("chooseRelic", MP.chooseRelic);
             o.addProperty("sequential", MP.sequential);
+            o.addProperty("finalAct", MP.finalAct);
             o.addProperty("lastStandUsed", Session.lastStandUsed);
             file().writeString(o.toString(), false);
         } catch (Throwable t) {
@@ -78,6 +79,7 @@ public class SavedSession {
     // Continue is two-phase: the host asks, everyone checks their own save, and only when
     // every player has a matching save (same run, same act and floor) does anyone load.
     private static final java.util.HashSet<Integer> okFrom = new java.util.HashSet<>();
+    private static final java.util.HashMap<Integer, String> okNames = new java.util.HashMap<>();
     private static JsonObject asking;
 
     /** Host: offer the saved run to everyone in the lobby. */
@@ -85,6 +87,7 @@ public class SavedSession {
         JsonObject s = read();
         if (s == null || !MP.isHost()) return;
         okFrom.clear();
+        okNames.clear();
         asking = s;
         JsonObject o = MP.msg("continueask");
         o.add("save", s);
@@ -100,25 +103,43 @@ public class SavedSession {
     public static void onMessage(String t, int from, JsonObject m) {
         switch (t) {
             case "continueask": {
+                PartySaves.received = null;
                 boolean ok = matches(read(), m.getAsJsonObject("save"));
-                JsonObject r = MP.msg(ok ? "continueok" : "continueno");
+                JsonObject r = MP.msg("continueok");
+                r.addProperty("has", ok);
+                r.addProperty("name", MP.myName);
                 MP.send(r);
                 return;
             }
-            case "continueok":
+            case "continueno": // older versions
+            case "continueok": {
                 if (!MP.isHost() || asking == null) return;
+                MP.Player pl = MP.player(from);
+                String name = m.has("name") ? m.get("name").getAsString() : pl == null ? "" : pl.name;
+                boolean has = m.has("has") ? m.get("has").getAsBoolean() : t.equals("continueok");
+                if (!has && PartySaves.savedFor(name, asking) == null) {
+                    asking = null;
+                    Session.toast(name + " has no save of this run at this room, and the host has none"
+                            + " for them either: can't continue");
+                    return;
+                }
                 okFrom.add(from);
+                okNames.put(from, name);
                 for (MP.Player p : MP.players) if (p.connected && !okFrom.contains(p.id)) return;
+                // hand everyone their save from the host's copies (the latest one each game sent)
+                for (java.util.Map.Entry<Integer, String> e : okNames.entrySet()) {
+                    JsonObject s = PartySaves.savedFor(e.getValue(), asking);
+                    if (s == null || e.getKey() == MP.myId) continue;
+                    JsonObject y = new JsonParser().parse(s.toString()).getAsJsonObject();
+                    y.addProperty("t", "yoursave");
+                    BoardGame.multiplayer.net.Net.sendDirect(e.getKey(), y);
+                }
                 JsonObject go = MP.msg("continuego");
                 go.add("save", asking);
                 asking = null;
                 MP.send(go);
                 return;
-            case "continueno":
-                if (MP.isHost()) asking = null;
-                Session.toast(Session.nameOf(from) + " doesn't have a save of this run at the same room;"
-                        + " can't continue it together");
-                return;
+            }
             case "continuego":
                 onContinue(m);
                 return;
@@ -129,19 +150,36 @@ public class SavedSession {
     public static void onContinue(JsonObject m) {
         JsonObject hostSave = m.getAsJsonObject("save");
         JsonObject mine = read();
-        if (!matches(mine, hostSave)) {
+        JsonObject fromHost = PartySaves.received;
+        PartySaves.received = null;
+        if (fromHost == null && MP.isHost() && !matches(mine, hostSave)) { // host lost its own save
+            JsonObject s = PartySaves.savedFor(MP.myName, hostSave);
+            if (s != null) {
+                PartySaves.receive(s);
+                fromHost = PartySaves.received;
+                PartySaves.received = null;
+            }
+        }
+        if (fromHost == null && !matches(mine, hostSave)) {
             Session.toast("You don't have a save of this run; can't continue it");
             MP.leave();
             return;
         }
         RunStart.resetModStatics();
-        int savedId = mine.get("me").getAsInt();
+        // my id in the saved party: by name (join order may differ this time), else my own record
+        int savedId = mine != null && matches(mine, hostSave) ? mine.get("me").getAsInt() : MP.myId;
+        for (JsonElement e : hostSave.getAsJsonArray("roster")) {
+            JsonObject pj = e.getAsJsonObject();
+            if (pj.get("name").getAsString().equals(MP.myName)) savedId = pj.get("id").getAsInt();
+        }
+        if (MP.isHost()) savedId = 0;
         if (!MP.isHost()) MP.claimId(savedId);
         MP.seed = hostSave.get("seed").getAsLong();
         MP.ascension = hostSave.get("asc").getAsInt();
         MP.lastStand = hostSave.has("lastStand") && hostSave.get("lastStand").getAsBoolean();
         MP.chooseRelic = hostSave.has("chooseRelic") && hostSave.get("chooseRelic").getAsBoolean();
         MP.sequential = hostSave.has("sequential") && hostSave.get("sequential").getAsBoolean();
+        MP.finalAct = hostSave.has("finalAct") && hostSave.get("finalAct").getAsBoolean();
         MP.players.clear();
         for (JsonElement e : hostSave.getAsJsonArray("roster")) {
             JsonObject pj = e.getAsJsonObject();
@@ -166,6 +204,9 @@ public class SavedSession {
                 BoardGame.characters.BGIronclad.Enums.BG_IRONCLAD, BoardGame.characters.BGSilent.Enums.BG_SILENT,
                 BoardGame.characters.BGDefect.Enums.BG_DEFECT, BoardGame.characters.BGWatcher.Enums.BG_WATCHER};
         CardCrawlGame.chosenCharacter = classes[Math.max(0, Math.min(3, ch))];
+        if (fromHost != null)
+            CardCrawlGame.chosenCharacter = com.megacrit.cardcrawl.characters.AbstractPlayer.PlayerClass
+                    .valueOf(fromHost.get("cls").getAsString());
         CardCrawlGame.mainMenuScreen.isFadingOut = true;
         CardCrawlGame.mainMenuScreen.fadeOutMusic();
         Settings.isDailyRun = false;
