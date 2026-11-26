@@ -22,6 +22,10 @@ public class BGSurroundedAction extends AbstractGameAction {
     @Override
     public void update() {
         isDone=true;
+        if (BoardGame.multiplayer.MP.inRun && BoardGame.multiplayer.MP.playerCount() > 1) {
+            partyFacing();
+            return;
+        }
         ArrayList<AbstractCard> choices = new ArrayList<>();
         {
             AbstractCard c = new BGShieldSpear_Shield();
@@ -57,5 +61,38 @@ public class BGSurroundedAction extends AbstractGameAction {
             choices.add(c);
         }
         AbstractDungeon.cardRewardScreen.chooseOneOpen(choices);
+    }
+
+    /**
+     * Multiplayer (Spire Shield / Spire Spear cards): "After start of turn effects, players can
+     * switch rows. Then they're immediately targeted by the Facing ability from the enemy in their
+     * row." The Shield covers the bottom 2 rows and the Spear the top 2, so with 2 players everyone
+     * faces both; with 3 the middle row faces both; with 4 the bottom two face the Shield and the
+     * top two the Spear.
+     */
+    private void partyFacing() {
+        int n = BoardGame.multiplayer.MP.playerCount();
+        int row = BoardGame.multiplayer.MP.myRow();
+        BoardGame.monsters.bgending.BGSpireShield shield = null;
+        BoardGame.monsters.bgending.BGSpireSpear spear = null;
+        for (AbstractMonster m : AbstractDungeon.getMonsters().monsters) {
+            if (m.isDeadOrEscaped() || m.halfDead) continue;
+            if (m instanceof BoardGame.monsters.bgending.BGSpireShield && shield == null)
+                shield = (BoardGame.monsters.bgending.BGSpireShield) m;
+            if (m instanceof BoardGame.monsters.bgending.BGSpireSpear && spear == null)
+                spear = (BoardGame.monsters.bgending.BGSpireSpear) m;
+        }
+        StringBuilder what = new StringBuilder();
+        if (shield != null && row <= 1) {
+            shield.facingAttack();
+            what.append("Spire Shield (").append(shield.nextMove == 1 ? "you can't draw cards this turn"
+                    : shield.nextMove == 2 ? "your damage is 0 this turn" : "lose 1 Energy").append(")");
+        }
+        if (spear != null && row >= n - 2) {
+            spear.facingAttack();
+            if (what.length() > 0) what.append(" and ");
+            what.append("Spire Spear (2 Burns)");
+        }
+        if (what.length() > 0) BoardGame.multiplayer.Session.toast("Facing: " + what);
     }
 }

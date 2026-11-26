@@ -367,6 +367,11 @@ public class MPHooks {
                 if (m == elite) MultiCreature.Field.currentRow.set(m, 0);
                 else MultiCreature.Field.currentRow.set(m, (next++) % n);
             }
+            // Act 4: the Spire Shield's card goes in the bottom rows, the Spire Spear's in the top rows
+            for (AbstractMonster m : all) {
+                if (m instanceof BoardGame.monsters.bgending.BGSpireShield) MultiCreature.Field.currentRow.set(m, 0);
+                if (m instanceof BoardGame.monsters.bgending.BGSpireSpear) MultiCreature.Field.currentRow.set(m, n - 1);
+            }
             for (AbstractMonster m : all) scaleHp(m, n);
             return finishGroup(all);
         }

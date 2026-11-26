@@ -75,6 +75,18 @@ public class DebugChannel {
                 AbstractDungeon.actionManager.addToBottom(new com.megacrit.cardcrawl.actions.common.LoseHPAction(
                         AbstractDungeon.player, AbstractDungeon.player, Integer.parseInt(a[1])));
                 return "hurt " + a[1];
+            case "nextact": { // test: what the boss chest's Proceed does, from any room
+                try {
+                    com.megacrit.cardcrawl.ui.buttons.ProceedButton pb = AbstractDungeon.overlayMenu.proceedButton;
+                    java.lang.reflect.Method m = pb.getClass().getDeclaredMethod("goToNextDungeon",
+                            com.megacrit.cardcrawl.rooms.AbstractRoom.class);
+                    m.setAccessible(true);
+                    m.invoke(pb, AbstractDungeon.getCurrRoom());
+                    return "next act";
+                } catch (Throwable t) {
+                    return "ERROR " + t;
+                }
+            }
             case "givekeys": // test: all three Act 4 keys
                 com.megacrit.cardcrawl.core.Settings.hasRubyKey = true;
                 com.megacrit.cardcrawl.core.Settings.hasEmeraldKey = true;
