@@ -1330,7 +1330,9 @@ public class Session {
 
     private static void checkDeath() {
         AbstractPlayer p = AbstractDungeon.player;
-        if (sentDead || p == null || !CardCrawlGame.isInARun()) return;
+        // not isInARun(): the game counts a dead player as out of the run, which is exactly when to send
+        if (sentDead || p == null || CardCrawlGame.mode != CardCrawlGame.GameMode.GAMEPLAY
+                || CardCrawlGame.dungeon == null || AbstractDungeon.currMapNode == null) return;
         if (p.isDead || p.currentHealth <= 0 && AbstractDungeon.deathScreen != null) {
             sentDead = true;
             SavedSession.clear();

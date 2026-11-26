@@ -70,6 +70,10 @@ public class DebugChannel {
                 }
                 return "rule " + a[1] + " " + on;
             }
+            case "hurt": // test: lose HP, e.g. "hurt 5"
+                AbstractDungeon.actionManager.addToBottom(new com.megacrit.cardcrawl.actions.common.LoseHPAction(
+                        AbstractDungeon.player, AbstractDungeon.player, Integer.parseInt(a[1])));
+                return "hurt " + a[1];
             case "deck": // test: the master deck
                 return "deck=" + cards(AbstractDungeon.player.masterDeck);
             case "state":
@@ -315,6 +319,7 @@ public class DebugChannel {
                     case "event": n.room = new com.megacrit.cardcrawl.rooms.EventRoom(); break;
                     case "treasure": n.room = new com.megacrit.cardcrawl.rooms.TreasureRoom(); break;
                     case "elite": n.room = new com.megacrit.cardcrawl.rooms.MonsterRoomElite(); break;
+                    case "boss": n.room = new com.megacrit.cardcrawl.rooms.MonsterRoomBoss(); break;
                     default: n.room = new com.megacrit.cardcrawl.rooms.MonsterRoom();
                 }
                 return "node " + a[1] + "," + a[2] + " is now " + n.room.getClass().getSimpleName();
