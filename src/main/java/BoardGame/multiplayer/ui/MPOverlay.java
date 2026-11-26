@@ -28,6 +28,13 @@ public class MPOverlay implements PostRenderSubscriber {
     private static boolean wasDown = false;
     private static boolean clicked = false;
 
+    /** A fresh left click this frame that nothing else has used (for other overlay panels). */
+    public static boolean takeClick() {
+        if (!clicked) return false;
+        clicked = false;
+        return true;
+    }
+
     /** A clickable text button laid out in 1080p units from the top-left. */
     private static class Button {
         float x, y, w, h;
@@ -284,7 +291,9 @@ public class MPOverlay implements PostRenderSubscriber {
                 lines.add("  " + p.name + ": " + (v == null ? "-" : roomName(v[0], v[1])));
             }
         }
-        if (combat) {
+        if (combat && AbstractDungeon.isScreenUp) {
+            // a full screen (deck, map, card choice) is open: keep the combat overlay out of its way
+        } else if (combat) {
             RowView.render(sb);
             dieBottom1080 = DIE_TOP - 10;
             renderDie(sb);
@@ -371,7 +380,7 @@ public class MPOverlay implements PostRenderSubscriber {
         }
     }
 
-    private static final float DIE_TOP = 200, DIE_W = 380;
+    private static final float DIE_TOP = 214, DIE_W = 380; // just under the History button (170 + 34)
     /** Where the die box ends (1080p units from the top); the combat log goes under it. */
     private static float dieBottom1080 = DIE_TOP;
 

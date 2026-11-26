@@ -219,6 +219,58 @@ public class DebugChannel {
                 AbstractDungeon.getCurrRoom().phase = com.megacrit.cardcrawl.rooms.AbstractRoom.RoomPhase.COMPLETE;
                 AbstractDungeon.dungeonMapScreen.open(false);
                 return "ok";
+            case "nextenc": { // test: the next fights use these encounters (one per row), e.g. "nextenc BoardGame:Angry Gremlin Team"
+                String rest = String.join(" ", java.util.Arrays.copyOfRange(a, 1, a.length));
+                String[] keys = rest.split(",");
+                for (int i = keys.length - 1; i >= 0; i--) {
+                    AbstractDungeon.monsterList.add(0, keys[i].trim());
+                    AbstractDungeon.eliteMonsterList.add(0, keys[i].trim());
+                }
+                return "next encounters " + AbstractDungeon.monsterList.subList(0, Math.min(4, AbstractDungeon.monsterList.size()));
+            }
+            case "give": { // test: put a card in hand, e.g. "give BoardGame:BGPredator"
+                AbstractCard c = com.megacrit.cardcrawl.helpers.CardLibrary.getCard(a[1]);
+                if (c == null) return "no card " + a[1];
+                c = c.makeCopy();
+                if (a.length > 2) c.upgrade();
+                AbstractDungeon.player.hand.addToTop(c);
+                AbstractDungeon.player.hand.refreshHandLayout();
+                return "gave " + c.cardID;
+            }
+            case "relic": { // test: obtain a relic, e.g. "relic BGOrichalcum"
+                com.megacrit.cardcrawl.relics.AbstractRelic r = com.megacrit.cardcrawl.helpers.RelicLibrary.getRelic(a[1]);
+                if (r == null) return "no relic " + a[1];
+                r.makeCopy().instantObtain();
+                return "relic " + a[1];
+            }
+            case "potion": {
+                com.megacrit.cardcrawl.potions.AbstractPotion pt = com.megacrit.cardcrawl.helpers.PotionHelper.getPotion(a[1]);
+                if (pt == null) return "no potion " + a[1];
+                AbstractDungeon.player.obtainPotion(pt);
+                return "potion " + a[1];
+            }
+            case "orb": { // test: channel an orb, e.g. "orb BGFrost"
+                try {
+                    com.megacrit.cardcrawl.orbs.AbstractOrb o = (com.megacrit.cardcrawl.orbs.AbstractOrb)
+                            Class.forName("BoardGame.orbs." + a[1]).getConstructor().newInstance();
+                    AbstractDungeon.player.channelOrb(o);
+                    return "orb " + a[1];
+                } catch (Throwable t) {
+                    return "orb failed " + t;
+                }
+            }
+            case "energy":
+                AbstractDungeon.player.gainEnergy(Integer.parseInt(a[1]));
+                return "energy";
+            case "monsters": {
+                StringBuilder sb = new StringBuilder();
+                for (com.megacrit.cardcrawl.monsters.AbstractMonster m : AbstractDungeon.getMonsters().monsters)
+                    sb.append(BoardGame.multiplayer.combat.MonsterSync.id(m)).append(' ').append(m.getClass().getSimpleName())
+                            .append(" row").append(BoardGame.multiplayer.combat.MonsterSync.row(m)).append(" hp")
+                            .append(m.currentHealth).append(m.isDeadOrEscaped() ? " DEAD" : "").append(" x")
+                            .append((int) m.drawX).append('\n');
+                return sb.toString();
+            }
             case "end":
                 if (!UndoManager.isIdle()) return "not idle";
                 AbstractDungeon.overlayMenu.endTurnButton.disable(true);

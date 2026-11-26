@@ -23,6 +23,7 @@ import com.megacrit.cardcrawl.ui.buttons.LargeDialogOptionButton;
  */
 public class PartyEventUI {
     private static String banner;
+    private static boolean neowLocked = false;
     private static String templeBase;
     private static int templeShown = -1;
 
@@ -51,8 +52,16 @@ public class PartyEventUI {
                     ? (waiting.isEmpty() ? "Party decision: you choose where the party starts"
                     : "Waiting for " + waiting + " to finish choosing a Neow blessing")
                     : "Party decision: " + hostName() + " chooses where the party starts";
-            if (partyChoice && MP.isHost() && !waiting.isEmpty())
+            // the others wait for the host; the host waits until everyone has a blessing
+            boolean lock = partyChoice && (!MP.isHost() || !waiting.isEmpty());
+            if (lock) {
                 for (LargeDialogOptionButton b : RoomEventDialog.optionList) b.isDisabled = true;
+                neowLocked = true;
+            } else if (neowLocked) {
+                for (LargeDialogOptionButton b : RoomEventDialog.optionList) b.isDisabled = false;
+                neowLocked = false;
+            }
+            return;
         } else if (ev instanceof BGDeadAdventurer && AbstractDungeon.floorNum != 2) {
             partyChoice = true;
             banner = MP.isHost() ? "Party decision: you choose for everyone (one roll for the party)"
@@ -66,8 +75,9 @@ public class PartyEventUI {
         } else if (ev instanceof BoardGame.events.BGBigFish) {
             banner = "Big Fish: each player must take a different option";
         }
-        if (partyChoice && !MP.isHost()) {
-            for (LargeDialogOptionButton b : RoomEventDialog.optionList) b.isDisabled = true;
+        if (neowLocked) { // left Neow while locked: give the buttons back
+            for (LargeDialogOptionButton b : RoomEventDialog.optionList) b.isDisabled = false;
+            neowLocked = false;
         }
     }
 
@@ -93,7 +103,7 @@ public class PartyEventUI {
     public static void render(SpriteBatch sb) {
         if (banner == null) return;
         float w = 900 * Settings.scale, h = 44 * Settings.scale;
-        float x = Settings.WIDTH / 2f - w / 2f, y = Settings.HEIGHT - 150 * Settings.scale;
+        float x = Settings.WIDTH / 2f - w / 2f, y = Settings.HEIGHT - 190 * Settings.scale; // below the party info line
         sb.setColor(new Color(0.1f, 0.12f, 0.18f, 0.9f));
         sb.draw(ImageMaster.WHITE_SQUARE_IMG, x, y, w, h);
         sb.setColor(Color.WHITE);

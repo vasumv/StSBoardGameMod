@@ -224,15 +224,15 @@ public class RowView {
             float iy = r[1] + r[3] - 66f * s(), ix = r[0] + 10f * s(), is = 28f * s();
             sb.setColor(Color.WHITE);
             sb.draw(ImageMaster.BLOCK_ICON, ix, iy, is, is);
-            FontHelper.renderFontCentered(sb, FontHelper.tipBodyFont, String.valueOf(p.block), ix + is / 2f, iy + is / 2f,
-                    p.block > 0 ? Settings.CREAM_COLOR : Color.GRAY);
+            FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipHeaderFont, String.valueOf(p.block), ix + is + 2f * s(),
+                    iy + is * 0.85f, p.block > 0 ? Settings.CREAM_COLOR : Color.GRAY);
             com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion orb = p.character == 0 ? ImageMaster.CARD_RED_ORB
                     : p.character == 1 ? ImageMaster.CARD_GREEN_ORB : p.character == 2 ? ImageMaster.CARD_BLUE_ORB
                     : ImageMaster.CARD_PURPLE_ORB;
-            sb.draw(orb, ix + 40f * s(), iy, is, is);
-            FontHelper.renderFontCentered(sb, FontHelper.tipBodyFont, String.valueOf(p.energy), ix + 40f * s() + is / 2f,
-                    iy + is / 2f, Settings.CREAM_COLOR);
-            float hx = ix + 80f * s(), hw = 110f * s();
+            sb.draw(orb, ix + 60f * s(), iy, is, is);
+            FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipHeaderFont, String.valueOf(p.energy), ix + 60f * s() + is
+                    + 2f * s(), iy + is * 0.85f, Settings.CREAM_COLOR);
+            float hx = ix + 120f * s(), hw = 110f * s();
             boolean hHov = InputHelper.mX >= hx && InputHelper.mX <= hx + hw && InputHelper.mY >= iy && InputHelper.mY <= iy + is;
             sb.setColor(handView == p.id ? new Color(0.25f, 0.45f, 0.25f, 0.95f)
                     : hHov ? new Color(0.3f, 0.4f, 0.5f, 0.95f) : new Color(0.15f, 0.18f, 0.24f, 0.95f));
@@ -240,8 +240,7 @@ public class RowView {
             sb.setColor(Color.WHITE);
             FontHelper.renderFontCentered(sb, FontHelper.tipBodyFont, "Hand (" + p.handSize + ")", hx + hw / 2f, iy + is / 2f,
                     Settings.CREAM_COLOR);
-            if (hHov && InputHelper.justClickedLeft) {
-                InputHelper.justClickedLeft = false;
+            if (hHov && MPOverlay.takeClick()) {
                 handView = handView == p.id ? -1 : p.id;
             }
             AbstractPlayer a = puppet(p);
@@ -290,8 +289,7 @@ public class RowView {
             c.drawScale = c.targetDrawScale = scale;
             c.render(sb);
         }
-        if (InputHelper.justClickedLeft) {
-            InputHelper.justClickedLeft = false;
+        if (MPOverlay.takeClick()) {
             handView = -1;
         }
     }

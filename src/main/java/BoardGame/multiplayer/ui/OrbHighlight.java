@@ -31,7 +31,9 @@ public class OrbHighlight {
             ArrayList<AbstractOrb> orbs = new ArrayList<>();
             for (AbstractOrb o : AbstractDungeon.player.orbs) if (!(o instanceof EmptyOrbSlot)) orbs.add(o);
             // each orb's effects go on top of the queue, so add them last-to-first with a
-            // highlight in front of each: they then resolve first-to-last
+            // highlight in front of each: they then resolve first-to-last; the highlight stays
+            // on its orb (through target prompts) until the next one, then Clear ends it
+            if (!orbs.isEmpty()) AbstractDungeon.actionManager.addToTop(new Clear());
             for (int i = orbs.size() - 1; i >= 0; i--) {
                 AbstractOrb o = orbs.get(i);
                 o.onEndOfTurn();
@@ -61,32 +63,52 @@ public class OrbHighlight {
 
         @Override
         public void update() {
-            if (this.duration == this.startDuration)
-                AbstractDungeon.topLevelEffects.add(new Ring(orb, label, this.startDuration + 0.25f));
+            if (this.duration == this.startDuration) {
+                current = orb;
+                currentLabel = label;
+                if (!ringShown) {
+                    ringShown = true;
+                    AbstractDungeon.topLevelEffects.add(new Ring());
+                }
+            }
             tickDuration();
         }
     }
 
-    private static class Ring extends AbstractGameEffect {
-        private final AbstractOrb orb;
-        private final String label;
+    /** Ends the highlight after the last orb's effects. */
+    public static class Clear extends AbstractGameAction {
+        @Override
+        public void update() {
+            current = null;
+            this.isDone = true;
+        }
+    }
 
-        Ring(AbstractOrb orb, String label, float duration) {
-            this.orb = orb;
-            this.label = label;
-            this.duration = this.startingDuration = duration;
+    private static AbstractOrb current;
+    private static String currentLabel = "";
+    private static boolean ringShown = false;
+
+    /** Draws the box around whichever orb is resolving; goes away when none is. */
+    private static class Ring extends AbstractGameEffect {
+        Ring() {
+            this.duration = this.startingDuration = 1f;
             this.color = new Color(1f, 0.85f, 0.3f, 1f);
         }
 
         @Override
         public void update() {
-            this.duration -= Gdx.graphics.getDeltaTime();
-            this.color.a = Math.min(1f, this.duration / 0.25f);
-            if (this.duration < 0f) this.isDone = true;
+            if (current == null || AbstractDungeon.player == null || !AbstractDungeon.player.orbs.contains(current)) {
+                current = null;
+                ringShown = false;
+                this.isDone = true;
+            }
         }
 
         @Override
         public void render(SpriteBatch sb) {
+            AbstractOrb orb = current;
+            String label = currentLabel;
+            if (orb == null) return;
             float s = 96f * Settings.scale, t = 4f * Settings.scale;
             float x = orb.cX - s / 2f, y = orb.cY - s / 2f;
             sb.setColor(this.color);
