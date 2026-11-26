@@ -266,6 +266,7 @@ public class MPOverlay implements PostRenderSubscriber {
             if (combat) s += "  Block " + p.block + "  Energy " + p.energy + "  Hand " + p.handSize
                     + (p.endTurnReady ? "  [READY]" : "");
             else s += "  Gold " + p.gold;
+            if (p.dead) s = p.name + " (" + MP.CHARACTER_NAMES[p.character] + ")  fallen";
             if (!p.connected) s += "  (disconnected)";
             lines.add(s);
             if (combat && p.powers != null && !p.powers.isEmpty()) lines.add("    " + p.powers);

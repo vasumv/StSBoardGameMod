@@ -14,7 +14,14 @@ setsid nohup $B/start.sh p2 98 -Dbg.mp.join=127.0.0.1:7777 -Dbg.fast=true -Dbg.m
 echo "p2 launched"
 for i in $(seq 1 120); do
   a=$(timeout 2 $B/q.sh p1 "mp status" 0 2>/dev/null); b=$(timeout 2 $B/q.sh p2 "mp status" 0 2>/dev/null)
-  [ -n "$a" ] && [ -n "$b" ] && { echo "both up after ${i} tries"; exit 0; }
+  if [ -n "$a" ] && [ -n "$b" ]; then
+    # the joiner may have tried before the host was listening: join again until connected
+    for j in $(seq 1 20); do
+      $B/q.sh p2 "mp status" 0 | grep -q "active=true" && { echo "both up after ${i} tries"; exit 0; }
+      $B/q.sh p2 "mp join 127.0.0.1 7777" >/dev/null; sleep 2
+    done
+    echo "p2 could not join"; exit 1
+  fi
   for n in p1 p2; do pgrep -f "java .*bg.debug.dir=$B/$n/dbg" >/dev/null || [ $i -lt 20 ] || { echo "$n DIED"; tail -3 $B/$n/launch.log; exit 1; }; done
   sleep 1
 done

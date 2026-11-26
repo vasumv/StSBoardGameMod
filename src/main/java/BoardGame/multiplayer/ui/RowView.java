@@ -218,10 +218,13 @@ public class RowView {
             sb.setColor(p.id == dragTarget ? PANEL_TARGET : PANEL_BG);
             sb.draw(ImageMaster.WHITE_SQUARE_IMG, r[0], r[1], r[2], r[3]);
             sb.setColor(Color.WHITE);
-            String head = p.name + " (" + MP.CHARACTER_NAMES[p.character] + ")" + (p.endTurnReady ? "  READY" : "")
+            String head = p.name + " (" + MP.CHARACTER_NAMES[p.character] + ")"
+                    + (p.dead ? "  FALLEN" : p.endTurnReady ? "  READY" : "")
                     + (!p.connected ? "  (disconnected)" : "");
             FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont, head, r[0] + 10f * s(),
-                    r[1] + r[3] - 10f * s(), p.endTurnReady ? Settings.GREEN_TEXT_COLOR : Settings.GOLD_COLOR);
+                    r[1] + r[3] - 10f * s(), p.dead ? Settings.RED_TEXT_COLOR
+                            : p.endTurnReady ? Settings.GREEN_TEXT_COLOR : Settings.GOLD_COLOR);
+            if (p.dead) continue; // Last Stand: nothing more to show for a fallen player
             // block, energy and hand at a glance; click "Hand" to see their cards
             float iy = r[1] + r[3] - 66f * s(), ix = r[0] + 10f * s(), is = 28f * s();
             sb.setColor(Color.WHITE);
