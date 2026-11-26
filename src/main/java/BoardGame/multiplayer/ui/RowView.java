@@ -74,6 +74,13 @@ public class RowView {
     }
 
     /** Panel rectangle in screen pixels: x, y (bottom), w, h. */
+    /** The panel of this teammate (x, y, w, h in pixels), or null. */
+    public static float[] panelOf(int playerId) {
+        ArrayList<MP.Player> o = others();
+        for (int i = 0; i < o.size(); i++) if (o.get(i).id == playerId) return panelRect(i);
+        return null;
+    }
+
     private static float[] panelRect(int i) {
         float x = (PANEL_LEFT + i * (PANEL_W + PANEL_GAP)) * s();
         float top = Settings.HEIGHT - PANEL_TOP * s();
@@ -213,8 +220,30 @@ public class RowView {
                     + (!p.connected ? "  (disconnected)" : "");
             FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont, head, r[0] + 10f * s(),
                     r[1] + r[3] - 10f * s(), p.endTurnReady ? Settings.GREEN_TEXT_COLOR : Settings.GOLD_COLOR);
-            FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont, "Energy " + p.energy + "  Hand "
-                    + p.handSize, r[0] + 10f * s(), r[1] + r[3] - 36f * s(), Settings.CREAM_COLOR);
+            // block, energy and hand at a glance; click "Hand" to see their cards
+            float iy = r[1] + r[3] - 66f * s(), ix = r[0] + 10f * s(), is = 28f * s();
+            sb.setColor(Color.WHITE);
+            sb.draw(ImageMaster.BLOCK_ICON, ix, iy, is, is);
+            FontHelper.renderFontCentered(sb, FontHelper.tipBodyFont, String.valueOf(p.block), ix + is / 2f, iy + is / 2f,
+                    p.block > 0 ? Settings.CREAM_COLOR : Color.GRAY);
+            com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion orb = p.character == 0 ? ImageMaster.CARD_RED_ORB
+                    : p.character == 1 ? ImageMaster.CARD_GREEN_ORB : p.character == 2 ? ImageMaster.CARD_BLUE_ORB
+                    : ImageMaster.CARD_PURPLE_ORB;
+            sb.draw(orb, ix + 40f * s(), iy, is, is);
+            FontHelper.renderFontCentered(sb, FontHelper.tipBodyFont, String.valueOf(p.energy), ix + 40f * s() + is / 2f,
+                    iy + is / 2f, Settings.CREAM_COLOR);
+            float hx = ix + 80f * s(), hw = 110f * s();
+            boolean hHov = InputHelper.mX >= hx && InputHelper.mX <= hx + hw && InputHelper.mY >= iy && InputHelper.mY <= iy + is;
+            sb.setColor(handView == p.id ? new Color(0.25f, 0.45f, 0.25f, 0.95f)
+                    : hHov ? new Color(0.3f, 0.4f, 0.5f, 0.95f) : new Color(0.15f, 0.18f, 0.24f, 0.95f));
+            sb.draw(ImageMaster.WHITE_SQUARE_IMG, hx, iy, hw, is);
+            sb.setColor(Color.WHITE);
+            FontHelper.renderFontCentered(sb, FontHelper.tipBodyFont, "Hand (" + p.handSize + ")", hx + hw / 2f, iy + is / 2f,
+                    Settings.CREAM_COLOR);
+            if (hHov && InputHelper.justClickedLeft) {
+                InputHelper.justClickedLeft = false;
+                handView = handView == p.id ? -1 : p.id;
+            }
             AbstractPlayer a = puppet(p);
             if (a == null) continue;
             float px = r[0] + 62f * s();
@@ -231,6 +260,39 @@ public class RowView {
             a.hb.move(px, foot + a.hb.height / 2f);
             renderSmall(a, sb, px, foot, () -> a.renderPlayerImage(sb));
             a.renderHealth(sb);
+        }
+        renderHandView(sb);
+    }
+
+    /** Whose hand is being shown (-1: none). */
+    private static int handView = -1;
+
+    private static void renderHandView(SpriteBatch sb) {
+        MP.Player p = handView < 0 ? null : MP.player(handView);
+        if (p == null) {
+            handView = -1;
+            return;
+        }
+        java.util.ArrayList<AbstractCard> cards = TeammateDecks.cards(p.hand);
+        float scale = 0.55f, cw = AbstractCard.IMG_WIDTH * scale, gap = 12f * s();
+        float total = Math.max(1, cards.size()) * (cw + gap) + gap;
+        float cy = Settings.HEIGHT * 0.52f, ch = AbstractCard.IMG_HEIGHT * scale;
+        float x0 = Settings.WIDTH / 2f - total / 2f;
+        sb.setColor(new Color(0f, 0f, 0f, 0.75f));
+        sb.draw(ImageMaster.WHITE_SQUARE_IMG, x0, cy - ch / 2f - 20f * s(), total, ch + 56f * s());
+        sb.setColor(Color.WHITE);
+        FontHelper.renderFontCentered(sb, FontHelper.tipBodyFont, p.name + "'s hand" + (cards.isEmpty() ? " is empty" : "")
+                + "  (click to close)", Settings.WIDTH / 2f, cy + ch / 2f + 18f * s(), Settings.GOLD_COLOR);
+        for (int i = 0; i < cards.size(); i++) {
+            AbstractCard c = cards.get(i);
+            c.current_x = c.target_x = x0 + gap + cw / 2f + i * (cw + gap);
+            c.current_y = c.target_y = cy;
+            c.drawScale = c.targetDrawScale = scale;
+            c.render(sb);
+        }
+        if (InputHelper.justClickedLeft) {
+            InputHelper.justClickedLeft = false;
+            handView = -1;
         }
     }
 

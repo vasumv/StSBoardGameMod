@@ -43,6 +43,32 @@ public class TeammateDecks {
         return sb.toString();
     }
 
+    private static final HashMap<String, java.util.ArrayList<AbstractCard>> handCache = new HashMap<>();
+
+    /** Cards from the "id#upgrades|..." text (cached). */
+    public static java.util.ArrayList<AbstractCard> cards(String text) {
+        if (text == null) return new java.util.ArrayList<>();
+        java.util.ArrayList<AbstractCard> cached = handCache.get(text);
+        if (cached != null) return cached;
+        java.util.ArrayList<AbstractCard> out = new java.util.ArrayList<>();
+        if (!text.isEmpty()) for (String part : text.split("\\|")) {
+            int hash = part.lastIndexOf('#');
+            AbstractCard c = CardLibrary.getCard(hash < 0 ? part : part.substring(0, hash));
+            if (c == null) continue;
+            c = c.makeCopy();
+            int up = 0;
+            try {
+                up = hash < 0 ? 0 : Integer.parseInt(part.substring(hash + 1));
+            } catch (NumberFormatException ignored) {
+            }
+            for (int i = 0; i < up && c.canUpgrade(); i++) c.upgrade();
+            out.add(c);
+        }
+        if (handCache.size() > 50) handCache.clear();
+        handCache.put(text, out);
+        return out;
+    }
+
     private static CardGroup groupFor(int id) {
         MP.Player pl = MP.player(id);
         if (pl == null || pl.deck == null) return null;

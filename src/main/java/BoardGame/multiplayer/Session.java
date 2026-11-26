@@ -571,6 +571,7 @@ public class Session {
                 pl.gold = m.has("gold") ? m.get("gold").getAsInt() : pl.gold;
                 pl.where = m.has("where") ? m.get("where").getAsString() : pl.where;
                 if (m.has("deck")) pl.deck = m.get("deck").getAsString();
+                if (m.has("cards")) pl.hand = m.get("cards").getAsString();
                 return;
             }
             case "rb": {
@@ -1089,7 +1090,8 @@ public class Session {
             if (!r.has("cardId")) return;
             AbstractCard c = com.megacrit.cardcrawl.helpers.CardLibrary.getCopy(r.get("cardId").getAsString(),
                     r.get("upgraded").getAsBoolean() ? 1 : 0, 0);
-            if (c != null) AbstractDungeon.effectList.add(new ShowCardBrieflyEffect(c));
+            int from = r.has("from") ? r.get("from").getAsInt() : -1;
+            if (c != null) AbstractDungeon.topLevelEffects.add(new BoardGame.multiplayer.ui.SmallCardEffect(c, from));
         } catch (Throwable ignored) {
         }
     }
@@ -1271,7 +1273,8 @@ public class Session {
         String where = AbstractDungeon.getCurrRoom() == null ? "" : AbstractDungeon.getCurrRoom().getClass().getSimpleName();
         String s = p.currentHealth + "/" + p.maxHealth + "/" + p.currentBlock + "/" + EnergyPanel.totalCount + "/"
                 + p.hand.size() + "/" + pw + "/" + p.gold + "/" + where + "/"
-                + BoardGame.multiplayer.ui.TeammateDecks.encode(p);
+                + BoardGame.multiplayer.ui.TeammateDecks.encode(p) + "/"
+                + BoardGame.multiplayer.combat.SharedDecks.encode(p.hand);
         if (s.equals(lastStatus)) return;
         lastStatus = s;
         JsonObject o = MP.msg("status");
@@ -1284,6 +1287,7 @@ public class Session {
         o.addProperty("gold", p.gold);
         o.addProperty("where", where);
         o.addProperty("deck", BoardGame.multiplayer.ui.TeammateDecks.encode(p));
+        o.addProperty("cards", BoardGame.multiplayer.combat.SharedDecks.encode(p.hand));
         MP.send(o);
     }
 

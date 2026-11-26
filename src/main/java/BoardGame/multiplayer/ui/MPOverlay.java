@@ -69,7 +69,7 @@ public class MPOverlay implements PostRenderSubscriber {
     private static final Button startBtn = new Button(1460, 176, 420, 48, "Start run");
     private static final Button leaveBtn = new Button(1460, 232, 420, 48, "Leave");
     // die
-    private static final Button keepBtn = new Button(40, 400, 200, 44, "");
+    private static final Button keepBtn = new Button(36, 260, 160, 38, "");
     // rollback vote
     private static final Button acceptBtn = new Button(760, 520, 190, 50, "Accept");
     private static final Button declineBtn = new Button(970, 520, 190, 50, "Decline");
@@ -285,8 +285,9 @@ public class MPOverlay implements PostRenderSubscriber {
         }
         if (combat) {
             RowView.render(sb);
+            dieBottom1080 = DIE_TOP - 10;
             renderDie(sb);
-            textBlock(sb, 470, 400, 700, lines, Settings.CREAM_COLOR);
+            textBlock(sb, 38, dieBottom1080 + 14, DIE_W - 16, lines, Settings.CREAM_COLOR); // under the die, out of the way
         } else {
             textBlock(sb, 1180, 110, 720, lines, Settings.CREAM_COLOR);
         }
@@ -315,49 +316,63 @@ public class MPOverlay implements PostRenderSubscriber {
                 animTick = 0.07f;
             }
         }
-        float x = 40 * Settings.scale, w = 400 * Settings.scale;
-        float top = Settings.HEIGHT - 220 * Settings.scale, h = 170 * Settings.scale;
+        // compact: a small die, one status line, and the Keep button only while deciding
         boolean deciding = BoardGame.multiplayer.combat.DiePhase.deciding();
-        box(sb, x, top - h, w, h, BG);
-        // die face
-        float ds = 76 * Settings.scale;
-        box(sb, x + 14 * Settings.scale, top - 14 * Settings.scale - ds, ds, ds, rolling ? Color.LIGHT_GRAY : Color.WHITE);
-        FontHelper.renderFontCentered(sb, FontHelper.bannerNameFont, String.valueOf(rolling ? animFace : v),
-                x + 14 * Settings.scale + ds / 2f, top - 14 * Settings.scale - ds / 2f, Color.BLACK);
-        String title = deciding ? "Die: " + v + " - everyone keeps it or changes it" : "Die locked in: " + v;
-        FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont, title, x + 104 * Settings.scale,
-                top - 12 * Settings.scale, deciding ? Settings.GOLD_COLOR : Settings.GREEN_TEXT_COLOR);
-        float y = top - 40 * Settings.scale;
+        ArrayList<String> extra = new ArrayList<>();
+        ArrayList<Color> extraColor = new ArrayList<>();
         if (deciding) {
+            StringBuilder who = new StringBuilder();
             for (MP.Player p : MP.players) {
-                boolean ok = BoardGame.multiplayer.combat.DiePhase.confirmed(p.id);
-                FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
-                        (p.id == MP.myId ? "You" : p.name) + (ok ? ": keeps " + v : ": deciding..."),
-                        x + 104 * Settings.scale, y, ok ? Settings.GREEN_TEXT_COLOR : Settings.CREAM_COLOR);
-                y -= 24 * Settings.scale;
+                if (who.length() > 0) who.append("   ");
+                who.append(p.id == MP.myId ? "You" : p.name)
+                        .append(BoardGame.multiplayer.combat.DiePhase.confirmed(p.id) ? " ok" : " ...");
             }
-            if (!BoardGame.multiplayer.combat.DiePhase.iConfirmed()) {
-                keepBtn.text = "Keep " + v;
-                keepBtn.render(sb);
-            }
+            extra.add(who.toString());
+            extraColor.add(Settings.CREAM_COLOR);
         } else {
             if (!BoardGame.multiplayer.combat.DiePhase.lastChange.isEmpty()) {
-                FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
-                        BoardGame.multiplayer.combat.DiePhase.lastChange, x + 104 * Settings.scale, y,
-                        Settings.CREAM_COLOR);
-                y -= 24 * Settings.scale;
+                extra.add(BoardGame.multiplayer.combat.DiePhase.lastChange);
+                extraColor.add(Settings.CREAM_COLOR);
             }
-            // die relics that triggered on this number, for everyone in the party
             for (MP.Player p : MP.players) {
                 String list = BoardGame.multiplayer.combat.DiePhase.triggered.get(p.id);
                 if (list == null || list.isEmpty()) continue;
-                FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
-                        (p.id == MP.myId ? "You" : p.name) + ": " + list, x + 104 * Settings.scale, y,
-                        Settings.GREEN_TEXT_COLOR);
-                y -= 24 * Settings.scale;
+                extra.add((p.id == MP.myId ? "You" : p.name) + ": " + list);
+                extraColor.add(Settings.GREEN_TEXT_COLOR);
             }
         }
+        boolean showKeep = deciding && !BoardGame.multiplayer.combat.DiePhase.iConfirmed();
+        float lh = 22f;
+        float h1080 = 56 + extra.size() * lh + (showKeep ? 44 : 0);
+        dieBottom1080 = DIE_TOP + h1080;
+        float x = 30 * Settings.scale, w = DIE_W * Settings.scale;
+        float top = Settings.HEIGHT - DIE_TOP * Settings.scale;
+        box(sb, x, top - h1080 * Settings.scale, w, h1080 * Settings.scale, BG);
+        float ds = 44 * Settings.scale;
+        box(sb, x + 6 * Settings.scale, top - 6 * Settings.scale - ds, ds, ds, rolling ? Color.LIGHT_GRAY : Color.WHITE);
+        FontHelper.renderFontCentered(sb, FontHelper.tipHeaderFont, String.valueOf(rolling ? animFace : v),
+                x + 6 * Settings.scale + ds / 2f, top - 6 * Settings.scale - ds / 2f, Color.BLACK);
+        String title = deciding ? "Die " + v + ": keep it or change it" : "Die " + v + " (locked in)";
+        FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont, title, x + 60 * Settings.scale,
+                top - 16 * Settings.scale, deciding ? Settings.GOLD_COLOR : Settings.GREEN_TEXT_COLOR);
+        float y = top - 56 * Settings.scale;
+        for (int i = 0; i < extra.size(); i++) {
+            String l = extra.get(i);
+            if (l.length() > 46) l = l.substring(0, 45) + "...";
+            FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont, l, x + 8 * Settings.scale, y,
+                    extraColor.get(i));
+            y -= lh * Settings.scale;
+        }
+        if (showKeep) {
+            keepBtn.y = DIE_TOP + 56 + extra.size() * lh + 2;
+            keepBtn.text = "Keep " + v;
+            keepBtn.render(sb);
+        }
     }
+
+    private static final float DIE_TOP = 200, DIE_W = 380;
+    /** Where the die box ends (1080p units from the top); the combat log goes under it. */
+    private static float dieBottom1080 = DIE_TOP;
 
     private static String roomName(int x, int y) {
         try {

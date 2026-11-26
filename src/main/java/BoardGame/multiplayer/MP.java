@@ -32,6 +32,8 @@ public class MP {
         public String where = "";
         /** Their deck (card id#upgrades|...), for the deck viewer. */
         public String deck = null;
+        /** Their hand right now (same format), for the hand viewer. */
+        public String hand = "";
     }
 
     /** True once a session exists (hosting or joined), in the lobby or in a run. */
