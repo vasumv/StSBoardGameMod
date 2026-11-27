@@ -87,7 +87,7 @@ def play_turn(p):
 
 
 def fight():
-    for rnd in range(25):
+    for rnd in range(ROUNDS):
         time.sleep(2.5)  # die phase / start of turn
         if phase("p1") != "COMBAT":
             return "won"
@@ -115,9 +115,18 @@ def fight():
 
 floors = int(sys.argv[1]) if len(sys.argv) > 1 else 16
 act4 = len(sys.argv) > 2 and sys.argv[2] == "act4"
+ROUNDS = int(sys.argv[3]) if len(sys.argv) > 3 else 25  # then the fight is finished off
 last_kind = ""
 for f in range(floors):
     n = nxt()
+    for _ in range(10):  # the map may not be ready yet
+        if n or not act4:
+            break
+        time.sleep(2)
+        n = nxt()
+    if not n and act4:
+        print("run over (Act 4)" if "MonsterRoomBoss" in last_kind else "floor %d: no next room in Act 4" % f, flush=True)
+        break
     if not n and "MonsterRoomBoss" in last_kind and act4:
         print("run over (Act 4 boss)", flush=True)
         break

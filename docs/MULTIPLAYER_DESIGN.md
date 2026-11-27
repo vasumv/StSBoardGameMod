@@ -42,7 +42,9 @@ reference implementation: `reference/enemy_audit.md`, `reference/enemy_mp_data.j
 
 ## Known gaps
 
-- Not yet run in game: Steam lobby codes with real accounts, keys and Act 4.
+- Not yet run in game: Steam lobby codes with real accounts.
+- Act 4 Shield and Spear with 3-4 players: the cards let players switch rows before Facing;
+  mid-fight switching isn't offered yet (with 2 players everyone faces both, so it doesn't matter).
 - Sequential Turns is experimental: everyone's start-of-turn draw still happens at the
   start of the round.
 - If two players pick the same character they each get a full reward deck (the board
@@ -71,6 +73,10 @@ Exchange; Colosseum as a shared party fight; boss-chest crash fix; party defeat 
 dies (was broken) and Last Stand in a boss fight (survivor wins, run ends); Choose Your Relic in
 a treasure room; Wheel of Change die faces with The Abacus; combat die relic previews; Mind
 Bloom's solo boss fight. Recorded an autoplayed Act 1 (scripts/record_act.sh).
+Later 2026-11-26: gremlin teams summon 3 and match in every game; Ruby/Sapphire key votes
+(agree, call off when someone takes the relic or acts at the campfire); Emerald key shared;
+Act 4 at Ascension 11 through the door: Facing hits both players with 2 players, Shield bottom
+row and Spear top row, Heart 240 HP for 2 at A11. Recorded Act 4.
 
 ## What the code investigation found
 
