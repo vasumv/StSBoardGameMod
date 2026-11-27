@@ -216,4 +216,26 @@ public class TeammateDecks {
 
     @SpirePatch2(clz = MasterDeckViewScreen.class, method = "render")
     public static class R7 { @SpireInstrumentPatch public static ExprEditor e() { return redirect(); } }
+
+    /** The line under the deck view: on a teammate's tab, say whose deck this is. */
+    public static String tip(String original) {
+        if (viewing < 0 || !MP.inRun) return original;
+        MP.Player p = MP.player(viewing);
+        return (p == null ? "A teammate" : p.name) + "'s deck (" + (p == null ? "" : MP.CHARACTER_NAMES[
+                Math.max(0, Math.min(MP.CHARACTER_NAMES.length - 1, p.character))]) + ")";
+    }
+
+    @SpirePatch2(clz = MasterDeckViewScreen.class, method = "render")
+    public static class TeammateTip {
+        @com.evacipated.cardcrawl.modthespire.lib.SpireInstrumentPatch
+        public static javassist.expr.ExprEditor edit() {
+            return new javassist.expr.ExprEditor() {
+                @Override
+                public void edit(javassist.expr.MethodCall m) throws javassist.CannotCompileException {
+                    if (m.getMethodName().equals("renderDeckViewTip"))
+                        m.replace("{ $2 = BoardGame.multiplayer.ui.TeammateDecks.tip($2); $_ = $proceed($$); }");
+                }
+            };
+        }
+    }
 }
