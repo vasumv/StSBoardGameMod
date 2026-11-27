@@ -298,11 +298,38 @@ public class MPOverlay implements PostRenderSubscriber {
             dieBottom1080 = DIE_TOP - 10;
             renderDie(sb);
             textBlock(sb, 38, dieBottom1080 + 14, DIE_W - 16, lines, Settings.CREAM_COLOR); // under the die, out of the way
-        } else {
-            textBlock(sb, 1180, 110, 720, lines, Settings.CREAM_COLOR);
+        } else if (!AbstractDungeon.isScreenUp || AbstractDungeon.screen == AbstractDungeon.CurrentScreen.MAP) {
+            // (hidden behind full screens like card rewards and the deck view; shown on the map for votes)
+            float tw = 0;
+            for (String l : lines) tw = Math.max(tw, FontHelper.getSmartWidth(FontHelper.tipBodyFont, l, 9999f, 0f));
+            float w1080 = tw / Settings.scale + 24;
+            textBlock(sb, 24, 232, w1080, lines, Settings.CREAM_COLOR); // left, under the Party button
         }
         PartyPanel.render(sb); // gold, potions and rows: one "Party" button out of combat
+        if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.MAP && !Session.mapVotes.isEmpty()) renderVoteMarks(sb);
         if (Session.proposal != null) renderProposal(sb);
+    }
+
+    /** On the map: each player's name above the room they voted for. */
+    private static void renderVoteMarks(SpriteBatch sb) {
+        java.util.HashMap<String, Integer> stack = new java.util.HashMap<>();
+        for (MP.Player p : MP.players) {
+            int[] v = Session.mapVotes.get(p.id);
+            if (v == null) continue;
+            try {
+                com.megacrit.cardcrawl.map.MapRoomNode n = AbstractDungeon.map.get(v[1]).get(v[0]);
+                String key = v[0] + "," + v[1];
+                int k = stack.getOrDefault(key, 0);
+                stack.put(key, k + 1);
+                String label = p.id == MP.myId ? "You" : p.name;
+                float w = FontHelper.getSmartWidth(FontHelper.tipBodyFont, label, 9999f, 0f) + 16 * Settings.scale;
+                float x = n.hb.cX, y = n.hb.cY + (44 + 26 * k) * Settings.scale;
+                box(sb, x - w / 2f, y - 12 * Settings.scale, w, 24 * Settings.scale, new Color(0.1f, 0.1f, 0.12f, 0.85f));
+                FontHelper.renderFontCentered(sb, FontHelper.tipBodyFont, label, x, y,
+                        p.id == MP.myId ? Settings.GREEN_TEXT_COLOR : Settings.GOLD_COLOR);
+            } catch (Throwable ignored) {
+            }
+        }
     }
 
     /** Screens that cover the fight (not target or orb pickers, which need the fight visible). */
@@ -477,10 +504,19 @@ public class MPOverlay implements PostRenderSubscriber {
     }
 
     private static void renderToasts(SpriteBatch sb) {
-        float y = Settings.HEIGHT - 260 * Settings.scale;
-        for (String t : Session.toasts) {
-            FontHelper.renderFontCentered(sb, FontHelper.tipBodyFont, t, Settings.WIDTH / 2f, y, Settings.GOLD_COLOR);
-            y -= 34 * Settings.scale;
+        // each message on its own dark pill (readable over any screen), fading out at the end
+        float s = Settings.scale;
+        float y = Settings.HEIGHT - 330 * s;
+        for (int i = 0; i < Session.toasts.size(); i++) {
+            String t = Session.toasts.get(i);
+            float life = i < Session.toastTimes.size() ? Session.toastTimes.get(i) : 1f;
+            float a = Math.max(0f, Math.min(1f, life / 0.6f));
+            float w = FontHelper.getSmartWidth(FontHelper.tipBodyFont, t, 9999f, 0f) + 36 * s, h = 32 * s;
+            box(sb, Settings.WIDTH / 2f - w / 2f, y - h / 2f, w, h, new Color(0.04f, 0.05f, 0.08f, 0.85f * a));
+            Color c = Settings.GOLD_COLOR.cpy();
+            c.a = a;
+            FontHelper.renderFontCentered(sb, FontHelper.tipBodyFont, t, Settings.WIDTH / 2f, y, c);
+            y -= 38 * s;
         }
     }
 

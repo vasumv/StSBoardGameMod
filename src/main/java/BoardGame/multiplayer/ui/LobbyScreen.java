@@ -207,10 +207,10 @@ public class LobbyScreen {
         if (sb != null) text(sb, "Ascension", x, y, Settings.GOLD_COLOR);
         if (MP.isHost()) {
             if (button(sb, clicked, x, y + 30, 60, 56, "-", false)) MP.setAscension(MP.ascension - 1);
-            if (sb != null) FontHelper.renderFontCentered(sb, FontHelper.bannerNameFont, String.valueOf(MP.ascension),
+            if (sb != null) FontHelper.renderFontCentered(sb, FontHelper.tipHeaderFont,
+                    MP.ascension == 0 ? "Off" : String.valueOf(MP.ascension),
                     sx(x + 110), sy(y + 30, 56) + 28 * Settings.scale, Settings.GOLD_COLOR);
             if (button(sb, clicked, x + 160, y + 30, 60, 56, "+", false)) MP.setAscension(MP.ascension + 1);
-            if (sb != null) text(sb, MP.ascension == 0 ? "(off)" : "", x + 240, y + 46, Settings.CREAM_COLOR);
         } else if (sb != null) {
             text(sb, MP.ascension == 0 ? "Off" : "Level " + MP.ascension, x, y + 40, Settings.CREAM_COLOR);
         }
@@ -223,9 +223,9 @@ public class LobbyScreen {
             if (button(sb, clicked, x + 420, y + 94, 420, 50, "Choose Your Relic (optional rule): "
                     + (MP.chooseRelic ? "On" : "Off"), MP.chooseRelic)) MP.setChooseRelic(!MP.chooseRelic);
         } else if (sb != null) {
-            text(sb, "Last Stand: " + (MP.lastStand ? "On" : "Off") + "    Choose Your Relic: "
-                    + (MP.chooseRelic ? "On" : "Off") + "    Sequential Turns: " + (MP.sequential ? "On" : "Off"),
-                    x + 420, y + 40, Settings.CREAM_COLOR);
+            text(sb, "Last Stand: " + (MP.lastStand ? "On" : "Off") + "      Choose Your Relic: "
+                    + (MP.chooseRelic ? "On" : "Off"), x + 420, y + 40, Settings.CREAM_COLOR);
+            text(sb, "Sequential Turns: " + (MP.sequential ? "On" : "Off"), x + 420, y + 70, Settings.CREAM_COLOR);
         }
         com.google.gson.JsonObject saved = MP.isHost() ? BoardGame.multiplayer.SavedSession.read() : null;
         if (saved != null && button(sb, clicked, PX + 220, PY + PH - 80, 300, 56,
