@@ -283,7 +283,7 @@ public class MPOverlay implements PostRenderSubscriber {
         }
         if (combat) {
             MP.Player me = MP.me();
-            lines.add("You" + (me != null && me.endTurnReady ? ": READY (click End Turn again to cancel)" : ""));
+            lines.add("You" + (me != null && me.endTurnReady ? ": READY (End Turn again to cancel)" : ""));
             if (false) lines.add("You: row " + (MP.myRow() + 1) + (me != null && me.endTurnReady
                     ? "  [READY - click End Turn again to cancel]" : ""));
             MP.Player actor = Session.currentActor();
@@ -572,6 +572,24 @@ public class MPOverlay implements PostRenderSubscriber {
         if (lines.isEmpty()) return;
         float lh = 26f * Settings.scale;
         float x = x1080 * Settings.scale, w = w1080 * Settings.scale;
+        // wrap anything wider than the box at a space, indenting the continuation
+        ArrayList<String> wrapped = new ArrayList<>();
+        float max = w - 16 * Settings.scale;
+        for (String l : lines) {
+            String rest = l;
+            boolean first = true;
+            while (FontHelper.getSmartWidth(FontHelper.tipBodyFont, rest, 9999f, 0f) > max && rest.length() > 10) {
+                int cut = rest.length() - 1;
+                while (cut > 8 && (rest.charAt(cut) != ' '
+                        || FontHelper.getSmartWidth(FontHelper.tipBodyFont, rest.substring(0, cut), 9999f, 0f) > max)) cut--;
+                if (cut <= 8) break;
+                wrapped.add((first ? "" : "   ") + rest.substring(0, cut));
+                rest = rest.substring(cut + 1);
+                first = false;
+            }
+            wrapped.add((first ? "" : "   ") + rest);
+        }
+        lines = wrapped;
         float top = Settings.HEIGHT - yTop1080 * Settings.scale;
         box(sb, x - 8 * Settings.scale, top - lh * lines.size() - 12 * Settings.scale, w, lh * lines.size()
                 + 16 * Settings.scale, BG);

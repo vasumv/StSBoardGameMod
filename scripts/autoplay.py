@@ -6,6 +6,8 @@ Prints one line per floor (room, result, HP)."""
 import re, subprocess, sys, time
 
 B = "/home/vasu/fun/spire_board_game/sandbox"
+import os
+PLAYERS = ["p%d" % k for k in range(1, int(os.environ.get("PLAYERS", "2")) + 1)]
 # cards that open a choice screen (this script can't answer those)
 SKIP = {"BGSurvivor", "BGAcrobatics", "BGPrepared", "BGWarcry", "BGHeadbutt", "BGArmaments", "BGDualcast"}
 
@@ -91,18 +93,17 @@ def fight():
         time.sleep(2.5)  # die phase / start of turn
         if phase("p1") != "COMBAT":
             return "won"
-        play_turn("p1")
-        play_turn("p2")
+        for p in PLAYERS:
+            play_turn(p)
         t0 = turn("p1")
-        q("p1", "end")
-        q("p2", "end")
+        for p in PLAYERS:
+            q(p, "end")
         # End Turn toggles "ready": never send it again until the next turn has really started
         for _ in range(60):
             time.sleep(1)
             if phase("p1") != "COMBAT":
                 return "won"
-            if turn("p1") > t0 and turn("p2") > t0 and "idle=true" in q("p1", "idle") \
-                    and "idle=true" in q("p2", "idle"):
+            if all(turn(p) > t0 for p in PLAYERS) and all("idle=true" in q(p, "idle") for p in PLAYERS):
                 break
     # stuck: finish it so the run goes on
     _, _, _, mons = state("p1")
@@ -131,10 +132,10 @@ for f in range(floors):
         print("run over (Act 4 boss)", flush=True)
         break
     if not n:
-        for p in ("p1", "p2"):
+        for p in PLAYERS:
             q(p, "proceed")
         time.sleep(8)
-        for p in ("p1", "p2"):
+        for p in PLAYERS:
             q(p, "proceed")
         time.sleep(15)
         n = nxt()
@@ -144,8 +145,8 @@ for f in range(floors):
     xy, kind = n.split("=")
     last_kind = kind
     x, y = xy.split(",")
-    q("p1", "mp vote %s %s" % (x, y))
-    q("p2", "mp vote %s %s" % (x, y))
+    for p in PLAYERS:
+        q(p, "mp vote %s %s" % (x, y))
     time.sleep(7)
     ph = phase("p1")
     res = ""
@@ -154,9 +155,8 @@ for f in range(floors):
         time.sleep(3)  # show the rewards a moment
     else:
         time.sleep(5)  # show the room
-    _, _, hp1, _ = state("p1")
-    _, _, hp2, _ = state("p2")
-    print("floor %d %s %s %s | Alice %s Bob %s" % (f + 1, kind, ph, res, hp1, hp2), flush=True)
-    for p in ("p1", "p2"):
+    hps = " ".join("%s %s" % (p, state(p)[2]) for p in PLAYERS)
+    print("floor %d %s %s %s | %s" % (f + 1, kind, ph, res, hps), flush=True)
+    for p in PLAYERS:
         q(p, "skiproom")
     time.sleep(2)
