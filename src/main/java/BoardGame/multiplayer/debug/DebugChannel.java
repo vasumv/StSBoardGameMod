@@ -262,6 +262,10 @@ public class DebugChannel {
                 AbstractDungeon.getCurrRoom().phase = com.megacrit.cardcrawl.rooms.AbstractRoom.RoomPhase.COMPLETE;
                 AbstractDungeon.dungeonMapScreen.open(false);
                 return "ok";
+            case "nextelite": { // test: the next elite is this encounter, e.g. "nextelite BoardGame:Shield_and_Spear"
+                AbstractDungeon.eliteMonsterList.add(0, a[1].replace('_', ' '));
+                return "next elite " + AbstractDungeon.eliteMonsterList.get(0);
+            }
             case "nextenc": { // test: the next fights use these encounters (one per row), e.g. "nextenc BoardGame:Angry Gremlin Team"
                 String rest = String.join(" ", java.util.Arrays.copyOfRange(a, 1, a.length));
                 String[] keys = rest.split(",");

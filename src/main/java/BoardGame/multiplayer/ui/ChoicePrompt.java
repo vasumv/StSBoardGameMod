@@ -56,10 +56,44 @@ public class ChoicePrompt {
         };
     }
 
+    /**
+     * Buttons sized to their text: side by side when they fit, otherwise stacked (long choices
+     * like "Switch with Bob (row 2): Spire Spear (2 Burns)").
+     */
     private static float[] box(int i) {
-        float w = 260 * Settings.scale, h = 56 * Settings.scale, gap = 20 * Settings.scale;
-        float total = options.size() * w + (options.size() - 1) * gap;
-        return new float[]{Settings.WIDTH / 2f - total / 2f + i * (w + gap), Settings.HEIGHT / 2f - 40 * Settings.scale, w, h};
+        float s = Settings.scale, h = 52 * s, gap = 16 * s;
+        float[] w = new float[options.size()];
+        float total = 0, widest = 0;
+        for (int k = 0; k < options.size(); k++) {
+            w[k] = Math.max(200 * s, FontHelper.getSmartWidth(FontHelper.tipBodyFont, options.get(k), 9999f, 0f) + 48 * s);
+            total += w[k] + (k > 0 ? gap : 0);
+            widest = Math.max(widest, w[k]);
+        }
+        float top = Settings.HEIGHT / 2f + 10 * s;
+        if (total <= Settings.WIDTH * 0.8f) { // one row
+            float x = Settings.WIDTH / 2f - total / 2f;
+            for (int k = 0; k < i; k++) x += w[k] + gap;
+            return new float[]{x, top - h, w[i], h};
+        }
+        // a column of equal-width buttons
+        return new float[]{Settings.WIDTH / 2f - widest / 2f, top - h - i * (h + gap * 0.6f), widest, h};
+    }
+
+    /** The panel around the title and buttons: x, y, w, h. */
+    private static float[] panel() {
+        float s = Settings.scale;
+        float minX = Float.MAX_VALUE, maxX = -Float.MAX_VALUE, minY = Float.MAX_VALUE;
+        for (int k = 0; k < options.size(); k++) {
+            float[] b = box(k);
+            minX = Math.min(minX, b[0]);
+            maxX = Math.max(maxX, b[0] + b[2]);
+            minY = Math.min(minY, b[1]);
+        }
+        float titleW = FontHelper.getSmartWidth(FontHelper.tipBodyFont, title, 9999f, 0f) + 80 * s;
+        float w = Math.max(Math.max(600 * s, titleW), maxX - minX + 60 * s);
+        float top = Settings.HEIGHT / 2f + 80 * s;
+        float bottom = minY - 24 * s;
+        return new float[]{Settings.WIDTH / 2f - w / 2f, bottom, w, top - bottom};
     }
 
     public static void update() {
@@ -82,12 +116,15 @@ public class ChoicePrompt {
 
     public static void render(SpriteBatch sb) {
         if (onPick == null) return;
-        float pw = Math.max(600 * Settings.scale, box(options.size() - 1)[0] + box(0)[2] - box(0)[0] + 60 * Settings.scale);
-        float px = Settings.WIDTH / 2f - pw / 2f, py = Settings.HEIGHT / 2f - 80 * Settings.scale;
-        sb.setColor(new Color(0.05f, 0.07f, 0.1f, 0.92f));
-        sb.draw(ImageMaster.WHITE_SQUARE_IMG, px, py, pw, 190 * Settings.scale);
+        float[] pr = panel();
+        sb.setColor(new Color(0.05f, 0.07f, 0.1f, 0.94f));
+        sb.draw(ImageMaster.WHITE_SQUARE_IMG, pr[0], pr[1], pr[2], pr[3]);
+        sb.setColor(new Color(0.85f, 0.7f, 0.3f, 0.6f)); // thin gold frame
+        float t = 2 * Settings.scale;
+        sb.draw(ImageMaster.WHITE_SQUARE_IMG, pr[0], pr[1] + pr[3] - t, pr[2], t);
+        sb.draw(ImageMaster.WHITE_SQUARE_IMG, pr[0], pr[1], pr[2], t);
         FontHelper.renderFontCentered(sb, FontHelper.tipBodyFont, title, Settings.WIDTH / 2f,
-                py + 150 * Settings.scale, Settings.GOLD_COLOR);
+                pr[1] + pr[3] - 34 * Settings.scale, Settings.GOLD_COLOR);
         for (int i = 0; i < options.size(); i++) {
             float[] b = box(i);
             boolean hov = InputHelper.mX >= b[0] && InputHelper.mX <= b[0] + b[2] && InputHelper.mY >= b[1]

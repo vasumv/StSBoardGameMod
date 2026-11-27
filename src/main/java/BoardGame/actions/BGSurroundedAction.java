@@ -23,6 +23,12 @@ public class BGSurroundedAction extends AbstractGameAction {
     public void update() {
         isDone=true;
         if (BoardGame.multiplayer.MP.inRun && BoardGame.multiplayer.MP.playerCount() > 1) {
+            // 3-4 players may switch rows first: wait until everyone has answered
+            if (!BoardGame.multiplayer.combat.FacingVote.ready(facingText(BoardGame.multiplayer.MP.myRow()),
+                    this::facingText)) {
+                isDone = false;
+                return;
+            }
             partyFacing();
             return;
         }
@@ -70,6 +76,21 @@ public class BGSurroundedAction extends AbstractGameAction {
      * faces both; with 3 the middle row faces both; with 4 the bottom two face the Shield and the
      * top two the Spear.
      */
+    /** What a player in this row faces this turn, e.g. "Spire Shield (lose 1 Energy)". */
+    private String facingText(int row) {
+        int n = BoardGame.multiplayer.MP.playerCount();
+        StringBuilder sb = new StringBuilder();
+        for (AbstractMonster m : AbstractDungeon.getMonsters().monsters) {
+            if (m.isDeadOrEscaped() || m.halfDead) continue;
+            if (m instanceof BoardGame.monsters.bgending.BGSpireShield && row <= 1 && sb.indexOf("Shield") < 0)
+                sb.append(sb.length() > 0 ? " and " : "").append("Spire Shield (").append(m.nextMove == 1
+                        ? "can't draw cards" : m.nextMove == 2 ? "your damage is 0" : "lose 1 Energy").append(")");
+            if (m instanceof BoardGame.monsters.bgending.BGSpireSpear && row >= n - 2 && sb.indexOf("Spear") < 0)
+                sb.append(sb.length() > 0 ? " and " : "").append("Spire Spear (2 Burns)");
+        }
+        return sb.length() == 0 ? "nothing" : sb.toString();
+    }
+
     private void partyFacing() {
         int n = BoardGame.multiplayer.MP.playerCount();
         int row = BoardGame.multiplayer.MP.myRow();
