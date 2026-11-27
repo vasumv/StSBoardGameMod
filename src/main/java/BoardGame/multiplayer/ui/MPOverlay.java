@@ -44,6 +44,12 @@ public class MPOverlay implements PostRenderSubscriber {
     private static class Button {
         float x, y, w, h;
         String text;
+        Color fill; // optional: a coloured button (Accept / Decline)
+
+        Button(float x, float y, float w, float h, String text, Color fill) {
+            this(x, y, w, h, text);
+            this.fill = fill;
+        }
 
         Button(float x, float y, float w, float h, String text) {
             this.x = x;
@@ -68,7 +74,10 @@ public class MPOverlay implements PostRenderSubscriber {
         }
 
         void render(SpriteBatch sb) {
-            box(sb, sx(), sy(), sw(), sh(), hovered() ? BG_HOVER : BG);
+            Color c = fill == null ? (hovered() ? BG_HOVER : BG)
+                    : hovered() ? new Color(Math.min(1f, fill.r + 0.15f), Math.min(1f, fill.g + 0.15f),
+                    Math.min(1f, fill.b + 0.15f), 1f) : fill;
+            box(sb, sx(), sy(), sw(), sh(), c);
             FontHelper.renderFontCentered(sb, FontHelper.tipBodyFont, text, sx() + sw() / 2f, sy() + sh() / 2f,
                     Settings.GOLD_COLOR);
         }
@@ -83,8 +92,8 @@ public class MPOverlay implements PostRenderSubscriber {
     // die
     private static final Button keepBtn = new Button(36, 260, 160, 38, "");
     // rollback vote
-    private static final Button acceptBtn = new Button(760, 520, 190, 50, "Accept");
-    private static final Button declineBtn = new Button(970, 520, 190, 50, "Decline");
+    private static final Button acceptBtn = new Button(760, 520, 190, 50, "Accept", new Color(0.15f, 0.45f, 0.2f, 1f));
+    private static final Button declineBtn = new Button(970, 520, 190, 50, "Decline", new Color(0.5f, 0.15f, 0.15f, 1f));
 
     // party actions (built fresh each frame; the same list is used for clicks and drawing)
     private interface Act {

@@ -139,7 +139,8 @@ public class PartyPanel {
         btns.clear();
         if (!available()) return;
         // the opener sits where the old party buttons were, under the relic bar
-        boolean screenFree = !AbstractDungeon.isScreenUp || AbstractDungeon.screen == AbstractDungeon.CurrentScreen.MAP;
+        boolean screenFree = !AbstractDungeon.isScreenUp || AbstractDungeon.screen == AbstractDungeon.CurrentScreen.MAP
+                || AbstractDungeon.screen == AbstractDungeon.CurrentScreen.SHOP; // give gold while browsing
         if (!open) {
             if (screenFree) btn(sb, 16, 170, 200, 40, "Party", true, () -> open = true);
             return;
