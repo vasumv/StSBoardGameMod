@@ -50,6 +50,17 @@ public class MonsterSync {
         return r == null ? 0 : r;
     }
 
+    /**
+     * Is this enemy in the given row? Usually its own row, but in Act 4 the Spire Shield and Spire
+     * Spear cards each cover two rows (with 3 players the middle row faces both).
+     */
+    public static boolean covers(AbstractMonster m, int r) {
+        int n = MP.playerCount();
+        if (m instanceof BoardGame.monsters.bgending.BGSpireShield) return r <= 1;
+        if (m instanceof BoardGame.monsters.bgending.BGSpireSpear) return r >= n - 2;
+        return row(m) == r;
+    }
+
     public static String id(AbstractMonster m) {
         return MPFields.Monster.id.get(m);
     }

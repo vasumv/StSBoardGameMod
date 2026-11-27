@@ -93,16 +93,29 @@ def fight():
         time.sleep(2.5)  # die phase / start of turn
         if phase("p1") != "COMBAT":
             return "won"
+        # Spire Shield/Spear with 3+ players: answer "switch rows?" (Alice and Bob swap on odd turns)
+        time.sleep(1)
+        for k, p in enumerate(PLAYERS):
+            pick = 1 if (rnd % 2 == 0 and k < 2) else 0
+            if "chose" in q(p, "choose %d" % pick):
+                time.sleep(0.5)
+        time.sleep(2)
         for p in PLAYERS:
             play_turn(p)
         t0 = turn("p1")
         for p in PLAYERS:
             q(p, "end")
+        for _ in range(3):  # end-of-turn Lightning Orbs ask for a target
+            time.sleep(1.5)
+            for p in PLAYERS:
+                q(p, "target")
         # End Turn toggles "ready": never send it again until the next turn has really started
         for _ in range(60):
             time.sleep(1)
             if phase("p1") != "COMBAT":
                 return "won"
+            for p in PLAYERS:
+                q(p, "target")
             if all(turn(p) > t0 for p in PLAYERS) and all("idle=true" in q(p, "idle") for p in PLAYERS):
                 break
     # stuck: finish it so the run goes on

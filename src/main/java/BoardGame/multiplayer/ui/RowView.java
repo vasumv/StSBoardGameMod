@@ -66,7 +66,7 @@ public class RowView {
     public static boolean inPanel(AbstractMonster m) {
         if (!enabled() || MonsterSync.isBossRoom()) return false;
         int r = MonsterSync.row(m);
-        return r != MP.myRow() && panelIndexForRow(r) >= 0;
+        return !MonsterSync.covers(m, MP.myRow()) && panelIndexForRow(r) >= 0;
     }
 
     private static float s() {
@@ -114,12 +114,35 @@ public class RowView {
     private static AbstractMonster drawing;
     private static float drawingHomeX;
 
+    /**
+     * Spire Shield and Spire Spear each cover two rows. A player who faces both (the middle row with
+     * 3 players) sees both in their own view; they would stand on the same spot, so spread them out.
+     */
+    private static void spreadSharedRowEnemies(AbstractMonster m) {
+        boolean shield = m instanceof BoardGame.monsters.bgending.BGSpireShield;
+        if (!enabled() || !(shield || m instanceof BoardGame.monsters.bgending.BGSpireSpear)) return;
+        int both = 0;
+        for (AbstractMonster x : AbstractDungeon.getCurrRoom().monsters.monsters)
+            if (!x.isDeadOrEscaped() && MonsterSync.covers(x, MP.myRow())
+                    && (x instanceof BoardGame.monsters.bgending.BGSpireShield || x instanceof BoardGame.monsters.bgending.BGSpireSpear))
+                both++;
+        if (both < 2) return;
+        float want = Settings.WIDTH * (shield ? 0.60f : 0.82f);
+        float wantY = AbstractDungeon.floorY; // both stand on the floor line
+        if (Math.abs(m.drawX - want) < 1f && Math.abs(m.drawY - wantY) < 1f) return;
+        m.drawX = want;
+        m.drawY = wantY;
+        basemod.ReflectionHacks.privateMethod(com.megacrit.cardcrawl.core.AbstractCreature.class, "refreshHitboxLocation").invoke(m);
+        m.refreshIntentHbLocation();
+    }
+
     // ---------------- enemy hitboxes follow the panel ----------------
 
     @SpirePatch2(clz = AbstractMonster.class, method = "update")
     public static class MonsterHitboxes {
         @SpirePostfixPatch
         public static void postfix(AbstractMonster __instance) {
+            spreadSharedRowEnemies(__instance);
             if (!inPanel(__instance)) return;
             float[] slot = slotFor(__instance);
             Hitbox hb = __instance.hb;

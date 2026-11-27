@@ -853,7 +853,25 @@ public class Session {
         AbstractDungeon.dungeonMapScreen.map.bossHb.hovered = false;
     }
 
+    private static MapRoomNode movingNode; // the room the party is moving into, until the move starts
+
     private static void updatePendingMove() {
+        // The map only updates the nodes in its visible list (built from the map when the act is
+        // set up). Make sure the node we are moving into gets updated so the move really starts.
+        if (movingNode != null) {
+            try {
+                float t = basemod.ReflectionHacks.getPrivate(movingNode, MapRoomNode.class, "animWaitTimer");
+                java.util.ArrayList<?> vis = basemod.ReflectionHacks.getPrivate(AbstractDungeon.dungeonMapScreen,
+                        com.megacrit.cardcrawl.screens.DungeonMapScreen.class, "visibleMapNodes");
+                if (t == 0f) movingNode = null;
+                else if (!AbstractDungeon.isScreenUp || vis == null || !vis.contains(movingNode)) {
+                    MP.logger.info("moving into a node the map does not update: updating it directly");
+                    movingNode.update();
+                }
+            } catch (Throwable e) {
+                movingNode = null;
+            }
+        }
         if (pendingMove == null) return;
         try {
             if (AbstractDungeon.screen != AbstractDungeon.CurrentScreen.MAP) {
@@ -881,6 +899,7 @@ public class Session {
                 AbstractDungeon.dungeonMapScreen.dismissable = true;
             }
             basemod.ReflectionHacks.setPrivate(node, MapRoomNode.class, "animWaitTimer", 0.25f);
+            movingNode = node;
         } catch (Throwable t) {
             MP.logger.error("could not move", t);
         }
@@ -962,6 +981,7 @@ public class Session {
             onRoomChanged();
         }
         if (!combat()) {
+            BoardGame.multiplayer.combat.FacingVote.fightOver();
             // the local game may have just won the fight: share what ended it
             if (room != null && room.monsters != null && room.isBattleOver && !battleEndHandled && baseline != null
                     && AbstractDungeon.actionManager.actions.isEmpty()) {
@@ -1251,6 +1271,7 @@ public class Session {
 
     private static void onRoomChanged() {
         battleEndHandled = false;
+        BoardGame.multiplayer.ui.ChoicePrompt.roomChanged(); // a question from the last room no longer applies
         SavedSession.write();
         BoardGame.multiplayer.combat.DiePhase.reset();
         // Messages for this room are held back until this game arrives (canProcess), so everything

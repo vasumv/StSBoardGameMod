@@ -43,8 +43,9 @@ reference implementation: `reference/enemy_audit.md`, `reference/enemy_mp_data.j
 ## Known gaps
 
 - Not yet run in game: Steam lobby codes with real accounts.
-- Act 4 Shield and Spear with 3-4 players: the cards let players switch rows before Facing;
-  mid-fight switching isn't offered yet (with 2 players everyone faces both, so it doesn't matter).
+- Act 4 Shield and Spear with 3-4 players: each turn everyone is asked whether to switch rows
+  before Facing (mutual picks swap). Shield covers rows 1-2, Spear the last two; the middle player
+  with 3 sees both. 4 players not run in game (memory).
 - Sequential Turns is experimental: everyone's start-of-turn draw still happens at the
   start of the round.
 - If two players pick the same character they each get a full reward deck (the board
@@ -77,6 +78,11 @@ Later 2026-11-26: gremlin teams summon 3 and match in every game; Ruby/Sapphire 
 (agree, call off when someone takes the relic or acts at the campfire); Emerald key shared;
 Act 4 at Ascension 11 through the door: Facing hits both players with 2 players, Shield bottom
 row and Spear top row, Heart 240 HP for 2 at A11. Recorded Act 4.
+
+2026-11-27 (3 copies): straight to Act 4 (debug `act4`, scripts/act4setup.sh); row-switch vote
+and swap, middle row facing both; Heart 360 HP for 3 at A11. Fixed: a question left open when a
+fight ends stayed on screen (now closed on fight end / room change); a map move that sometimes
+never started (the move's room is now updated directly when the map isn't updating it).
 
 ## What the code investigation found
 

@@ -88,6 +88,38 @@ public class DebugChannel {
                     return "ERROR " + t;
                 }
             }
+            case "target": { // test: answer the mod's "Choose a target" screen (Lightning Orb...) with enemy i, or the first living one
+                if (AbstractDungeon.screen != BoardGame.screen.TargetSelectScreen.Enum.TARGET_SELECT) return "no target screen";
+                java.util.ArrayList<com.megacrit.cardcrawl.monsters.AbstractMonster> ms = AbstractDungeon.getCurrRoom().monsters.monsters;
+                com.megacrit.cardcrawl.monsters.AbstractMonster t = null;
+                if (a.length > 1) t = ms.get(Integer.parseInt(a[1]));
+                for (com.megacrit.cardcrawl.monsters.AbstractMonster x : ms) if (t == null && !x.isDeadOrEscaped() && x.currentHealth > 0) t = x;
+                BoardGame.screen.TargetSelectScreen ts = (BoardGame.screen.TargetSelectScreen) basemod.BaseMod.getCustomScreen(BoardGame.screen.TargetSelectScreen.Enum.TARGET_SELECT);
+                if (!ts.isDone) {
+                    ts.isDone = true;
+                    ts.action.execute(t);
+                }
+                AbstractDungeon.player.inSingleTargetMode = false;
+                com.megacrit.cardcrawl.core.GameCursor.hidden = false;
+                AbstractDungeon.closeCurrentScreen();
+                return "targeted " + (t == null ? "-" : t.name);
+            }
+            case "choose": { // test: answer the open on-screen question (ChoicePrompt) with option i
+                if (!BoardGame.multiplayer.ui.ChoicePrompt.open()) return "no question";
+                java.util.function.IntConsumer h = BoardGame.multiplayer.ui.ChoicePrompt.current();
+                BoardGame.multiplayer.ui.ChoicePrompt.close(h);
+                h.accept(Integer.parseInt(a[1]));
+                return "chose " + a[1];
+            }
+            case "act4": // test: leave this act straight for Act 4 (as the mod's quick start does); run in every game
+                com.megacrit.cardcrawl.core.CardCrawlGame.nextDungeon = "TheEnding";
+                com.megacrit.cardcrawl.core.Settings.hasRubyKey = true;
+                com.megacrit.cardcrawl.core.Settings.hasSapphireKey = true;
+                com.megacrit.cardcrawl.core.Settings.hasEmeraldKey = true;
+                AbstractDungeon.fadeOut();
+                AbstractDungeon.isDungeonBeaten = true;
+                AbstractDungeon.getCurrRoom().phase = com.megacrit.cardcrawl.rooms.AbstractRoom.RoomPhase.COMPLETE;
+                return "to Act 4";
             case "givekeys": // test: all three Act 4 keys
                 com.megacrit.cardcrawl.core.Settings.hasRubyKey = true;
                 com.megacrit.cardcrawl.core.Settings.hasEmeraldKey = true;
@@ -158,6 +190,14 @@ public class DebugChannel {
                         StringBuilder sb = new StringBuilder();
                         for (BoardGame.multiplayer.Session.Step st : BoardGame.multiplayer.Session.steps)
                             sb.append('[').append(st.label).append("] ");
+                        return sb.toString();
+                    }
+                    case "inbox": { // test: messages waiting to be processed, and this game's map votes
+                        com.google.gson.JsonObject h = BoardGame.multiplayer.net.Net.inbox.peek();
+                        StringBuilder sb = new StringBuilder("inbox=" + BoardGame.multiplayer.net.Net.inbox.size()
+                                + " roomKey=" + BoardGame.multiplayer.MP.roomKey() + " head=" + h + " votes=");
+                        for (java.util.Map.Entry<Integer, int[]> e : BoardGame.multiplayer.Session.mapVotes.entrySet())
+                            sb.append(e.getKey()).append(':').append(e.getValue()[0]).append(',').append(e.getValue()[1]).append(' ');
                         return sb.toString();
                     }
                     case "map": {

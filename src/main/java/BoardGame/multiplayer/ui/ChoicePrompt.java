@@ -29,8 +29,34 @@ public class ChoicePrompt {
         return onPick != null;
     }
 
+    private static Object askedIn; // the room the question was asked in
+
+    private static Object room() {
+        try {
+            return com.megacrit.cardcrawl.dungeons.AbstractDungeon.currMapNode == null ? null
+                    : com.megacrit.cardcrawl.dungeons.AbstractDungeon.getCurrRoom();
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    /** The party left the room: drop a question asked in an earlier room. */
+    public static void roomChanged() {
+        if (onPick != null && askedIn != room()) onPick = null;
+    }
+
+    /** Close the question only if it is this one (still the same answer handler). */
+    public static void close(IntConsumer handler) {
+        if (onPick == handler) onPick = null;
+    }
+
+    public static IntConsumer current() {
+        return onPick;
+    }
+
     public static void ask(String t, List<String> opts, IntConsumer pick) {
         title = t;
+        askedIn = room();
         options.clear();
         options.addAll(opts);
         onPick = pick;

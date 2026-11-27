@@ -21,6 +21,7 @@ import java.util.HashMap;
 public class FacingVote {
     private static int turn = -1;
     private static boolean asked = false, resolved = false;
+    private static java.util.function.IntConsumer prompt; // our open question, if any
     private static final HashMap<Integer, Integer> choice = new HashMap<>(); // player -> teammate id, or -1 to stay
 
     /** Called each frame by the waiting Facing action: true once Facing can be applied. */
@@ -47,7 +48,7 @@ public class FacingVote {
                 ids.add(p.id);
             }
             ChoicePrompt.ask("Spire Shield and Spear: switch rows before Facing? (both must pick each other)",
-                    labels, i -> {
+                    labels, prompt = i -> {
                         JsonObject o = MP.msg("facing");
                         o.addProperty("turn", turn);
                         o.addProperty("with", ids.get(Math.max(0, Math.min(ids.size() - 1, i))));
@@ -55,6 +56,14 @@ public class FacingVote {
                     });
         }
         return false;
+    }
+
+    /** The fight ended (e.g. the last enemy died during the question): drop the question. */
+    public static void fightOver() {
+        if (prompt != null) {
+            ChoicePrompt.close(prompt);
+            prompt = null;
+        }
     }
 
     public static void onMessage(int from, JsonObject m) {
