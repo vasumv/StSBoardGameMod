@@ -154,6 +154,7 @@ public class Session {
     public static final ArrayList<Float> toastTimes = new ArrayList<>();
 
     public static void reset() {
+        moveTarget = null;
         soloBonusRemoved = false;
         lastStandUsed = false;
         BoardGame.multiplayer.ui.RelicPicker.reset();
@@ -830,6 +831,8 @@ public class Session {
     /** Move the party: replay the game's own map click for that room. */
     private static void doMove(int x, int y) {
         pendingMove = new int[]{x, y};
+        moveTarget = new int[]{x, y};
+        moveWait = 0f;
     }
 
     private static int[] pendingMove;
@@ -853,9 +856,35 @@ public class Session {
         AbstractDungeon.dungeonMapScreen.map.bossHb.hovered = false;
     }
 
+    public static String moveDebug = "";
     private static MapRoomNode movingNode; // the room the party is moving into, until the move starts
 
+    private static int[] moveTarget; // the room the party agreed to move into
+    private static float moveWait = 0f;
+
+    /** Watchdog: a move that has not reached its room after a few seconds is logged and tried again. */
+    private static void checkMoveArrived() {
+        if (moveTarget == null) return;
+        MapRoomNode cur = AbstractDungeon.currMapNode;
+        if (cur != null && cur.x == moveTarget[0] && cur.y == moveTarget[1]) {
+            moveTarget = null;
+            return;
+        }
+        if (pendingMove != null) return;
+        moveWait += Gdx.graphics.getDeltaTime();
+        if (moveWait < 4f) return;
+        moveWait = 0f;
+        MP.logger.warn("move to " + moveTarget[0] + "," + moveTarget[1] + " has not arrived: nextRoom="
+                + (AbstractDungeon.nextRoom == null ? "-" : AbstractDungeon.nextRoom.x + "," + AbstractDungeon.nextRoom.y)
+                + " fading=" + AbstractDungeon.isFadingOut + "/" + AbstractDungeon.waitingOnFadeOut + " screen="
+                + AbstractDungeon.screen + " screenUp=" + AbstractDungeon.isScreenUp + " phase="
+                + AbstractDungeon.getCurrRoom().phase + " " + moveDebug + "; trying again");
+        if (AbstractDungeon.waitingOnFadeOut || AbstractDungeon.isFadingOut) return; // a transition is under way
+        pendingMove = new int[]{moveTarget[0], moveTarget[1]};
+    }
+
     private static void updatePendingMove() {
+        checkMoveArrived();
         // The map only updates the nodes in its visible list (built from the map when the act is
         // set up). Make sure the node we are moving into gets updated so the move really starts.
         if (movingNode != null) {
@@ -884,10 +913,12 @@ public class Session {
                     instanceof com.megacrit.cardcrawl.rooms.MonsterRoomBoss;
             if (boss) {
                 pendingMove = null;
+                moveTarget = null; // the boss room is a new node, not on the map
                 enterBoss();
                 return;
             }
             MapRoomNode node = AbstractDungeon.map.get(pendingMove[1]).get(pendingMove[0]);
+            moveDebug = "move=" + pendingMove[0] + "," + pendingMove[1] + " screen=" + AbstractDungeon.screen;
             if (AbstractDungeon.screen != AbstractDungeon.CurrentScreen.MAP) {
                 if (AbstractDungeon.isScreenUp) AbstractDungeon.closeCurrentScreen();
                 AbstractDungeon.dungeonMapScreen.open(false);
@@ -900,6 +931,7 @@ public class Session {
             }
             basemod.ReflectionHacks.setPrivate(node, MapRoomNode.class, "animWaitTimer", 0.25f);
             movingNode = node;
+            moveDebug += " started";
         } catch (Throwable t) {
             MP.logger.error("could not move", t);
         }

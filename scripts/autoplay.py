@@ -88,18 +88,27 @@ def play_turn(p):
             return
 
 
+def answer_rows(rnd):
+    """Spire Shield/Spear with 3+ players: answer "switch rows?" (the first two swap on even rounds)."""
+    asked = False
+    for _ in range(4):
+        for k, p in enumerate(PLAYERS):
+            pick = 1 if (rnd % 2 == 0 and k < 2) else 0
+            if "chose" in q(p, "choose %d" % pick):
+                asked = True
+        if asked:
+            time.sleep(1.5)
+            return
+        time.sleep(0.7)
+
+
 def fight():
     for rnd in range(ROUNDS):
         time.sleep(2.5)  # die phase / start of turn
         if phase("p1") != "COMBAT":
             return "won"
         # Spire Shield/Spear with 3+ players: answer "switch rows?" (Alice and Bob swap on odd turns)
-        time.sleep(1)
-        for k, p in enumerate(PLAYERS):
-            pick = 1 if (rnd % 2 == 0 and k < 2) else 0
-            if "chose" in q(p, "choose %d" % pick):
-                time.sleep(0.5)
-        time.sleep(2)
+        answer_rows(rnd)
         for p in PLAYERS:
             play_turn(p)
         t0 = turn("p1")
@@ -116,6 +125,7 @@ def fight():
                 return "won"
             for p in PLAYERS:
                 q(p, "target")
+            answer_rows(rnd + 1)
             if all(turn(p) > t0 for p in PLAYERS) and all("idle=true" in q(p, "idle") for p in PLAYERS):
                 break
     # stuck: finish it so the run goes on

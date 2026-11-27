@@ -195,7 +195,12 @@ public class DebugChannel {
                     case "inbox": { // test: messages waiting to be processed, and this game's map votes
                         com.google.gson.JsonObject h = BoardGame.multiplayer.net.Net.inbox.peek();
                         StringBuilder sb = new StringBuilder("inbox=" + BoardGame.multiplayer.net.Net.inbox.size()
-                                + " roomKey=" + BoardGame.multiplayer.MP.roomKey() + " head=" + h + " votes=");
+                                + " roomKey=" + BoardGame.multiplayer.MP.roomKey() + " head=" + h
+                                + " nextRoom=" + (AbstractDungeon.nextRoom == null ? "-" : AbstractDungeon.nextRoom.x + "," + AbstractDungeon.nextRoom.y)
+                                + " fading=" + AbstractDungeon.isFadingOut + "/" + AbstractDungeon.waitingOnFadeOut
+                                + " screenUp=" + AbstractDungeon.isScreenUp + " screen=" + AbstractDungeon.screen
+                                + " node31timer=" + basemod.ReflectionHacks.getPrivate(AbstractDungeon.map.get(1).get(3), com.megacrit.cardcrawl.map.MapRoomNode.class, "animWaitTimer")
+                                + " " + BoardGame.multiplayer.Session.moveDebug + " votes=");
                         for (java.util.Map.Entry<Integer, int[]> e : BoardGame.multiplayer.Session.mapVotes.entrySet())
                             sb.append(e.getKey()).append(':').append(e.getValue()[0]).append(',').append(e.getValue()[1]).append(' ');
                         return sb.toString();
