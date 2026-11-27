@@ -140,6 +140,7 @@ public class MPOverlay implements PostRenderSubscriber {
         PartyEventUI.update();
         EventDie.update();
         BoardGame.multiplayer.combat.DiePhase.autoKeep();
+        placeDieButtons();
         BoardGame.multiplayer.combat.IntentDetails.update();
         if (BoardGame.multiplayer.combat.DiePhase.rollAnim > 0)
             BoardGame.multiplayer.combat.DiePhase.rollAnim -= Gdx.graphics.getDeltaTime();
@@ -296,8 +297,10 @@ public class MPOverlay implements PostRenderSubscriber {
         } else if (combat) {
             RowView.render(sb);
             dieBottom1080 = DIE_TOP - 10;
-            renderDie(sb);
-            textBlock(sb, 38, dieBottom1080 + 14, DIE_W - 16, lines, Settings.CREAM_COLOR); // under the die, out of the way
+            if (!BoardGame.multiplayer.undo.HistoryPanel.isOpen()) { // the open History list uses this space
+                renderDie(sb);
+                textBlock(sb, 38, dieBottom1080 + 14, DIE_W - 16, lines, Settings.CREAM_COLOR); // under the die
+            }
         } else if (!AbstractDungeon.isScreenUp || AbstractDungeon.screen == AbstractDungeon.CurrentScreen.MAP) {
             // (hidden behind full screens like card rewards and the deck view; shown on the map for votes)
             float tw = 0;
@@ -308,6 +311,41 @@ public class MPOverlay implements PostRenderSubscriber {
         PartyPanel.render(sb); // gold, potions and rows: one "Party" button out of combat
         if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.MAP && !Session.mapVotes.isEmpty()) renderVoteMarks(sb);
         if (Session.proposal != null) renderProposal(sb);
+    }
+
+    private static final java.util.IdentityHashMap<Object, Float> dieButtonHome = new java.util.IdentityHashMap<>();
+
+    /**
+     * The board game's die buttons (Accept Roll, The Abacus, Toolbox, reroll, Gambler's Brew) sit
+     * just above the middle of the screen, where the teammate panels are in a shared fight: move
+     * them down below the panels while there are panels.
+     */
+    private static void placeDieButtons() {
+        try {
+            if (AbstractDungeon.overlayMenu == null) return;
+            boolean shift = RowView.enabled();
+            com.megacrit.cardcrawl.ui.buttons.Button[] bs = {
+                    BoardGame.ui.OverlayMenuPatches.OverlayMenuExtraInterface.lockinrollbutton.get(AbstractDungeon.overlayMenu),
+                    BoardGame.ui.OverlayMenuPatches.OverlayMenuExtraInterface.rerollbutton.get(AbstractDungeon.overlayMenu),
+                    BoardGame.ui.OverlayMenuPatches.OverlayMenuExtraInterface.theabacusbutton.get(AbstractDungeon.overlayMenu),
+                    BoardGame.ui.OverlayMenuPatches.OverlayMenuExtraInterface.toolboxbutton.get(AbstractDungeon.overlayMenu),
+                    BoardGame.ui.OverlayMenuPatches.OverlayMenuExtraInterface.potionbutton.get(AbstractDungeon.overlayMenu)};
+            for (com.megacrit.cardcrawl.ui.buttons.Button b : bs) {
+                if (b == null) continue;
+                Float home = dieButtonHome.get(b);
+                if (home == null) {
+                    home = b.y;
+                    dieButtonHome.put(b, home);
+                }
+                float want = shift ? home - 150f * Settings.scale : home;
+                if (b.y != want) {
+                    b.y = want;
+                    ((com.megacrit.cardcrawl.helpers.Hitbox) basemod.ReflectionHacks.getPrivate(b,
+                            com.megacrit.cardcrawl.ui.buttons.Button.class, "hb")).translate(b.x, want);
+                }
+            }
+        } catch (Throwable ignored) {
+        }
     }
 
     /** On the map: each player's name above the room they voted for. */

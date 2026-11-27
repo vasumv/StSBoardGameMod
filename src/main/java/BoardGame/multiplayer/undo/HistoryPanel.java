@@ -38,7 +38,7 @@ public class HistoryPanel implements PostRenderSubscriber {
     }
 
     private static void size(Hitbox hb) {
-        hb.width = W * Settings.scale;
+        hb.width = (open ? 420f : W) * Settings.scale; // the open list is wider
         hb.height = ROW_H * Settings.scale;
     }
 
@@ -61,6 +61,11 @@ public class HistoryPanel implements PostRenderSubscriber {
     private static void choose(int i) {
         if (mp()) BoardGame.multiplayer.Session.proposeRollback(i);
         else UndoManager.rollbackTo(i);
+    }
+
+    /** The step list is showing (the die box and log make room for it). */
+    public static boolean isOpen() {
+        return open && visible();
     }
 
     private static boolean visible() {
@@ -108,10 +113,15 @@ public class HistoryPanel implements PostRenderSubscriber {
         if (!visible()) return;
         List<String> steps = labels();
         float x = X * Settings.scale, w = W * Settings.scale, h = ROW_H * Settings.scale;
-        drawRow(sb, x, rowY(0), w, h, button.hovered,
-                "History (" + steps.size() + ")" + (open ? (mp() ? "  - click a step to propose undoing to before it" : "  - click a step to undo to before it") : ""),
+        drawRow(sb, x, rowY(0), w, h, button.hovered, "History (" + steps.size() + ")" + (open ? "  (click to close)" : ""),
                 Settings.GOLD_COLOR);
         if (!open) return;
+        float wide = 420f * Settings.scale;
+        int shown = Math.min(steps.size(), MAX_ROWS);
+        // the hint goes under the steps, on the same dark backing
+        drawRow(sb, x, rowY(shown + 1), wide, h, false, mp() ? "Click a step to propose undoing it"
+                : "Click a step to undo it", Settings.CREAM_COLOR);
+        w = wide;
         int first = Math.max(0, steps.size() - MAX_ROWS);
         for (int i = first; i < steps.size(); i++) {
             boolean hov = rows[i - first].hovered;
